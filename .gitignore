@@ -54,5 +54,10 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
-# Local Pi runtime state
+
+# Local agent runtime state
 .atl/
+.codegraph/
+
+# TypeScript incremental build metadata
+*.tsbuildinfo
