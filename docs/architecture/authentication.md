@@ -183,19 +183,6 @@ Authentication may additionally validate relevant account state, such as whether
 
 The exact account states supported by the application may evolve independently from the token mechanism.
 
-## Public Endpoints
-
-The initial authentication boundary is expected to support the following capabilities:
-
-```text
-register
-login
-refresh
-current authenticated user
-```
-
-HTTP paths and versioning are API-contract decisions and are not defined by this architectural document.
-
 ## Security Boundaries
 
 Authentication implementations must not:
