@@ -1,11 +1,20 @@
 {
-  "name": "nestjs12-api",
+  "name": "nestjs-api-boilerplate",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "description": "A secure NestJS 12 API boilerplate for TypeScript applications.",
+  "author": "AutanaSoft",
   "private": true,
-  "license": "UNLICENSED",
+  "license": "MIT",
   "type": "module",
+  "packageManager": "pnpm@11.25.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AutanaSoft/nestjs-api-boilerplate.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AutanaSoft/nestjs-api-boilerplate/issues"
+  },
+  "homepage": "https://github.com/AutanaSoft/nestjs-api-boilerplate#readme",
   "scripts": {
     "build": "nest build",
     "deploy": "nest deploy",
