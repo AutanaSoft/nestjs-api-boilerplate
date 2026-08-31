@@ -12,6 +12,18 @@ Read this file completely before making the first modification. Each section def
 - Consult the relevant documentation under `docs/` when the task requires additional context about architecture,
   conventions, or technical decisions. Do not read unrelated documentation by default.
 
+## Architecture and Conventions
+
+- Treat the relevant documents under `docs/architecture/` as normative for architectural decisions within their scope.
+- Apply only the installed skill rules relevant to the task and consistent with the documented project architecture.
+- For feature organization, module sharing, service responsibility, and persistence boundaries, apply:
+  - `nestjs-best-practices/rules/arch-feature-modules.md`
+  - `nestjs-best-practices/rules/arch-module-sharing.md`
+  - `nestjs-best-practices/rules/arch-single-responsibility.md`
+  - `nestjs-best-practices/rules/arch-use-repository-pattern.md`
+- Do not introduce a framework, library, ORM, or architectural pattern that conflicts with a documented project decision.
+- If the existing implementation conflicts with documented architecture, report the divergence before modifying either side.
+
 ## Code Style
 
 - Follow `.editorconfig` for baseline file conventions. For files supported by Prettier, follow `.prettierrc`, which
@@ -39,8 +51,17 @@ Read this file completely before making the first modification. Each section def
 
 ## Comments and Documentation
 
-- Document exports when their contract is not evident; omit self-explanatory helpers and one-liners.
-- Explain intent, decision, or limitation, not a literal description of the code.
+- Document exported APIs when their contract, responsibility, constraints, side effects, or expected usage are not evident
+  from the type signature and name.
+- Prefer JSDoc for exported classes, functions, types, interfaces, constants, or provider tokens when additional contract
+  information is required.
+- Do not add documentation that only repeats names, types, parameters, or implementation details already evident from the
+  code.
+- Internal helpers and straightforward private methods normally do not require documentation.
+- Add inline comments only when they explain intent, architectural reasoning, non-obvious behavior, compatibility
+  constraints, security requirements, or implementation limitations.
+- Keep documentation close to the code or architectural boundary that owns the documented behavior.
+- Update documentation when a change modifies a documented public contract or architectural decision.
 - Do not keep commented-out code; Git history preserves prior versions.
 
 ## Planning and Verification
