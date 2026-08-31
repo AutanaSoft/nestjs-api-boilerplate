@@ -21,8 +21,15 @@ Read this file completely before making the first modification. Each section def
   - `nestjs-best-practices/rules/arch-module-sharing.md`
   - `nestjs-best-practices/rules/arch-single-responsibility.md`
   - `nestjs-best-practices/rules/arch-use-repository-pattern.md`
-- Do not introduce a framework, library, ORM, or architectural pattern that conflicts with a documented project decision.
-- If the existing implementation conflicts with documented architecture, report the divergence before modifying either side.
+- For NestJS end-to-end testing, apply the `nestjs-e2e-practices` skill and its relevant reference cards:
+  - `e2e-orchestrate-execution-and-lifecycle.md`
+  - `e2e-run-real-application-and-infrastructure.md`
+  - `e2e-build-data-and-assert-contracts.md`
+  - `e2e-isolate-external-service-boundaries.md`
+- Do not introduce a framework, library, ORM, or architectural pattern that conflicts with a documented project
+  decision.
+- If the existing implementation conflicts with documented architecture, report the divergence before modifying either
+  side.
 
 ## Code Style
 
@@ -51,12 +58,12 @@ Read this file completely before making the first modification. Each section def
 
 ## Comments and Documentation
 
-- Document exported APIs when their contract, responsibility, constraints, side effects, or expected usage are not evident
-  from the type signature and name.
-- Prefer JSDoc for exported classes, functions, types, interfaces, constants, or provider tokens when additional contract
-  information is required.
-- Do not add documentation that only repeats names, types, parameters, or implementation details already evident from the
-  code.
+- Document exported APIs when their contract, responsibility, constraints, side effects, or expected usage are not
+  evident from the type signature and name.
+- Prefer JSDoc for exported classes, functions, types, interfaces, constants, or provider tokens when additional
+  contract information is required.
+- Do not add documentation that only repeats names, types, parameters, or implementation details already evident from
+  the code.
 - Internal helpers and straightforward private methods normally do not require documentation.
 - Add inline comments only when they explain intent, architectural reasoning, non-obvious behavior, compatibility
   constraints, security requirements, or implementation limitations.

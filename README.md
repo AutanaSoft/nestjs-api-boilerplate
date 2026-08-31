@@ -31,7 +31,7 @@ pnpm install
 
 ## Documentation
 
-Use the focused references for architecture, configuration, and project policies beyond the quick start.
+Use the focused references for architecture, configuration, testing, and project policies beyond the quick start.
 
 | Topic                                       | Reference                                                          |
 | ------------------------------------------- | ------------------------------------------------------------------ |
@@ -40,6 +40,8 @@ Use the focused references for architecture, configuration, and project policies
 | Database and persistence architecture       | [Data access](docs/architecture/data-access.md)                    |
 | Application configuration architecture      | [Configuration](docs/architecture/configuration.md)                |
 | Authentication architecture                 | [Authentication](docs/architecture/authentication.md)              |
+| Testing conventions                         | [Testing](docs/architecture/testing.md)                            |
+| End-to-end testing architecture             | [E2E testing](docs/architecture/e2e-testing.md)                    |
 | HTTP security and environment configuration | [HTTP security configuration](docs/configuration/http-security.md) |
 | Contribution workflow                       | [Contributing guide](CONTRIBUTING.md)                              |
 | Vulnerability reporting                     | [Security policy](SECURITY.md)                                     |
