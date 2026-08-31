@@ -28,5 +28,5 @@
     }
   },
   "gitignore": true,
-  "ignores": [".agents/**", ".git/**"]
+  "ignores": [".agents/**"]
 }
