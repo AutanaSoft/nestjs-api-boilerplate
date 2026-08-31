@@ -31,10 +31,15 @@ pnpm install
 
 ## Documentation
 
-Use the focused references when you need configuration rules or project policies beyond the quick start.
+Use the focused references for architecture, configuration, and project policies beyond the quick start.
 
 | Topic                                       | Reference                                                          |
 | ------------------------------------------- | ------------------------------------------------------------------ |
+| Architecture principles                     | [Architecture overview](docs/architecture/overview.md)             |
+| Project structure and module conventions    | [Project structure](docs/architecture/project-structure.md)        |
+| Database and persistence architecture       | [Data access](docs/architecture/data-access.md)                    |
+| Application configuration architecture      | [Configuration](docs/architecture/configuration.md)                |
+| Authentication architecture                 | [Authentication](docs/architecture/authentication.md)              |
 | HTTP security and environment configuration | [HTTP security configuration](docs/configuration/http-security.md) |
 | Contribution workflow                       | [Contributing guide](CONTRIBUTING.md)                              |
 | Vulnerability reporting                     | [Security policy](SECURITY.md)                                     |
