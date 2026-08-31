@@ -12,7 +12,7 @@ Application services must not depend directly on Prisma Client or contain Prisma
 
 The default dependency direction is:
 
-```text id="s3w7pc"
+```text
 Service
    ↓
 Repository
@@ -28,7 +28,7 @@ Repositories own persistence-specific behavior and keep ORM implementation detai
 
 Repositories belong to the feature that owns the persisted data.
 
-```text id="y159fb"
+```text
 src/modules/users/
 └── repositories/
     └── users.repository.ts
@@ -57,7 +57,7 @@ Repositories should expose operations meaningful to the application rather than 
 
 For example:
 
-```typescript id="7e7rt5"
+```typescript
 @Injectable()
 export class UsersRepository {
   findById(id: string) {}
@@ -76,7 +76,7 @@ export class UsersRepository {
 
 Prisma client construction and lifecycle belong to database infrastructure outside feature modules.
 
-```text id="ltd6bc"
+```text
 src/
 ├── database/
 └── modules/
@@ -90,7 +90,7 @@ Application services must not inject the Prisma client directly.
 
 The Prisma schema and migration history live outside `src`.
 
-```text id="9f73ui"
+```text
 prisma/
 ├── schema.prisma
 └── migrations/
@@ -130,7 +130,7 @@ Do not load collections and then execute one database query per record to retrie
 
 Avoid patterns equivalent to:
 
-```text id="rlfm4u"
+```text
 load users
    ↓
 for each user
