@@ -1,0 +1,130 @@
+{
+  "skill_name": "nestjs-practices",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create a typed payments configuration namespace for a NestJS application. Use a Zod schema, explicit defaults and overrides, a derived endpoint, one final validation of the complete object, a named exported factory, registerAs, a named registered constant, and a default export. Explain why the construction and registration steps stay separate. Do not require env.validation.ts or add testing guidance.",
+      "expected_output": "A complete namespace example with a named exported factory, final validation, explicit registerAs registration through a named constant, default export, TypeScript readonly typing, and no universal env.validation.ts or testing requirement.",
+      "expectations": [
+        "Exports a named paymentsConfigFactory that constructs the complete namespace.",
+        "Builds defaults, defined overrides, and derived values before one final schema parse.",
+        "Registers the named factory with registerAs under the payments namespace.",
+        "Assigns the registered namespace to paymentsConfig and exports it as the module default.",
+        "Expresses immutability with Readonly or readonly properties without using Zod .readonly() as the default pattern.",
+        "Does not require env.validation.ts or introduce unit, integration, or E2E testing rules."
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Design a NestJS PaymentsModule with forRoot and forRootAsync. Validate the public options before exposing the options provider, use one shared validator for both paths, keep input and validated output distinct, and expose a stable token. The validated contract should be read-only without requiring runtime freezing.",
+      "expected_output": "A dynamic module example that validates synchronous and asynchronous options at registration with the same validator, exposes only the validated read-only result through a stable token, and does not use Zod runtime freezing as a default.",
+      "expectations": [
+        "Validates forRoot input before creating or exposing the options provider.",
+        "Passes the resolved forRootAsync result through the same validator before exposure.",
+        "Keeps the accepted input type, validated result, and registered token distinct.",
+        "Uses Readonly in TypeScript types without using Zod .readonly() as the default schema pattern.",
+        "Does not repeat validation inside internal consumers."
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Correct a NestJS configuration example that uses a hardcoded API-key fallback and prints the complete configuration when validation fails. Keep the external secret boundary, use a read-only TypeScript contract, and show a sanitized diagnostic while explaining how a project can preserve structured error causes.",
+      "expected_output": "A secret-safe configuration example with no usable credential default, no serialized configuration or process.env dump, a read-only TypeScript contract, and a sanitized error that does not discard required structured-cause handling.",
+      "expectations": [
+        "Removes the hardcoded or usable API-key fallback.",
+        "Does not log or serialize the secret, the namespace, or process.env wholesale.",
+        "Expresses the returned configuration contract with Readonly or readonly properties.",
+        "Reports only safe variable or constraint metadata in the simplified error.",
+        "States that the simplified error example is not a universal policy and that required causes must be preserved through sanitized diagnostics."
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Define the boundary of a NestJS configuration catalog. Explain what config guidance covers and what it intentionally excludes when a request asks for generic unit tests, Jest discovery, E2E orchestration, fixtures, temporary test infrastructure, or black-box tests against a deployed API.",
+      "expected_output": "A self-contained scope statement covering configuration ownership, construction, validation, registration, injection, external sources, dynamic options, secrets, and safe diagnostics while excluding testing design and unrelated framework or black-box concerns.",
+      "expectations": [
+        "Describes the config domain without depending on the name or existence of another skill.",
+        "Excludes generic unit tests, Jest discovery, E2E orchestration, fixtures, and temporary test infrastructure.",
+        "Excludes black-box testing against a deployed API without NestJS source access.",
+        "Distinguishes runtime configuration validation from test strategy."
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Refactor a NestJS CLI runner that fetches external operations and writes them through several repositories. Keep the runner as an entrypoint, put the cross-module workflow in an explicit coordinator, and keep domain services and repositories focused on their own responsibilities.",
+      "expected_output": "A NestJS design where the CLI runner delegates to a coordinator, the coordinator owns cross-module orchestration, services remain domain-focused, and repositories remain persistence-focused.",
+      "expectations": [
+        "Keeps the CLI runner limited to invoking an application flow.",
+        "Introduces or uses an explicit coordinator for cross-module workflow decisions.",
+        "Does not move persistence queries into the coordinator or runner.",
+        "Does not combine unrelated domain responsibilities in one service."
+      ],
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "Refactor a NestJS OrdersService that contains Drizzle table references, query operators, and transaction logic. Move persistence access behind a repository while preserving a domain-oriented service API and supporting an existing transaction executor.",
+      "expected_output": "A repository-oriented design that keeps Drizzle persistence details and transaction executor handling outside the service while preserving a domain-oriented service API.",
+      "expectations": [
+        "Moves Drizzle table references, operators, and query shapes into a repository.",
+        "Keeps the service dependent on a domain-oriented repository API.",
+        "Allows repository operations participating in an existing transaction to accept its executor.",
+        "Does not create an independent transaction inside a repository operation that joins an existing transaction."
+      ],
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "Implement a NestJS command-line worker that runs a SyncCoordinator once and exits. It has no HTTP interface. Show bootstrap, provider resolution, cleanup, and error behavior without adding controllers, routes, or HTTP tests.",
+      "expected_output": "A standalone NestJS application context that resolves the entry provider, runs it, and closes reliably without introducing an HTTP server.",
+      "expectations": [
+        "Uses NestFactory.createApplicationContext rather than NestFactory.create.",
+        "Resolves and invokes the worker or runner provider.",
+        "Closes the application context in a finally block.",
+        "Does not add HTTP routes, controllers, or HTTP tests merely to run the worker."
+      ],
+      "files": []
+    },
+    {
+      "id": 8,
+      "prompt": "Correct a NestJS provider that logs errors through console.error with interpolated account data and assumes a caught value has a message. Use injected structured logging, narrow the caught value safely, and avoid exposing secrets or complete sensitive payloads.",
+      "expected_output": "A NestJS error-handling example with structured context, a stable message, safe narrowing of unknown caught values, and no sensitive data disclosure.",
+      "expectations": [
+        "Uses an injected runtime logger rather than console output.",
+        "Uses a stable log message and structured variable context.",
+        "Treats the caught value as unknown and narrows it before reading properties.",
+        "Does not log secrets, tokens, passwords, or complete sensitive payloads."
+      ],
+      "files": []
+    },
+    {
+      "id": 9,
+      "prompt": "Implement a NestJS client for an external operations provider. Validate the outgoing request, validate the received payload, normalize it to an internal OperationRecord, and keep raw provider data away from domain logic and persistence.",
+      "expected_output": "An integration-boundary example that validates request and response contracts and maps validated provider data to an internal model.",
+      "expectations": [
+        "Validates outgoing input before the transport call.",
+        "Validates the incoming provider response before it reaches domain logic.",
+        "Normalizes validated provider data to an internal record or model.",
+        "Does not persist or return raw provider payloads."
+      ],
+      "files": []
+    },
+    {
+      "id": 10,
+      "prompt": "Design a NestJS DatabaseModule for Drizzle. It must construct and close the client centrally, use a stable explicit token, obtain configuration through NestJS configuration providers, export the database provider, and keep business services dependent on repositories instead of the client.",
+      "expected_output": "A NestJS database module with centralized Drizzle lifecycle, a stable injection token, configuration through providers, an exported database provider, and repositories as the business-service boundary.",
+      "expectations": [
+        "Creates the Drizzle client in one database module rather than in each consumer.",
+        "Exposes the client through a stable explicit dependency-injection token.",
+        "Obtains database configuration through NestJS configuration providers.",
+        "Exports the database provider and owns connection shutdown.",
+        "Does not make business services construct or inject the database client directly."
+      ],
+      "files": []
+    }
+  ]
+}

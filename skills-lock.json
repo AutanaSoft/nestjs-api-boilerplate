@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "skills": {
+    "nestjs-best-practices": {
+      "source": "kadajett/agent-nestjs-skills",
+      "sourceType": "github",
+      "skillPath": "skills/nestjs-best-practices/SKILL.md",
+      "computedHash": "58f8a630637be3acce1f118c747d68160346ada8a43d76cb52a5b4c4edaa2d37"
+    },
+    "nestjs-e2e-practices": {
+      "source": "autanasoft/skills",
+      "sourceType": "github",
+      "skillPath": "skills/typescript/nestjs-e2e-practices/SKILL.md",
+      "computedHash": "38d19a757789e79c314988f76742787d703dbc5f2abdc9d1e34294c3ed5901e5"
+    },
+    "nestjs-practices": {
+      "source": "autanasoft/skills",
+      "sourceType": "github",
+      "skillPath": "skills/typescript/nestjs-practices/SKILL.md",
+      "computedHash": "ace2f3bdd09e72f0e8d39ab2dfa35c88371c1b71d2d1f12427b0c4544b5ef8e8"
+    },
+    "ts-general-practices": {
+      "source": "autanasoft/skills",
+      "sourceType": "github",
+      "skillPath": "skills/typescript/ts-general-practices/SKILL.md",
+      "computedHash": "73821ce18de5846b44e794b2aa56bf288ecdd3a164495a143c6ac7c95149e7d3"
+    },
+    "ts-zodv4-practices": {
+      "source": "autanasoft/skills",
+      "sourceType": "github",
+      "skillPath": "skills/typescript/ts-zodv4-practices/SKILL.md",
+      "computedHash": "6174b62103089a0ef5a904dddaf1e232e929987aa558487bb721079e40b590a9"
+    }
+  }
+}

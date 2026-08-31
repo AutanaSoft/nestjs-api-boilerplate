@@ -1,0 +1,4 @@
+interface:
+  display_name: 'NestJS Practices'
+  short_description: 'Apply architecture and runtime practices for NestJS'
+  default_prompt: 'Use $nestjs-practices to review and improve this NestJS implementation.'
