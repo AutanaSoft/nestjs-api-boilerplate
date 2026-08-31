@@ -19,7 +19,7 @@ The API listens on `http://localhost:3000` by default. `GET /` returns `Hello Wo
 
 ## Prerequisites
 
-- Node.js 24 (the version used by CI)
+- Node.js 26 (the version used by CI)
 - pnpm 11.25.0
 
 Corepack can activate the package-manager version declared in `package.json`:
