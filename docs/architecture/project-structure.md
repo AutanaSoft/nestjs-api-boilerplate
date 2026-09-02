@@ -1,22 +1,21 @@
 # Estructura del proyecto
 
-Este documento define las convenciones de arquitectura estructural para el Boilerplate de API de NestJS.
+Este documento define las convenciones de arquitectura estructural del proyecto.
 
-El proyecto se organiza alrededor de módulos de funcionalidades, compartición explícita de módulos, componentes de
-responsabilidad única y límites de persistencia basados en repositorios.
+El proyecto se organiza alrededor de Feature Modules, module sharing explícito, componentes de responsabilidad única y
+límites de persistencia basados en Repositories.
 
 ## Organización del proyecto
 
-Las funcionalidades de la aplicación se ubican en:
+Los Features de la aplicación se ubican en:
 
 ```text
 src/modules/<feature>/
 ```
 
-Cada funcionalidad es propietaria de sus controladores, servicios, repositorios, contratos y otros componentes de
-soporte.
+Cada Feature es responsable de sus Controllers, Services, Repositories, contratos y otros componentes de soporte.
 
-La infraestructura transversal a funcionalidades permanece fuera de `src/modules`.
+La infraestructura transversal a Features permanece fuera de `src/modules`.
 
 ```text
 src/
@@ -31,12 +30,12 @@ src/
 
 El código de la aplicación no debe organizarse globalmente por capa técnica.
 
-## Estructura de funcionalidades
+## Estructura de Features
 
-Las funcionalidades deben mantenerse planas mientras sean pequeñas e introducir directorios basados en responsabilidades
-a medida que crecen.
+Los Features deben mantenerse planos mientras sean pequeños e introducir directorios basados en responsabilidades a
+medida que crecen.
 
-Una funcionalidad pequeña puede usar:
+Un Feature pequeño puede usar:
 
 ```text
 src/modules/users/
@@ -47,7 +46,7 @@ src/modules/users/
 └── dto/
 ```
 
-Una funcionalidad más grande puede usar:
+Un Feature más grande puede usar:
 
 ```text
 src/modules/users/
@@ -72,12 +71,13 @@ Los límites de los componentes deben seguir la responsabilidad, en lugar de pre
 
 ## Límites de módulos
 
-Un módulo de funcionalidad es el límite de propiedad para una capacidad de la aplicación.
+Un Feature Module es el límite de ownership para una capacidad de la aplicación.
 
-El código específico de una funcionalidad debe permanecer dentro de su módulo propietario, salvo que represente
-infraestructura genuinamente compartida.
+El código específico de un Feature debe permanecer dentro de su módulo propietario, salvo que represente infraestructura
+genuinamente compartida.
 
-Cada proveedor tiene un módulo propietario. Los consumidores importan ese módulo en lugar de redeclarar sus proveedores.
+Cada Provider tiene un único módulo propietario. Los consumidores importan ese módulo en lugar de redeclarar sus
+Providers.
 
 ```typescript
 @Module({
@@ -96,19 +96,19 @@ export class UsersModule {}
 export class AuthModule {}
 ```
 
-Los módulos deben exponer únicamente los proveedores requeridos por otros módulos.
+Los módulos deben exponer únicamente los Providers requeridos por otros módulos.
 
-Los repositorios normalmente deben permanecer privados para su funcionalidad propietaria.
+Los Repositories normalmente deben permanecer privados para su Feature propietario.
 
-## Controladores
+## Controllers
 
-Los controladores son propietarios de superficies de transporte cohesivas y delegan el comportamiento de la aplicación a
-los servicios.
+Los Controllers son responsables de superficies de transport cohesivas y delegan el comportamiento de la aplicación a
+los Services.
 
 No deben contener lógica de persistencia ni lógica de negocio sustancial.
 
-Cuando una funcionalidad expone múltiples responsabilidades HTTP distintas, esas responsabilidades deben dividirse entre
-controladores.
+Cuando un Feature expone múltiples responsabilidades HTTP distintas, esas responsabilidades deben dividirse entre
+Controllers.
 
 Por ejemplo:
 
@@ -119,16 +119,16 @@ controllers/
 └── user-password.controller.ts
 ```
 
-Los límites de los controladores deben seguir la responsabilidad HTTP, en lugar de forzar todos los endpoints de una
-funcionalidad en un solo controlador.
+Los límites de los Controllers deben seguir la responsabilidad HTTP, en lugar de forzar todos los Endpoints de un Feature
+en un solo Controller.
 
-## Servicios
+## Services
 
-Los servicios son propietarios de comportamientos cohesivos de aplicación o dominio.
+Los Services son responsables de comportamientos cohesivos de aplicación o dominio.
 
-Una funcionalidad puede contener uno o varios servicios.
+Un Feature puede contener uno o varios Services.
 
-No agrupe responsabilidades no relacionadas en un único servicio solo para preservar una convención de nombres
+No agrupe responsabilidades no relacionadas en un único Service solo para preservar una convención de nombres
 `<feature>.service.ts`.
 
 Por ejemplo:
@@ -140,36 +140,36 @@ services/
 └── order-status.service.ts
 ```
 
-Los límites de los servicios deben seguir la responsabilidad, en lugar de las convenciones de cantidad de archivos.
+Los límites de los Services deben seguir la responsabilidad, en lugar de las convenciones de cantidad de archivos.
 
-## Repositorios
+## Repositories
 
-Los repositorios encapsulan el acceso a persistencia.
+Los Repositories encapsulan el acceso a persistencia.
 
-Las consultas, joins, filtros, mapeo de persistencia y responsabilidades relacionadas con el acceso a datos específicos
-de ORM pertenecen a los repositorios, en lugar de a los servicios.
+Las queries, joins, filtros, persistence mapping y responsabilidades relacionadas con el acceso a datos específicas del
+ORM pertenecen a los Repositories, en lugar de a los Services.
 
 ```text
-Controlador
+Controller
     ↓
-Servicio
+Service
     ↓
-Repositorio
+Repository
     ↓
-Infraestructura de persistencia
+Persistence Infrastructure
 ```
 
-Una funcionalidad puede contener varios repositorios cuando las responsabilidades de persistencia son distintas.
+Un Feature puede contener varios Repositories cuando las responsabilidades de persistencia son distintas.
 
-Los repositorios se requieren únicamente para funcionalidades que poseen comportamiento de persistencia.
+Los Repositories se requieren únicamente para Features que poseen comportamiento de persistencia.
 
-## DTO y contratos
+## DTOs y contratos
 
-Las definiciones de entrada y salida específicas de transporte pertenecen a la funcionalidad que posee el límite HTTP
+Las definiciones de input y output específicas del transport pertenecen al Feature que posee el límite HTTP
 correspondiente.
 
-Los esquemas y tipos reutilizables propiedad de una funcionalidad pertenecen a esa misma funcionalidad y deben
-mantenerse separados de los detalles de implementación de persistencia.
+Los schemas y types reutilizables propiedad de un Feature pertenecen a ese mismo Feature y deben mantenerse separados de
+los detalles de implementación de persistencia.
 
 Las ubicaciones habituales son:
 
@@ -178,11 +178,11 @@ dto/
 contracts/
 ```
 
-Sus convenciones detalladas de propiedad y validación se definen por separado de este documento estructural.
+Sus convenciones detalladas de ownership y validación se definen por separado de este documento estructural.
 
 ## Infraestructura
 
-La infraestructura transversal a funcionalidades se ubica fuera de `src/modules`.
+La infraestructura transversal a Features se ubica fuera de `src/modules`.
 
 Los ejemplos incluyen:
 
@@ -192,32 +192,32 @@ src/config/
 src/common/
 ```
 
-Los módulos de infraestructura pueden exponer capacidades técnicas requeridas por repositorios de funcionalidades u
-otros componentes de infraestructura.
+Los módulos de infraestructura pueden exponer capacidades técnicas requeridas por Repositories de Features u otros
+componentes de infraestructura.
 
-Los servicios de aplicación deben depender de abstracciones de funcionalidades, en lugar de hacerlo directamente de
-clientes de persistencia.
+Los Application Services deben depender de abstracciones de Features, en lugar de hacerlo directamente de persistence
+clients.
 
 ## Código compartido
 
-`src/common` está reservado para código genuinamente transversal sin un propietario natural de funcionalidad.
+`src/common` está reservado para código genuinamente transversal sin un Feature propietario natural.
 
-El código no debe moverse a `common` simplemente porque se reutiliza o porque su propiedad no es clara.
+El código no debe moverse a `common` simplemente porque se reutiliza o porque su ownership no es claro.
 
-Prefiera mantener el comportamiento junto con la funcionalidad que lo posee.
+Prefiera mantener el comportamiento junto con el Feature que lo posee.
 
 ## Reglas
 
-1. Organice la funcionalidad de la aplicación por funcionalidad en `src/modules`.
-2. Mantenga los componentes específicos de una funcionalidad dentro de su módulo propietario.
-3. Mantenga las funcionalidades planas mientras sean pequeñas e introduzca directorios basados en responsabilidades a
-   medida que crecen.
-4. Divida los controladores, servicios y repositorios según una responsabilidad cohesiva cuando sea necesario.
-5. Asigne a cada proveedor un módulo propietario.
-6. Comparta proveedores mediante importaciones de módulos y exportaciones explícitas.
-7. Mantenga los controladores enfocados en las responsabilidades de transporte.
-8. Mantenga los servicios enfocados en una responsabilidad cohesiva.
-9. Encapsule el acceso a persistencia en repositorios.
-10. Mantenga la lógica específica de ORM fuera de los servicios de aplicación.
-11. Mantenga privados los repositorios de funcionalidades, salvo que un requisito documentado justifique exponerlos.
+1. Organice las capacidades de la aplicación por Feature dentro de `src/modules`.
+2. Mantenga los componentes específicos de un Feature dentro de su módulo propietario.
+3. Mantenga los Features planos mientras sean pequeños e introduzca directorios basados en responsabilidades a medida que
+   crecen.
+4. Divida Controllers, Services y Repositories según una responsabilidad cohesiva cuando sea necesario.
+5. Asigne a cada Provider un único módulo propietario.
+6. Comparta Providers mediante module imports y exports explícitos.
+7. Mantenga los Controllers enfocados en responsabilidades de transport.
+8. Mantenga los Services enfocados en una responsabilidad cohesiva.
+9. Encapsule el acceso a persistencia en Repositories.
+10. Mantenga la lógica específica del ORM fuera de los Application Services.
+11. Mantenga privados los Repositories de Features, salvo que un requisito documentado justifique exponerlos.
 12. Mantenga la infraestructura compartida fuera de `src/modules`.
