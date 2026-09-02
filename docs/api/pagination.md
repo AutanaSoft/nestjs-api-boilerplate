@@ -1,32 +1,20 @@
 # Paginación
 
-Este documento define la convención de paginación utilizada por la API.
+Status: Target
+
+Este documento define la convención compartida de paginación de la API.
 
 La estrategia estándar es **bidirectional cursor pagination**.
 
 ## Request Contract
 
-La entrada de paginación utiliza:
+La entrada utiliza:
 
-- `limit`;
-- `after`;
-- `before`.
-
-```typescript
-export const cursorPaginationSchema = z
-  .object({
-    limit: z.coerce.number().int().positive().max(250).default(25),
-    after: z.string().min(1).optional(),
-    before: z.string().min(1).optional(),
-  })
-  .refine(({ after, before }) => !(after && before), {
-    message: '`after` and `before` cannot be used together',
-  });
-
-export type CursorPaginationInput = z.infer<
-  typeof cursorPaginationSchema
->;
-```
+| Campo | Semántica |
+| --- | --- |
+| `limit` | Cantidad máxima de elementos solicitados |
+| `after` | Cursor para navegación hacia adelante |
+| `before` | Cursor para navegación hacia atrás |
 
 Convenciones:
 
@@ -37,41 +25,16 @@ maximum limit = 250
 
 `after` y `before` son mutuamente excluyentes.
 
-Los cursors deben ser opacos para el cliente y no deben exponer directamente estructuras de Prisma ni detalles de persistencia.
+Los cursors deben ser opacos para el cliente.
+
+Las convenciones generales de contratos se definen en `http-contracts.md`.
 
 ## Response Contract
 
-Las Responses paginadas deben utilizar:
+Las Responses paginadas utilizan:
 
 ```typescript
-export const pageInfoSchema = z.object({
-  nextCursor: z.string().nullable(),
-  previousCursor: z.string().nullable(),
-  hasNextPage: z.boolean(),
-  hasPreviousPage: z.boolean(),
-});
-
-export type PageInfo = z.infer<typeof pageInfoSchema>;
-```
-
-El contrato paginado debe utilizar la estructura:
-
-```typescript
-export const createPaginatedResponseSchema = <
-  T extends z.ZodType,
->(
-  itemSchema: T,
-) =>
-  z.object({
-    data: z.array(itemSchema),
-    pageInfo: pageInfoSchema,
-  });
-```
-
-Conceptualmente:
-
-```typescript
-export type PaginatedResponse<T> = {
+type PaginatedResponse<T> = {
   data: T[];
   pageInfo: {
     nextCursor: string | null;
@@ -82,30 +45,27 @@ export type PaginatedResponse<T> = {
 };
 ```
 
+`data` contiene los recursos de la página actual.
+
+`pageInfo` contiene únicamente la información necesaria para navegar entre páginas.
+
 ## Ordering
 
-Cursor pagination requiere un ordering determinista.
+Cursor pagination requiere ordering determinista.
 
-Cuando el campo principal de sorting no garantice unicidad, debe incluirse un tie-breaker único.
-
-Por ejemplo:
-
-```text
-createdAt DESC
-id DESC
-```
+Cuando el criterio principal no sea único, debe utilizarse un tie-breaker único.
 
 Los cursors deben corresponder al mismo filtering y sorting que originaron la consulta.
 
 ## Reglas
 
 1. Utilice bidirectional cursor pagination como estrategia estándar.
-2. Utilice `after` y `before` como cursors de navegación.
-3. No permita `after` y `before` simultáneamente.
-4. Utilice `limit = 25` por defecto.
-5. Utilice `250` como límite máximo.
+2. Utilice `after` y `before` para navegación.
+3. No permita ambos cursors simultáneamente.
+4. Utilice `25` como limit predeterminado.
+5. Utilice `250` como limit máximo.
 6. Utilice `{ data, pageInfo }` como Response estándar.
-7. Incluya `nextCursor`, `previousCursor`, `hasNextPage` y `hasPreviousPage` en `pageInfo`.
-8. Mantenga los cursors opacos e independientes de Prisma.
+7. Incluya `nextCursor`, `previousCursor`, `hasNextPage` y `hasPreviousPage`.
+8. Mantenga los cursors opacos.
 9. Utilice ordering determinista.
-10. No incluya offset, page numbers ni totals como parte del contrato estándar.
+10. No incluya offsets, page numbers ni totals en el contrato estándar.
