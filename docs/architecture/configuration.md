@@ -1,42 +1,41 @@
 # Configuración
 
-Este documento define las convenciones de configuración de la aplicación para el Boilerplate de API de NestJS.
+Este documento define las convenciones de configuración de la aplicación.
 
-El proyecto utiliza `@nestjs/config` para el registro de configuración y la inyección de dependencias, con Zod para la
-validación en tiempo de ejecución.
+El proyecto utiliza `@nestjs/config` para configuration registration y dependency injection, con Zod para runtime
+validation.
 
 ## Límites de configuración
 
-Las fuentes de configuración externas deben mantenerse aisladas de los consumidores de la aplicación.
+Las external configuration sources deben mantenerse aisladas de los consumidores de la aplicación.
 
 Los ejemplos incluyen:
 
-- variables de entorno;
-- gestores de secretos;
-- archivos de configuración montados;
-- servicios de configuración externos.
+- environment variables;
+- secret managers;
+- mounted configuration files;
+- external configuration services.
 
-Los servicios de aplicación y los componentes de funcionalidades no deben acceder directamente a `process.env` ni a
-proveedores externos de secretos.
+Los Application Services y los componentes de Features no deben acceder directamente a `process.env` ni a external secret
+providers.
 
-Los valores externos primero deben pasar por un límite de configuración y exponerse como configuración validada y
-tipada.
+Los external values primero deben pasar por un configuration boundary y exponerse como configuración validada y tipada.
 
 ```text
-Fuente externa
+External source
       ↓
-Fábrica de configuración
+Configuration factory
       ↓
-Validación
+Validation
       ↓
-Configuración tipada
+Typed configuration
       ↓
-Consumidor de la aplicación
+Application consumer
 ```
 
-## Configuración con espacios de nombres
+## Namespaced Configuration
 
-La configuración debe agruparse en espacios de nombres cohesivos.
+La configuración debe agruparse en namespaces cohesivos.
 
 Los ejemplos incluyen:
 
@@ -46,28 +45,28 @@ database
 auth
 ```
 
-Cada espacio de nombres es propietario de:
+Cada namespace es responsable de:
 
-- sus entradas externas;
-- valores predeterminados;
-- normalización;
-- valores derivados;
-- validación;
-- tipo de configuración final.
+- sus external inputs;
+- defaults;
+- normalization;
+- derived values;
+- validation;
+- final configuration type.
 
-Los espacios de nombres deben usar nombres semánticos cortos y estables.
+Los namespaces deben usar nombres semánticos cortos y estables.
 
-## Propiedad de la configuración
+## Configuration Ownership
 
 La configuración debe ubicarse en el límite arquitectónico que la posee.
 
-La configuración de toda la aplicación puede ubicarse en:
+La configuración global de la aplicación puede ubicarse en:
 
 ```text
 src/config/
 ```
 
-La configuración específica de una funcionalidad puede ubicarse dentro de la funcionalidad propietaria.
+La configuración específica de un Feature puede ubicarse dentro de su Feature propietario.
 
 Por ejemplo:
 
@@ -77,7 +76,7 @@ src/modules/auth/
     └── auth.config.ts
 ```
 
-La configuración específica de infraestructura puede ubicarse con su módulo de infraestructura.
+La configuración específica de infraestructura puede ubicarse junto a su infrastructure module.
 
 ```text
 src/database/
@@ -87,17 +86,16 @@ src/database/
 
 No mueva la configuración a un directorio global cuando exista un propietario más claro.
 
-## Fábricas de configuración
+## Configuration Factories
 
-Cada espacio de nombres debe exponer una fábrica con nombre responsable de construir el objeto de configuración final
-completo.
+Cada namespace debe exponer una named factory responsable de construir el objeto de configuración final completo.
 
-La fábrica debe aplicar:
+La factory debe aplicar:
 
-1. valores predeterminados;
-2. anulaciones externas explícitas;
-3. normalización y valores derivados;
-4. validación final.
+1. defaults;
+2. explicit external overrides;
+3. normalization y derived values;
+4. final validation.
 
 El objeto final debe ser válido antes de estar disponible para los consumidores de la aplicación.
 
@@ -111,7 +109,7 @@ export const authConfigFactory = (): AuthConfig => {
 };
 ```
 
-El espacio de nombres se registra luego mediante `registerAs`.
+El namespace se registra luego mediante `registerAs`.
 
 ```typescript
 const authConfig = registerAs<AuthConfig>('auth', authConfigFactory);
@@ -119,35 +117,34 @@ const authConfig = registerAs<AuthConfig>('auth', authConfigFactory);
 export default authConfig;
 ```
 
-Evite las fábricas anónimas que devuelven configuración no validada o parcial.
+Evite anonymous factories que devuelvan configuración no validada o parcial.
 
 ## Validación
 
-La configuración debe fallar durante el inicio de la aplicación cuando falten valores requeridos o sean inválidos.
+La configuración debe fallar durante application startup cuando falten required values o sean inválidos.
 
-No difiera los errores de configuración hasta que una solicitud alcance la funcionalidad afectada.
+No difiera configuration errors hasta que un Request alcance el Feature afectado.
 
-Los esquemas de Zod deben validar el contrato de configuración final después de que se hayan aplicado los valores
-predeterminados, la normalización y las transformaciones.
+Los Zod schemas deben validar el final configuration contract después de que se hayan aplicado defaults, normalization y
+transformations.
 
-Los consumidores de configuración no deben repetir la validación que ya es propiedad del espacio de nombres de
-configuración.
+Los configuration consumers no deben repetir la validación que ya pertenece al configuration namespace.
 
-## Valores externos
+## External Values
 
-Los valores de configuración externos deben tratarse como entrada no confiable.
+Los external configuration values deben tratarse como untrusted input.
 
-Los valores de entorno pueden requerir:
+Los environment values pueden requerir:
 
-- recorte de espacios;
-- coerción numérica;
-- validación de URL;
-- normalización de booleanos;
-- análisis de listas;
-- validación de rangos.
+- trimming;
+- numeric coercion;
+- URL validation;
+- boolean normalization;
+- list parsing;
+- range validation.
 
-Los valores predeterminados deben seleccionarse mediante comprobaciones explícitas de ausencia, en lugar de valores de
-veracidad, cuando un valor vacío deba considerarse inválido.
+Los defaults deben seleccionarse mediante comprobaciones explícitas de ausencia, en lugar de truthiness checks, cuando un
+valor vacío deba considerarse inválido.
 
 Por ejemplo, prefiera:
 
@@ -161,10 +158,9 @@ en lugar de:
 const value = process.env.VALUE || DEFAULT_VALUE;
 ```
 
-## Configuración tipada
+## Typed Configuration
 
-Los consumidores de un espacio de nombres de configuración conocido deben inyectar directamente su token de
-configuración de NestJS.
+Los consumidores de un configuration namespace conocido deben inyectar directamente su NestJS configuration token.
 
 ```typescript
 @Injectable()
@@ -176,54 +172,53 @@ export class ExampleService {
 }
 ```
 
-Evite las búsquedas basadas en cadenas para espacios de nombres conocidos:
+Evite string-based lookups para namespaces conocidos:
 
 ```typescript
 configService.get('auth.secret');
 ```
 
-La inyección de espacios de nombres tipados hace explícitas las dependencias de configuración y preserva el contrato
-validado.
+La inyección de typed namespaces hace explícitas las configuration dependencies y preserva el contrato validado.
 
-`ConfigService` debe reservarse para casos que requieran genuinamente acceso dinámico o agregación entre múltiples
-espacios de nombres.
+`ConfigService` debe reservarse para casos que requieran genuinamente dynamic access o agregación entre múltiples
+namespaces.
 
 ## Inmutabilidad
 
-La configuración de arranque representa el estado de inicio de la aplicación y debe tratarse como de solo lectura.
+La startup configuration representa el estado inicial de la aplicación y debe tratarse como read-only.
 
-Los tipos de configuración deben usar contratos de solo lectura cuando sea práctico.
+Los configuration types deben usar read-only contracts cuando sea práctico.
 
-Los ajustes mutables en tiempo de ejecución pertenecen a un límite de aplicación separado y no deben modelarse como
-configuración de arranque.
+Los mutable runtime settings pertenecen a un límite de aplicación separado y no deben modelarse como startup
+configuration.
 
-## Secretos
+## Secrets
 
-Los secretos no deben codificarse de forma rígida en el código fuente.
+Los secrets no deben hardcodearse en el source code.
 
-Deben ingresar a la aplicación mediante una fuente de configuración externa y pasar por el límite de configuración
+Deben ingresar a la aplicación mediante una external configuration source y pasar por el configuration boundary
 adecuado.
 
-Los secretos no deben exponerse mediante:
+Los secrets no deben exponerse mediante:
 
-- registros;
-- mensajes de excepción;
-- respuestas de diagnóstico;
-- archivos de configuración confirmados en el repositorio.
+- logs;
+- exception messages;
+- diagnostic responses;
+- configuration files versionados en el repositorio.
 
-Los archivos de entorno de ejemplo pueden documentar las variables requeridas, pero deben contener únicamente valores de
-marcador de posición seguros.
+Los example environment files pueden documentar las variables requeridas, pero deben contener únicamente placeholder
+values seguros.
 
 ## Reglas
 
-1. Utilice `@nestjs/config` para el registro de configuración de la aplicación y la inyección de dependencias.
-2. Valide la configuración en tiempo de ejecución con Zod antes de exponerla a los consumidores.
-3. Organice la configuración en espacios de nombres semánticos cohesivos.
-4. Mantenga la configuración con el límite arquitectónico que la posee.
-5. Aísle `process.env` y otras fuentes de configuración externas detrás de límites de configuración.
-6. Construya el espacio de nombres completo antes de realizar la validación final.
-7. Haga fallar el inicio de la aplicación cuando la configuración requerida sea inválida.
-8. Inyecte los espacios de nombres conocidos mediante sus tokens de configuración tipados.
-9. No disperse rutas de configuración basadas en cadenas por todo el código de la aplicación.
-10. Trate la configuración de arranque como de solo lectura.
-11. Mantenga los secretos fuera del código fuente y los diagnósticos.
+1. Utilice `@nestjs/config` para configuration registration y dependency injection.
+2. Valide la configuración en runtime con Zod antes de exponerla a los consumidores.
+3. Organice la configuración en semantic namespaces cohesivos.
+4. Mantenga la configuración junto al límite arquitectónico que la posee.
+5. Aísle `process.env` y otras external configuration sources detrás de configuration boundaries.
+6. Construya el namespace completo antes de realizar final validation.
+7. Haga fallar application startup cuando la configuración requerida sea inválida.
+8. Inyecte los namespaces conocidos mediante sus typed configuration tokens.
+9. No disperse string-based configuration paths por todo el código de la aplicación.
+10. Trate startup configuration como read-only.
+11. Mantenga los secrets fuera del source code y de los diagnostics.
