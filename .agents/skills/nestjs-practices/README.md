@@ -20,7 +20,6 @@ and maintenance.
 | `arch-`   | Application structure and process boundaries                                                                               |
 | `error-`  | Errors and observability                                                                                                   |
 | `api-`    | External service contracts                                                                                                 |
-| `nestjs-` | NestJS and Drizzle integration                                                                                             |
 
 ## Configuration Cards
 
@@ -41,7 +40,7 @@ in the implementation plan; do not add aliases or duplicate guidance when extend
 
 - `references/arch-use-flow-coordinators.md` - Use flow coordinators for cross-module workflows
 - `references/arch-service-repository-responsibility.md` - Keep services focused on one domain
-- `references/arch-use-repository-pattern.md` - Use repositories for Drizzle persistence access
+- `references/arch-use-repository-pattern.md` - Use repositories for persistence access
 - `references/arch-use-standalone-application.md` - Use a standalone NestJS application context
 
 ## Errors and Observability Cards
@@ -53,14 +52,9 @@ in the implementation plan; do not add aliases or duplicate guidance when extend
 
 - `references/api-use-external-service-contracts.md` - Validate external service contracts
 
-## NestJS and Drizzle Integration Cards
-
-- `references/nestjs-use-drizzle-database-module.md` - Provide Drizzle through a NestJS database
-  module
-
 ## Maintenance
 
-1. Confirm that a proposed rule belongs to NestJS rather than TypeScript, Zod, or Drizzle.
+1. Confirm that a proposed rule belongs to NestJS rather than a framework-independent concern.
 2. Add or update an atomic card in `references/`.
 3. Use an accepted impact, at most four tags, focused examples, and an official HTTPS source.
 4. Update `SKILL.md`, this inventory, and relevant evals when activation, behavior, or the catalog

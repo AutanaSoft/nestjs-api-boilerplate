@@ -1,24 +1,24 @@
 ---
-title: Use repositories for Drizzle persistence access
+title: Use repositories for persistence access
 impact: HIGH
-impactDescription: Keeps Drizzle queries and persistence mapping outside services
-tags: nestjs, drizzle, repositories, persistence
+impactDescription: Keeps persistence queries and mapping outside services
+tags: nestjs, repositories, persistence
 ---
 
-## Use repositories for Drizzle persistence access
+## Use repositories for persistence access
 
-**Impact: HIGH (keeps Drizzle queries and persistence mapping outside services)**
+**Impact: HIGH (keeps persistence queries and mapping outside services)**
 
-Keep Drizzle tables, operators, query shapes, persistence schemas, and mappers in repositories.
-Services consume a domain-oriented repository API; repository operations that join a transaction
-accept its executor rather than creating an independent transaction.
+Keep persistence queries, query shapes, schemas, and mappers in repositories. Services consume a
+domain-oriented repository API; repository operations that join a transaction accept its executor
+rather than creating an independent transaction.
 
-**Incorrect (a service contains a Drizzle query):**
+**Incorrect (a service contains a persistence query):**
 
 ```typescript
 class RateInfoService {
   async update(id: string, input: UpdateInput) {
-    return this.db.update(rateInfo).set(input).where(eq(rateInfo.id, id));
+    return this.db.rateInfo.update({ where: { id }, data: input });
   }
 }
 ```

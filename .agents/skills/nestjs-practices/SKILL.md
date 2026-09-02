@@ -50,7 +50,6 @@ Use this skill when:
 | 2        | Application design    | CRITICAL/HIGH | `arch-`   |
 | 3        | External contracts    | HIGH          | `api-`    |
 | 4        | Diagnostics           | HIGH          | `error-`  |
-| 5        | NestJS data lifecycle | HIGH          | `nestjs-` |
 
 ## Quick Reference
 
@@ -73,7 +72,7 @@ map.
 
 - `arch-use-flow-coordinators` - Use coordinators for cross-module workflows.
 - `arch-service-repository-responsibility` - Keep services focused on one domain.
-- `arch-use-repository-pattern` - Keep Drizzle persistence access in repositories.
+- `arch-use-repository-pattern` - Keep persistence access in repositories.
 - `arch-use-standalone-application` - Use an application context for non-HTTP processes.
 
 ### 3. External Contracts (HIGH)
@@ -85,9 +84,6 @@ map.
 - `error-use-structured-logging` - Use structured runtime logging.
 - `error-handle-unknown-catches` - Narrow caught errors before reading properties.
 
-### 5. NestJS Data Lifecycle (HIGH)
-
-- `nestjs-use-drizzle-database-module` - Provide Drizzle through a database module.
 
 ## How to Use
 

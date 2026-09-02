@@ -36,7 +36,7 @@
     "should_trigger": true
   },
   {
-    "query": "Move Drizzle queries out of a NestJS domain service into a repository.",
+    "query": "Move persistence queries out of a NestJS domain service into a repository.",
     "should_trigger": true
   },
   {
@@ -53,10 +53,6 @@
   },
   {
     "query": "Validate and normalize an external service response before it reaches NestJS domain logic.",
-    "should_trigger": true
-  },
-  {
-    "query": "Provide a Drizzle client through a NestJS database module with a stable injection token.",
     "should_trigger": true
   },
   {
@@ -84,7 +80,7 @@
     "should_trigger": false
   },
   {
-    "query": "Write a Drizzle migration script without using NestJS modules or dependency injection.",
+    "query": "Write a database migration script without using NestJS modules or dependency injection.",
     "should_trigger": false
   },
   {

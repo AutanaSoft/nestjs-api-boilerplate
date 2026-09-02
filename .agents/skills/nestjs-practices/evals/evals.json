@@ -67,10 +67,10 @@
     },
     {
       "id": 6,
-      "prompt": "Refactor a NestJS OrdersService that contains Drizzle table references, query operators, and transaction logic. Move persistence access behind a repository while preserving a domain-oriented service API and supporting an existing transaction executor.",
-      "expected_output": "A repository-oriented design that keeps Drizzle persistence details and transaction executor handling outside the service while preserving a domain-oriented service API.",
+      "prompt": "Refactor a NestJS OrdersService that contains persistence-specific table references, query operators, and transaction logic. Move persistence access behind a repository while preserving a domain-oriented service API and supporting an existing transaction executor.",
+      "expected_output": "A repository-oriented design that keeps persistence details and transaction executor handling outside the service while preserving a domain-oriented service API.",
       "expectations": [
-        "Moves Drizzle table references, operators, and query shapes into a repository.",
+        "Moves persistence-specific table references, operators, and query shapes into a repository.",
         "Keeps the service dependent on a domain-oriented repository API.",
         "Allows repository operations participating in an existing transaction to accept its executor.",
         "Does not create an independent transaction inside a repository operation that joins an existing transaction."
@@ -110,19 +110,6 @@
         "Validates the incoming provider response before it reaches domain logic.",
         "Normalizes validated provider data to an internal record or model.",
         "Does not persist or return raw provider payloads."
-      ],
-      "files": []
-    },
-    {
-      "id": 10,
-      "prompt": "Design a NestJS DatabaseModule for Drizzle. It must construct and close the client centrally, use a stable explicit token, obtain configuration through NestJS configuration providers, export the database provider, and keep business services dependent on repositories instead of the client.",
-      "expected_output": "A NestJS database module with centralized Drizzle lifecycle, a stable injection token, configuration through providers, an exported database provider, and repositories as the business-service boundary.",
-      "expectations": [
-        "Creates the Drizzle client in one database module rather than in each consumer.",
-        "Exposes the client through a stable explicit dependency-injection token.",
-        "Obtains database configuration through NestJS configuration providers.",
-        "Exports the database provider and owns connection shutdown.",
-        "Does not make business services construct or inject the database client directly."
       ],
       "files": []
     }
