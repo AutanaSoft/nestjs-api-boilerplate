@@ -1,217 +1,212 @@
 # Autenticación
 
-Este documento define la arquitectura de autenticación del proyecto.
+Este documento define la arquitectura del módulo de autenticación.
 
-La autenticación pertenece al Feature `auth` y se mantiene separada de la gestión de usuarios.
+## Decisiones
 
-## Límite de módulo
+| Responsabilidad | Decisión |
+| --- | --- |
+| Access Tokens | JWT |
+| JWT integration | `@nestjs/jwt` |
+| Password hashing | Argon2id |
+| Password hashing library | `argon2` |
+| Refresh Tokens | Opaque tokens |
+| Refresh Token state | Persistencia server-side |
+| Request authentication | NestJS Guards |
+| Authentication context | `AuthenticatedPrincipal` |
 
-La autenticación se ubica en:
+Passport no forma parte de la arquitectura predeterminada.
+
+## Dependencias
+
+```text
+@nestjs/jwt
+argon2
+node:crypto
+```
+
+No introduzca otra estrategia de JWT, password hashing o authentication framework sin una decisión arquitectónica explícita.
+
+## Module Boundary
+
+La autenticación pertenece a:
 
 ```text
 src/modules/auth/
 ```
 
-La gestión de usuarios pertenece a un Feature separado:
+La gestión de usuarios pertenece a:
 
 ```text
 src/modules/users/
 ```
 
-`AuthModule` puede depender de la API pública exportada por `UsersModule`, pero no debe acceder directamente a la
-persistencia de usuarios.
+La dependencia permitida es:
+
+```text
+AuthModule
+    ↓
+UsersModule
+```
+
+`AuthModule` consume la API pública de `UsersModule` y no accede directamente a `UsersRepository`.
+
+La persistencia específica de sesiones y Refresh Tokens pertenece a `AuthModule`.
+
+## Estructura
+
+```text
+src/modules/auth/
+├── auth.module.ts
+├── auth.controller.ts
+├── auth.service.ts
+├── config/
+│   └── auth.config.ts
+├── decorators/
+│   ├── current-principal.decorator.ts
+│   └── public.decorator.ts
+├── guards/
+│   └── access-token.guard.ts
+├── repositories/
+│   └── auth-sessions.repository.ts
+├── types/
+│   └── authenticated-principal.type.ts
+└── dto/
+```
+
+Los directorios se crean únicamente cuando exista código que los justifique.
+
+## Access Tokens
+
+Los Access Tokens utilizan JWT mediante `@nestjs/jwt`.
+
+Deben ser short-lived y mantener un payload mínimo.
+
+Claims base:
+
+```text
+sub
+iat
+exp
+```
+
+Pueden incluir `iss`, `aud` y `sid` cuando la configuración o estrategia de sesión lo requiera.
+
+No deben incluir información sensible ni records completos de usuario.
+
+## Refresh Tokens
+
+Los Refresh Tokens son opaque tokens generados mediante `node:crypto`.
+
+Su estado se mantiene server-side para permitir:
+
+- expiration;
+- rotation;
+- revocation;
+- session management.
+
+Los tokens reutilizables no deben persistirse directamente; debe almacenarse una representación segura.
+
+La persistencia pertenece a `AuthSessionsRepository`.
+
+## Password Hashing
+
+Las passwords utilizan Argon2id mediante `argon2`.
+
+Las plain-text passwords nunca deben persistirse.
+
+La persistencia de usuarios almacena únicamente el password hash resultante.
+
+## Authentication Guard
+
+Los Endpoints protegidos utilizan:
+
+```text
+AccessTokenGuard
+```
+
+El Guard es responsable de validar el Access Token y establecer el principal autenticado.
+
+La autorización no pertenece al Guard de autenticación.
+
+La estrategia preferida es authentication global con Endpoints públicos declarados mediante:
+
+```typescript
+@Public()
+```
+
+## AuthenticatedPrincipal
+
+La identidad autenticada se representa mediante un contrato interno independiente de JWT, Prisma y HTTP.
+
+```typescript
+export interface AuthenticatedPrincipal {
+  readonly userId: string;
+  readonly sessionId?: string;
+}
+```
+
+Los consumidores deben depender de este contrato y no del JWT payload completo.
+
+## Persistencia
+
+`UsersModule` posee los datos y credentials del usuario.
+
+`AuthModule` posee el estado de autenticación.
+
+```text
+UsersModule
+    ↓
+User persistence
+
+AuthModule
+    ↓
+Auth session persistence
+```
+
+La persistencia específica de Auth se accede mediante:
 
 ```text
 AuthService
     ↓
-UsersService
+AuthSessionsRepository
     ↓
-UsersRepository
+Prisma
 ```
 
-La persistencia específica de autenticación sigue perteneciendo al Feature de autenticación.
+## Configuración
 
-## Responsabilidades
-
-`AuthModule` es responsable de:
-
-- registration flows;
-- credential validation;
-- login;
-- generación y validación de Access Tokens;
-- lifecycle de Refresh Tokens;
-- Authentication Guards;
-- configuración de autenticación.
-
-`UsersModule` es responsable de:
-
-- datos de usuario;
-- creación y gestión de usuarios;
-- user lookup;
-- estado de usuario requerido por otros Features de la aplicación.
-
-Las responsabilidades de autenticación no deben agregarse a `UsersService` simplemente porque la autenticación opera
-sobre usuarios.
-
-## Registro
-
-El registro es un caso de uso de autenticación, no una operación CRUD genérica de usuario.
-
-El registration flow debe:
+La configuración pertenece a:
 
 ```text
-Validate input
-    ↓
-Check account availability
-    ↓
-Hash credentials
-    ↓
-Create user
-    ↓
-Issue authentication tokens
+src/modules/auth/config/auth.config.ts
 ```
 
-`AuthService` coordina el registration flow, mientras que `UsersService` sigue siendo responsable de la creación de
-usuarios.
-
-Las plain-text passwords nunca deben persistirse.
-
-## Login
-
-El login valida las credenciales enviadas y emite authentication tokens.
+Debe incluir únicamente valores propios de autenticación, como:
 
 ```text
-Credentials
-    ↓
-Find user
-    ↓
-Verify password
-    ↓
-Validate account state
-    ↓
-Issue tokens
+JWT signing key
+JWT issuer
+JWT audience
+Access Token lifetime
+Refresh Token lifetime
+Argon2 parameters
 ```
-
-Los fallos de autenticación no deben revelar si existe una cuenta, salvo que la API pública requiera explícitamente esa
-distinción.
-
-## Password Storage
-
-Las passwords deben procesarse con un password-hashing algorithm diseñado para credential storage.
-
-Persista únicamente el password hash resultante.
-
-```text
-Password
-   ↓
-Password hashing
-   ↓
-Password hash
-   ↓
-Persistence
-```
-
-Las passwords y los password hashes nunca deben devolverse mediante respuestas de API públicas ni incluirse en
-authentication tokens.
-
-## Access Tokens
-
-El proyecto utiliza JWT Access Tokens para Requests autenticados a la API.
-
-Los Access Tokens deben tener una duración corta.
-
-Los JWT payloads deben contener únicamente la información mínima requerida para identificar y validar al authenticated
-principal.
-
-La información confidencial no debe almacenarse en los token payloads.
-
-El identificador de usuario debe representarse mediante el claim estándar `sub`.
-
-La token validation debe incluir expiration y las signing constraints configuradas.
-
-## Refresh Tokens
-
-Los Refresh Tokens permiten que los clients obtengan nuevos Access Tokens sin enviar credenciales repetidamente.
-
-Los Refresh Tokens deben tener una duración mayor que los Access Tokens y seguir siendo revocables de forma
-independiente.
-
-La persistencia del lado del servidor no debe almacenar credenciales reutilizables de Refresh Tokens en plain text.
-
-Una representación persistida de un token comprometido no debe ser suficiente para autenticarse como el usuario.
-
-La Refresh Token rotation debe invalidar el token utilizado previamente cuando se emite uno nuevo.
-
-## Configuración de tokens
-
-La configuración de autenticación pertenece al Feature `auth`.
-
-```text
-src/modules/auth/
-└── config/
-    └── auth.config.ts
-```
-
-La configuración debe incluir valores como:
-
-- signing secrets o keys;
-- token lifetimes;
-- issuer;
-- audience.
-
-Los secrets deben ingresar a la aplicación a través del límite de configuración y nunca deben hardcodearse.
-
-## Request Authentication
-
-Las rutas protegidas deben usar NestJS Guards para aplicar la autenticación.
-
-La lógica de autenticación no debe repetirse manualmente dentro de los Controllers.
-
-El authentication boundary debe:
-
-1. extraer el Access Token;
-2. validar el token;
-3. validar al authenticated principal cuando sea necesario;
-4. exponer al authenticated principal al Request context.
-
-Los tokens expirados, inválidos o inaceptables por otros motivos deben resultar en un fallo de autenticación.
-
-## User Validation
-
-Una firma JWT válida por sí sola no garantiza que la cuenta asociada aún deba tener acceso.
-
-La autenticación puede validar adicionalmente el estado relevante de la cuenta, por ejemplo, si el usuario:
-
-- aún existe;
-- está activo;
-- ha sido deshabilitado;
-- ha realizado un cambio de seguridad que invalida tokens emitidos previamente.
-
-Los estados exactos de cuenta admitidos por la aplicación pueden evolucionar independientemente del mecanismo de tokens.
-
-## Límites de seguridad
-
-Las implementaciones de autenticación no deben:
-
-- exponer passwords ni password hashes;
-- incluir información confidencial en JWT payloads;
-- hardcodear token secrets;
-- aceptar tokens expirados;
-- almacenar credenciales reutilizables de Refresh Tokens en plain text;
-- exponer detalles internos de autenticación mediante Controllers;
-- omitir los límites de Features para acceder directamente a la persistencia de usuarios.
 
 ## Reglas
 
-1. Mantenga la autenticación y la gestión de usuarios como responsabilidades de Features separados.
-2. Coordine el registro mediante `AuthService` mientras delega la gestión de usuarios a `UsersService`.
-3. Aplique hashing a las passwords antes de persistirlas y nunca almacene plain-text credentials.
-4. Utilice JWT Access Tokens de corta duración.
-5. Mantenga los JWT payloads mínimos y sin datos confidenciales.
-6. Utilice Refresh Tokens revocables de forma independiente.
-7. Almacene de forma segura las representaciones persistidas de Refresh Tokens, en lugar de reusable plain-text tokens.
-8. Rote los Refresh Tokens cuando se usen.
-9. Mantenga los authentication secrets en una configuración validada propiedad del Feature.
-10. Proteja las rutas autenticadas mediante Guards.
-11. Valide el estado relevante del usuario durante la autenticación cuando sea necesario.
-12. Mantenga la persistencia específica de autenticación dentro del Feature `auth`.
+1. Mantenga `AuthModule` separado de `UsersModule`.
+2. Utilice JWT mediante `@nestjs/jwt` para Access Tokens.
+3. Utilice Argon2id mediante `argon2` para password hashing.
+4. Utilice opaque Refresh Tokens con estado server-side.
+5. Mantenga la persistencia de sesiones dentro de `AuthModule`.
+6. Utilice Refresh Token rotation y revocation.
+7. Mantenga los Access Tokens short-lived.
+8. Mantenga los JWT payloads mínimos.
+9. Utilice `AccessTokenGuard` para Request authentication.
+10. Prefiera authentication global con `@Public()` para excepciones.
+11. Mantenga Authentication y Authorization como responsabilidades separadas.
+12. Exponga la identidad mediante `AuthenticatedPrincipal`.
+13. Mantenga `AuthService` independiente de Prisma y detalles HTTP.
+14. Mantenga la configuración y secrets dentro del boundary de Auth.
+15. No utilice Passport como dependencia predeterminada.
