@@ -1,6 +1,10 @@
 # Autenticación
 
-Este documento define la arquitectura del módulo de autenticación.
+Status: Target
+
+Este documento define la arquitectura de autenticación de la aplicación.
+
+La autorización se define por separado en `authorization.md`.
 
 ## Decisiones
 
@@ -11,35 +15,19 @@ Este documento define la arquitectura del módulo de autenticación.
 | Password hashing | Argon2id |
 | Password hashing library | `argon2` |
 | Refresh Tokens | Opaque tokens |
-| Refresh Token state | Persistencia server-side |
+| Refresh Token state | Server-side |
 | Request authentication | NestJS Guards |
 | Authentication context | `AuthenticatedPrincipal` |
 
 Passport no forma parte de la arquitectura predeterminada.
 
-## Dependencias
-
-```text
-@nestjs/jwt
-argon2
-node:crypto
-```
-
-No introduzca otra estrategia de JWT, password hashing o authentication framework sin una decisión arquitectónica explícita.
+No introduzca una estrategia alternativa de JWT, password hashing o authentication framework sin una decisión arquitectónica explícita.
 
 ## Module Boundary
 
-La autenticación pertenece a:
+La autenticación pertenece a `AuthModule`.
 
-```text
-src/modules/auth/
-```
-
-La gestión de usuarios pertenece a:
-
-```text
-src/modules/users/
-```
+La gestión de usuarios pertenece a `UsersModule`.
 
 La dependencia permitida es:
 
@@ -49,11 +37,15 @@ AuthModule
 UsersModule
 ```
 
-`AuthModule` consume la API pública de `UsersModule` y no accede directamente a `UsersRepository`.
+`AuthModule` consume la API exportada por `UsersModule` y no accede directamente a su persistencia.
 
-La persistencia específica de sesiones y Refresh Tokens pertenece a `AuthModule`.
+`AuthModule` posee el estado específico de autenticación y sesiones.
+
+Las reglas generales de module ownership se definen en `project-structure.md`.
 
 ## Estructura
+
+La estructura objetivo de Authentication puede evolucionar hacia:
 
 ```text
 src/modules/auth/
@@ -61,28 +53,21 @@ src/modules/auth/
 ├── auth.controller.ts
 ├── auth.service.ts
 ├── config/
-│   └── auth.config.ts
 ├── decorators/
-│   ├── current-principal.decorator.ts
-│   └── public.decorator.ts
 ├── guards/
-│   └── access-token.guard.ts
 ├── repositories/
-│   └── auth-sessions.repository.ts
-├── types/
-│   └── authenticated-principal.type.ts
-└── dto/
+└── types/
 ```
 
-Los directorios se crean únicamente cuando exista código que los justifique.
+Los directorios deben introducirse únicamente cuando exista código que justifique su responsabilidad.
 
 ## Access Tokens
 
 Los Access Tokens utilizan JWT mediante `@nestjs/jwt`.
 
-Deben ser short-lived y mantener un payload mínimo.
+Deben ser short-lived y contener únicamente las claims necesarias para establecer el principal autenticado.
 
-Claims base:
+Las claims base son:
 
 ```text
 sub
@@ -90,15 +75,15 @@ iat
 exp
 ```
 
-Pueden incluir `iss`, `aud` y `sid` cuando la configuración o estrategia de sesión lo requiera.
+Claims adicionales como `iss`, `aud` o `sid` pueden incluirse cuando la estrategia correspondiente lo requiera.
 
-No deben incluir información sensible ni records completos de usuario.
+No incluya información sensible ni records completos de usuario.
 
 ## Refresh Tokens
 
 Los Refresh Tokens son opaque tokens generados mediante `node:crypto`.
 
-Su estado se mantiene server-side para permitir:
+Su estado se mantiene server-side para soportar:
 
 - expiration;
 - rotation;
@@ -107,37 +92,32 @@ Su estado se mantiene server-side para permitir:
 
 Los tokens reutilizables no deben persistirse directamente; debe almacenarse una representación segura.
 
-La persistencia pertenece a `AuthSessionsRepository`.
+La persistencia específica de sesiones pertenece a `AuthModule`.
 
 ## Password Hashing
 
 Las passwords utilizan Argon2id mediante `argon2`.
 
-Las plain-text passwords nunca deben persistirse.
+Las plain-text passwords no deben persistirse.
 
-La persistencia de usuarios almacena únicamente el password hash resultante.
+El módulo propietario del usuario almacena únicamente el password hash necesario para authentication.
 
-## Authentication Guard
+## Request Authentication
 
-Los Endpoints protegidos utilizan:
+Los Endpoints protegidos utilizan un Guard de Access Token.
 
-```text
-AccessTokenGuard
-```
+El Guard es responsable de:
 
-El Guard es responsable de validar el Access Token y establecer el principal autenticado.
+- validar las credentials;
+- establecer el principal autenticado.
 
 La autorización no pertenece al Guard de autenticación.
 
-La estrategia preferida es authentication global con Endpoints públicos declarados mediante:
-
-```typescript
-@Public()
-```
+La estrategia preferida es authentication global con excepciones públicas declaradas explícitamente mediante `@Public()`.
 
 ## AuthenticatedPrincipal
 
-La identidad autenticada se representa mediante un contrato interno independiente de JWT, Prisma y HTTP.
+La identidad autenticada se representa mediante un contrato interno independiente de JWT, persistencia y HTTP.
 
 ```typescript
 export interface AuthenticatedPrincipal {
@@ -150,48 +130,25 @@ Los consumidores deben depender de este contrato y no del JWT payload completo.
 
 ## Persistencia
 
-`UsersModule` posee los datos y credentials del usuario.
+`UsersModule` posee la persistencia del usuario.
 
-`AuthModule` posee el estado de autenticación.
+`AuthModule` posee la persistencia específica del estado de autenticación.
 
-```text
-UsersModule
-    ↓
-User persistence
-
-AuthModule
-    ↓
-Auth session persistence
-```
-
-La persistencia específica de Auth se accede mediante:
-
-```text
-AuthService
-    ↓
-AuthSessionsRepository
-    ↓
-Prisma
-```
+Ambos deben acceder a persistencia mediante las reglas definidas en `data-access.md`.
 
 ## Configuración
 
-La configuración pertenece a:
+La configuración específica de Authentication pertenece al boundary de `AuthModule`.
 
-```text
-src/modules/auth/config/auth.config.ts
-```
+Puede incluir:
 
-Debe incluir únicamente valores propios de autenticación, como:
+- JWT signing key;
+- issuer y audience;
+- Access Token lifetime;
+- Refresh Token lifetime;
+- Argon2 parameters.
 
-```text
-JWT signing key
-JWT issuer
-JWT audience
-Access Token lifetime
-Refresh Token lifetime
-Argon2 parameters
-```
+Su construcción, validación e inyección deben seguir `configuration.md`.
 
 ## Reglas
 
@@ -199,14 +156,11 @@ Argon2 parameters
 2. Utilice JWT mediante `@nestjs/jwt` para Access Tokens.
 3. Utilice Argon2id mediante `argon2` para password hashing.
 4. Utilice opaque Refresh Tokens con estado server-side.
-5. Mantenga la persistencia de sesiones dentro de `AuthModule`.
-6. Utilice Refresh Token rotation y revocation.
-7. Mantenga los Access Tokens short-lived.
-8. Mantenga los JWT payloads mínimos.
-9. Utilice `AccessTokenGuard` para Request authentication.
-10. Prefiera authentication global con `@Public()` para excepciones.
-11. Mantenga Authentication y Authorization como responsabilidades separadas.
-12. Exponga la identidad mediante `AuthenticatedPrincipal`.
-13. Mantenga `AuthService` independiente de Prisma y detalles HTTP.
-14. Mantenga la configuración y secrets dentro del boundary de Auth.
-15. No utilice Passport como dependencia predeterminada.
+5. Mantenga el estado de sesiones bajo `AuthModule`.
+6. Mantenga los Access Tokens short-lived y sus claims mínimas.
+7. Utilice Guards para Request authentication.
+8. Mantenga Authentication y Authorization como responsabilidades separadas.
+9. Exponga la identidad interna mediante `AuthenticatedPrincipal`.
+10. Mantenga `AuthService` independiente de detalles de persistencia y HTTP.
+11. Mantenga configuración y secrets de Authentication bajo su boundary.
+12. No utilice Passport como dependencia predeterminada.
