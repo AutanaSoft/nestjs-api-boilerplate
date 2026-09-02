@@ -14,7 +14,13 @@ Read this file completely before making the first modification. Each section def
 
 ## Architecture and Conventions
 
-- Treat the relevant documents under `docs/architecture/` as normative for architectural decisions within their scope.
+- Treat the relevant documents under `docs/` as normative within their documented scope:
+  - `docs/architecture/` owns architectural boundaries and application design decisions.
+  - `docs/api/` owns public HTTP and REST API conventions.
+  - `docs/configuration/` owns runtime and HTTP configuration conventions.
+  - `docs/operations/` owns operational conventions such as observability.
+- Prefer the document with the narrowest matching responsibility when several documents are relevant. Do not duplicate a
+  rule into another document when an existing owner already defines it.
 - Apply only the installed skill rules relevant to the task and consistent with the documented project architecture.
 - For feature organization, module sharing, service responsibility, and persistence boundaries, apply:
   - `nestjs-best-practices/rules/arch-feature-modules.md`
