@@ -1,12 +1,14 @@
 # Convenciones de API REST
 
-Este documento define las convenciones generales para diseñar Endpoints HTTP RESTful en la aplicación.
+Status: Target
 
-Las reglas específicas de contratos, paginación, versionado, OpenAPI, autenticación, autorización y errores se definen en sus documentos correspondientes.
+Este documento define las convenciones generales del contrato HTTP público de la API.
+
+Los contratos, paginación, versionado y OpenAPI tienen documentos owners específicos dentro de `docs/api/`.
 
 ## Recursos y rutas
 
-Las rutas deben representar recursos o colecciones mediante sustantivos estables del dominio.
+Las rutas deben representar recursos o colecciones mediante nombres estables.
 
 Utilice:
 
@@ -15,116 +17,71 @@ Utilice:
 - `kebab-case` para nombres compuestos.
 
 ```text
-/users
+/resources
 /payment-methods
-/order-items
-/users/:id
+/resources/:id
 ```
 
-Evite rutas centradas innecesariamente en acciones o detalles de implementación.
+Evite rutas centradas innecesariamente en acciones o detalles internos.
 
-```text
-/getUsers
-/createUser
-/paymentMethods
-```
-
-Utilice recursos anidados cuando la relación con el padre forme parte relevante del contexto de acceso, evitando anidamiento excesivo.
+Los recursos anidados deben utilizarse únicamente cuando la relación con el recurso padre forme parte relevante del contexto público.
 
 ## GET
 
-`GET` recupera recursos o colecciones y debe mantener semántica safe e idempotente.
+`GET` se utiliza para recuperar recursos o colecciones y mantiene semántica safe e idempotent.
 
-```text
-GET /users
-GET /users/:id
-GET /users?status=active&sort=-createdAt
-```
-
-Utilice `GET` para consultas que puedan expresarse de forma razonable mediante URI y Query Params.
+Utilice Query Params cuando una consulta pueda representarse razonablemente mediante la URI.
 
 ## QUERY
 
-HTTP `QUERY` se utiliza para consultas safe e idempotentes que requieren un Request Body por su tamaño o complejidad.
-
-```http
-QUERY /users
-Content-Type: application/json
-```
+`QUERY` se utiliza para consultas safe e idempotent cuyo input requiere Request Content.
 
 `GET` continúa siendo la opción predeterminada para consultas convencionales.
 
-Utilice `QUERY` cuando `GET` deje de ser una representación práctica. Cuando exista una limitación real del stack para soportar `QUERY`, puede utilizarse temporalmente:
+Utilice `QUERY` cuando representar el input mediante la URI deje de ser práctico.
+
+Cuando exista una limitación real de compatibilidad del stack, puede utilizarse temporalmente:
 
 ```text
 POST /resource/search
 ```
 
-como fallback de compatibilidad.
+como fallback explícito.
 
-La compatibilidad específica de OpenAPI y tooling se define en `openapi.md`.
+La representación OpenAPI de `QUERY` se define en `openapi.md`.
 
 ## POST
 
-`POST` se utiliza para crear recursos o ejecutar operaciones cuya semántica no corresponda a una actualización idempotente sobre un recurso conocido.
+`POST` se utiliza para crear recursos o ejecutar operaciones cuya semántica no corresponda a otro método estándar.
 
-```text
-POST /users
-POST /auth/login
-POST /orders/:id/cancel
-```
-
-Una creación exitosa debe utilizar normalmente:
-
-```text
-201 Created
-```
+Una creación exitosa utiliza normalmente `201 Created`.
 
 Cuando el recurso creado tenga una URI pública identificable, la Response debe incluir `Location`.
 
-```http
-Location: /users/123
-```
-
-No utilice rutas de acción cuando un método HTTP estándar represente correctamente la operación.
-
 ## PUT
 
-`PUT` representa el reemplazo completo de la representación modificable de un recurso conocido y debe ser idempotente.
+`PUT` representa el reemplazo completo de la representación modificable de un recurso conocido y debe ser idempotent.
 
-```text
-PUT /users/:id
-```
-
-No utilice `PUT` como actualización parcial.
+No utilice `PUT` para actualizaciones parciales.
 
 ## PATCH
 
-`PATCH` representa una modificación parcial de un recurso existente.
+`PATCH` representa una modificación parcial.
 
-```text
-PATCH /users/:id
-```
+La semántica de campos omitidos y valores `null` pertenece al Request Contract correspondiente.
 
-Los campos omitidos y los campos explícitamente `null` deben conservar la semántica definida por el Request Contract.
+Una actualización puede utilizar:
 
-Una actualización puede responder `200 OK` cuando devuelve una representación o `204 No Content` cuando no devuelve body.
+- `200 OK` cuando devuelve una representación;
+- `204 No Content` cuando no devuelve body.
 
 ## DELETE
 
-`DELETE` provoca que un recurso deje de estar disponible bajo su URI según la semántica pública del dominio.
+`DELETE` provoca que el recurso deje de estar disponible bajo su URI según la semántica pública correspondiente.
 
-```text
-DELETE /users/:id
-```
+Una operación exitosa sin body utiliza normalmente `204 No Content`.
 
-Una eliminación exitosa sin Response Body debe utilizar normalmente:
-
-```text
-204 No Content
-```
-
-Una Response `204 No Content` no debe incluir body.
+Una Response `204 No Content` no debe contener body.
 
 ## Status Codes
 
@@ -136,16 +93,24 @@ Convención base:
 | Creación exitosa | `201 Created` |
 | Operación exitosa sin body | `204 No Content` |
 | Request inválido | `400 Bad Request` |
-| No autenticado | `401 Unauthorized` |
-| No autorizado | `403 Forbidden` |
-| Recurso inexistente | `404 Not Found` |
+| Principal no autenticado | `401 Unauthorized` |
+| Principal autenticado sin autorización | `403 Forbidden` |
+| Recurso no disponible | `404 Not Found` |
 | Conflicto de estado | `409 Conflict` |
 | Rate limit excedido | `429 Too Many Requests` |
 | Error interno inesperado | `500 Internal Server Error` |
 
-Los detalles del Error Response se definen en `../architecture/error-handling.md`.
-
 No utilice `200 OK` para representar errores mediante campos dentro del Response Body.
+
+La forma pública del Error Response se define en `http-contracts.md`.
+
+## Resource Visibility
+
+Cuando revelar la existencia de un recurso sea sensible, una política de autorización puede requerir una Response equivalente a `404 Not Found` en lugar de `403 Forbidden`.
+
+Esta excepción debe ser deliberada y consistente para el contrato correspondiente.
+
+La estrategia interna de autorización se define en `../architecture/authorization.md`.
 
 ## Idempotencia
 
@@ -160,15 +125,17 @@ POST    no necesariamente idempotent
 PATCH   depende de la operación
 ```
 
-Operaciones no idempotentes sensibles a reintentos pueden definir un `Idempotency-Key` cuando el caso de uso lo requiera. No lo aplique globalmente sin necesidad.
+Operaciones no idempotentes sensibles a reintentos pueden definir un `Idempotency-Key` cuando su contrato lo requiera.
 
-## Filtering y sorting
+No lo aplique globalmente sin necesidad.
 
-Filtering y sorting deben expresarse mediante contratos públicos explícitos.
+## Filtering y Sorting
 
-No exponga directamente nombres de columnas, propiedades Prisma ni expresiones internas de persistencia.
+Filtering y sorting deben definirse mediante contratos públicos explícitos.
 
-Los campos permitidos y su semántica deben definirse por Endpoint o por un contrato compartido con owner claro.
+No exponga nombres de columnas, propiedades del ORM ni expresiones internas de persistencia.
+
+Los campos permitidos y su semántica pertenecen al contrato correspondiente.
 
 La paginación se define en `pagination.md`.
 
@@ -176,12 +143,13 @@ La paginación se define en `pagination.md`.
 
 1. Modele rutas alrededor de recursos y colecciones.
 2. Utilice plural y `kebab-case` para rutas de recursos.
-3. Utilice `GET` para lecturas convencionales y `QUERY` para consultas complejas safe e idempotentes con Request Body.
-4. Utilice `POST /resource/search` sólo como fallback cuando el stack no soporte correctamente `QUERY`.
-5. Utilice `POST` para creación y operaciones con semántica propia que no correspondan a métodos estándar.
+3. Utilice `GET` para consultas convencionales.
+4. Utilice `QUERY` para consultas safe e idempotent que requieran Request Content.
+5. Utilice fallbacks basados en `POST` únicamente por necesidades explícitas de compatibilidad.
 6. Utilice `PUT` para reemplazo completo y `PATCH` para actualización parcial.
-7. Utilice `204 No Content` para operaciones exitosas sin Response Body y no incluya body con ese status.
-8. Incluya `Location` cuando `POST` cree un recurso públicamente direccionable.
-9. Mantenga Status Codes consistentes con la semántica pública de la operación.
-10. No exponga detalles de persistencia mediante filtering, sorting o rutas públicas.
-11. Mantenga la semántica de idempotencia declarada por cada método y operación.
+7. Utilice `204 No Content` únicamente sin Response Body.
+8. Incluya `Location` cuando una creación produzca un recurso públicamente direccionable.
+9. Mantenga Status Codes consistentes con la semántica pública.
+10. Mantenga Error Responses bajo `http-contracts.md`.
+11. No exponga detalles de persistencia mediante la API pública.
+12. Mantenga explícita la semántica de idempotencia de cada operación.
