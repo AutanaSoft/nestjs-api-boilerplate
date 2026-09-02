@@ -1,28 +1,29 @@
 # Validación
 
-Este documento define las convenciones de validación para los límites HTTP de la aplicación.
+Este documento define las convenciones de validación para datos que ingresan a la aplicación a través del límite HTTP.
 
-El proyecto utiliza Zod 4 como mecanismo principal para validar y tipar datos externos antes de que ingresen a la lógica
-de aplicación.
+Las reglas compartidas de ownership, Schema/Type, separación de contratos y Standard Schema se definen en
+`http-contracts.md`.
 
-## Límite de validación
+## Límite de entrada
 
-Todo dato proveniente de una fuente externa debe tratarse como no confiable hasta haber sido validado.
+Todo dato externo debe tratarse como no confiable hasta haber sido validado.
 
 En una API HTTP esto incluye, según corresponda:
 
 - Request Body;
 - Query Params;
 - Route Params;
-- Headers utilizados como entrada de aplicación;
-- payloads recibidos desde servicios externos.
+- Headers utilizados como entrada de aplicación.
 
-La validación debe ocurrir en el límite de entrada antes de que un Controller delegue datos a un Service.
+La validación debe ocurrir antes de que un Controller delegue datos a un Service.
 
 ```text
 HTTP Request
     ↓
-Validation Boundary
+StandardSchemaValidationPipe
+    ↓
+Request Schema
     ↓
 Typed Input
     ↓
@@ -34,52 +35,46 @@ Service
 Los Services deben recibir valores ya validados y tipados. No deben repetir la validación estructural propia del límite
 HTTP.
 
-## Ownership de schemas
+## StandardSchemaValidationPipe
 
-Cada contrato Zod debe tener un único owner canónico.
+El proyecto utiliza `StandardSchemaValidationPipe` como mecanismo predeterminado para Request validation schema-first con
+Zod 4.
 
-Los schemas específicos de un Feature pertenecen al Feature que posee el límite correspondiente.
-
-Una estructura habitual puede ser:
-
-```text
-src/modules/users/
-├── dto/
-│   ├── create-user.schema.ts
-│   ├── update-user.schema.ts
-│   └── list-users-query.schema.ts
-└── users.controller.ts
-```
-
-Cuando un contrato sea compartido por varios consumidores, debe seguir teniendo un único owner y los demás módulos deben
-importarlo desde allí en lugar de redeclararlo.
-
-No duplique schemas equivalentes en distintos Features.
-
-## Schema y Type
-
-El owner de un schema también debe derivar y exportar su Type.
+El Pipe debe registrarse en el bootstrap compartido cuando la validación de Standard Schema sea una convención global de
+la aplicación.
 
 ```typescript
-export const createUserSchema = z.object({
-  email: z.email(),
-  password: z.string().min(8),
-});
-
-export type CreateUserInput = z.infer<typeof createUserSchema>;
+app.useGlobalPipes(
+  new StandardSchemaValidationPipe({
+    transform: true,
+  }),
+);
 ```
 
-Los consumidores deben importar tanto el schema como el Type desde su owner canónico cuando los necesiten.
+Los Schemas pueden asociarse directamente a los decoradores de parámetros de NestJS.
 
-No vuelva a inferir localmente un Type perteneciente a otro módulo.
+```typescript
+@Post()
+create(@Body({ schema: createUserSchema }) body: CreateUserInput) {
+  return this.usersService.create(body);
+}
+```
+
+```typescript
+@Get(':id')
+findOne(
+  @Param('id', { schema: z.uuid() }) id: string,
+) {
+  return this.usersService.findById(id);
+}
+```
+
+Cuando el Schema realice coercion o Transform, el valor entregado al Controller debe ser el valor producido por el
+Schema.
 
 ## Request Body
 
-El Request Body debe validarse mediante un schema específico del caso de uso.
-
-No utilice modelos de Prisma, records de persistencia ni tipos generados por el ORM como DTO de entrada HTTP.
-
-Por ejemplo, la creación de un usuario debe definir un contrato de entrada independiente de su representación persistida:
+Cada Request Body debe validarse mediante un Schema específico del caso de uso.
 
 ```typescript
 export const createUserSchema = z.object({
@@ -88,143 +83,123 @@ export const createUserSchema = z.object({
 });
 ```
 
-Los campos internos de persistencia, como `id`, timestamps, hashes o metadata de seguridad, no deben convertirse en input
-público sólo porque existan en el modelo de base de datos.
+No acepte campos internos sólo porque existan en modelos de aplicación o persistencia.
+
+Los detalles sobre ownership y separación respecto a Prisma se definen en `http-contracts.md`.
 
 ## Query Params y Route Params
 
-Query Params y Route Params llegan al límite HTTP como representaciones externas y pueden requerir normalización o
-coercion.
+Query Params y Route Params llegan como representaciones externas y pueden requerir normalización o coercion.
 
 La coercion debe limitarse al límite de entrada.
-
-Por ejemplo:
 
 ```typescript
 export const listUsersQuerySchema = z.object({
   page: z.coerce.number().int().positive().optional(),
-  limit: z.coerce.number().int().positive().optional(),
+  limit: z.coerce.number().int().positive().max(100).optional(),
 });
 ```
 
-Después de la validación, la lógica interna debe trabajar con tipos ya normalizados y no coercivos.
+Después de la validación, la lógica interna debe trabajar con valores ya normalizados.
 
-No utilice `z.coerce` en schemas que modelan datos internos que ya poseen un Type definido.
+No utilice `z.coerce` en Schemas que modelen datos internos ya tipados.
 
-## Optional, Nullable y Nullish
+## Headers
 
-La ausencia y `null` deben modelarse explícitamente.
+Valide Headers únicamente cuando formen parte del input real de aplicación.
 
-Utilice:
+No convierta todos los Headers HTTP en contratos de dominio.
 
-- `optional()` cuando el campo pueda omitirse;
-- `nullable()` cuando `null` sea un valor permitido;
-- `nullish()` únicamente cuando tanto la omisión como `null` sean estados válidos.
-
-No use `nullable()` para representar simplemente un campo opcional.
-
-Esto es especialmente importante en operaciones `PATCH`, donde omitir una propiedad y establecerla explícitamente en
-`null` pueden representar operaciones distintas.
+Headers como idempotency keys, filtros condicionales u otros valores con semántica de aplicación deben pasar por un
+Schema antes de ser utilizados por la lógica interna.
 
 ## parse y safeParse
 
-El uso de `parse` o `safeParse` debe ser deliberado.
+Fuera de la integración automática del Pipe, el uso de `parse` o `safeParse` debe ser deliberado.
 
-Utilice `parse` cuando una entrada inválida deba abortar inmediatamente el flujo y el mecanismo de validación sea
-responsable de traducir el error.
+Utilice `parse` cuando el input inválido deba abortar inmediatamente el flujo.
 
-Utilice `safeParse` cuando el caller necesite inspeccionar el resultado de validación y decidir explícitamente cómo
-traducir o manejar el fallo.
+Utilice `safeParse` cuando el caller necesite inspeccionar explícitamente el resultado y decidir cómo manejar el fallo.
 
-No trate el resultado de `parse` como si fuera un objeto `success/data/error`.
+No trate el resultado de `parse` como un objeto `success/data/error`.
 
 ## Refinements y Transforms
 
-Los Refinements y Transforms deben permanecer puros y deterministas.
+Los Refinements y Transforms utilizados en Request Schemas deben permanecer puros y deterministas.
 
-Un Refinement puede validar relaciones internas entre los valores recibidos, pero no debe:
+Pueden validar relaciones internas entre valores recibidos, pero no deben:
 
 - consultar la base de datos;
 - invocar APIs externas;
 - leer estado mutable;
+- ejecutar autorización;
 - coordinar reglas de negocio dependientes de infraestructura.
 
-Por ejemplo, validar que dos campos de contraseña coincidan puede pertenecer al schema; comprobar si un email ya existe
-en la base de datos pertenece al Service correspondiente.
+Por ejemplo, comprobar que dos campos de contraseña coincidan puede pertenecer al Schema; comprobar si un email ya
+existe pertenece al Service.
 
-```text
-Schema
-    ↓
-Validación estructural y determinista
+## Unknown fields
 
-Service
-    ↓
-Reglas de negocio e I/O
-```
+Cada Request Schema debe definir de forma deliberada qué propiedades acepta.
 
-## Composición de schemas
+No permita que campos arbitrarios lleguen a Services o Repositories simplemente porque el cliente los envió.
 
-Prefiera componer schemas existentes cuando varios contratos compartan una estructura canónica.
+La política concreta de propiedades desconocidas debe ser coherente con Zod y con el contrato del Endpoint. Un campo no
+definido por el Request Contract no debe convertirse accidentalmente en input de persistencia.
 
-No copie manualmente campos comunes cuando exista un schema propietario reutilizable y la composición preserve la
-semántica del contrato.
+## Límites de entrada
 
-La reutilización no debe eliminar límites importantes entre contratos distintos. Un schema de persistencia no debe
-convertirse en la base automática de un DTO HTTP sólo para evitar duplicación de campos.
+Los Schemas deben aplicar límites razonables cuando la naturaleza del campo lo requiera.
 
-## Separación de persistencia
+Esto incluye, según corresponda:
 
-Los contratos HTTP, los contratos de aplicación y los records de persistencia son responsabilidades distintas.
+- longitud mínima y máxima de strings;
+- tamaño máximo de arrays;
+- rangos numéricos;
+- formatos de UUID, URL o email;
+- límites de paginación;
+- enums o discriminated unions.
 
-Pueden compartir campos, pero no deben ser tratados como el mismo contrato.
-
-```text
-HTTP Input Schema
-       ↓
-Application Input
-       ↓
-Service
-       ↓
-Repository Input
-       ↓
-Prisma
-```
-
-Esta separación evita que campos internos de persistencia se conviertan accidentalmente en parte de la API pública.
+Los límites de payload HTTP globales pertenecen a la configuración HTTP, no al Schema de un caso de uso individual.
 
 ## Errores de validación
 
-Los errores de Zod no deben exponerse directamente como detalles internos sin una traducción controlada al contrato HTTP
-de errores de la aplicación.
+Los errores producidos por Standard Schema o Zod no deben exponerse directamente como detalles internos.
 
-La forma pública del error será definida por la convención global de manejo de errores.
+La aplicación debe traducirlos al contrato HTTP global de errores.
 
-El límite de validación debe conservar suficiente información para identificar qué campo o parte del input fue inválido,
-sin exponer información interna innecesaria.
+El error público debe conservar información útil para identificar el input inválido sin exponer stack traces ni detalles
+internos del framework o de la librería.
+
+La forma exacta se define en `error-handling.md`.
 
 ## Testing
 
-La validación debe cubrirse en el nivel práctico más pequeño.
+Los Request Schemas pueden probarse directamente cuando contengan comportamiento estructural relevante.
 
-Los schemas pueden probarse directamente para casos estructurales complejos. Los Endpoints deben verificarse mediante E2E
-cuando el comportamiento público de validación forme parte del contrato HTTP.
+Los E2E Tests deben verificar que inputs inválidos sean rechazados a través del límite HTTP real y que no alcancen
+exitosamente la operación de aplicación.
 
-Las pruebas E2E deben incluir casos relevantes de input inválido y verificar que el Request no alcance exitosamente la
-operación cuando el contrato no se cumpla.
+Deben cubrirse especialmente:
+
+- coercion relevante;
+- campos requeridos;
+- formatos inválidos;
+- límites máximos y mínimos;
+- semántica de campos opcionales y nullable;
+- errores de Request públicos.
 
 ## Reglas
 
 1. Trate todo input externo como no confiable hasta validarlo.
-2. Utilice Zod 4 para validar los contratos de entrada definidos por el proyecto.
-3. Valide Request Body, Query Params y Route Params en el límite HTTP antes de delegar a Services.
-4. Asigne un único owner canónico a cada schema compartido.
-5. Derive y exporte el Type junto al schema que lo define.
-6. Mantenga separados los contratos HTTP, de aplicación y de persistencia.
-7. No utilice modelos de Prisma ni records de persistencia como DTOs de entrada HTTP.
-8. Limite `z.coerce` a límites de entrada externos.
-9. Modele `optional`, `nullable` y `nullish` de forma explícita según la semántica real del contrato.
-10. Elija `parse` o `safeParse` según el comportamiento de error requerido por el caller.
-11. Mantenga Refinements y Transforms puros, deterministas y libres de I/O.
-12. Mantenga las reglas de negocio dependientes de infraestructura fuera de los schemas.
-13. Componga schemas existentes cuando exista un owner canónico reutilizable y la composición preserve los límites del contrato.
-14. Traduzca los errores de Zod al contrato HTTP de errores de la aplicación en lugar de exponerlos directamente.
+2. Utilice `StandardSchemaValidationPipe` como mecanismo predeterminado para Request validation schema-first.
+3. Utilice Zod 4 Schemas compatibles con Standard Schema en Request Body, Query Params y Route Params.
+4. Valide el input antes de delegarlo a Services.
+5. Entregue a la aplicación el valor normalizado producido por el Schema.
+6. Limite coercion y normalización a límites externos.
+7. Valide Headers únicamente cuando tengan semántica de aplicación.
+8. Mantenga Refinements y Transforms libres de I/O, autorización y reglas de negocio dependientes de infraestructura.
+9. Defina deliberadamente campos aceptados, formatos y límites de cada Request Contract.
+10. Elija `parse` o `safeParse` deliberadamente cuando valide fuera del Pipe.
+11. Traduzca errores de validación al contrato HTTP global de errores.
+12. Verifique el comportamiento público de Request validation mediante E2E Tests.
