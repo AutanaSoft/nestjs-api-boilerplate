@@ -1,21 +1,16 @@
 # Validación
 
-Este documento define las convenciones para validar datos que ingresan a la aplicación a través del límite HTTP.
+Status: Target
 
-Las reglas compartidas de ownership, Schema/Type y separación de contratos se definen en `http-contracts.md`.
+Este documento define la estrategia técnica para validar datos que ingresan a la aplicación mediante el límite HTTP.
+
+Las convenciones de los contratos HTTP públicos se definen en `../api/http-contracts.md`.
 
 ## Límite de entrada
 
-Todo dato externo debe tratarse como no confiable hasta haber sido validado.
+Todo input externo debe considerarse no confiable hasta haber sido validado.
 
-Esto incluye, según corresponda:
-
-- Request Body;
-- Query Params;
-- Route Params;
-- Headers con semántica de aplicación.
-
-La validación debe ocurrir antes de delegar datos a un Service.
+La validación debe ejecutarse antes de delegar datos al comportamiento de aplicación.
 
 ```text
 HTTP Request
@@ -31,101 +26,47 @@ Controller
 Service
 ```
 
-Los Services deben recibir valores ya validados y normalizados respecto al contrato HTTP.
+Los Services deben recibir valores ya validados y normalizados respecto al contrato de entrada.
 
-## StandardSchemaValidationPipe
+## Standard Schema
 
-El proyecto utiliza `StandardSchemaValidationPipe` como mecanismo predeterminado para Request validation schema-first con Zod 4.
+El proyecto utiliza Zod 4 y `StandardSchemaValidationPipe` como estrategia predeterminada de Request validation.
 
-```typescript
-app.useGlobalPipes(
-  new StandardSchemaValidationPipe({
-    transform: true,
-  }),
-);
-```
+El Pipe debe validar contra el Schema canónico correspondiente y entregar el valor resultante de la validación.
 
-Los Schemas pueden asociarse directamente a parámetros HTTP.
+Los detalles y ownership del contrato público pertenecen a `../api/http-contracts.md`.
 
-```typescript
-@Post()
-create(@Body({ schema: createUserSchema }) body: CreateUserInput) {
-  return this.usersService.create(body);
-}
-```
+## Coercion
 
-Cuando el Schema aplique coercion o Transform, el Controller debe recibir el valor producido por el Schema.
+La coercion debe limitarse a boundaries externos donde la representación de transporte lo requiera.
 
-## Request Schemas
-
-Cada input HTTP debe utilizar un Schema que modele únicamente los campos aceptados por el contrato correspondiente.
-
-```typescript
-export const createUserSchema = z.object({
-  email: z.email(),
-  password: z.string().min(8),
-});
-```
-
-Query Params y Route Params pueden utilizar coercion cuando sea necesaria por su representación externa.
-
-```typescript
-export const listUsersQuerySchema = z.object({
-  status: z.enum(['active', 'inactive']).optional(),
-});
-```
-
-No utilice `z.coerce` en Schemas que modelen datos internos ya tipados.
+No aplique coercion innecesariamente sobre valores internos ya tipados.
 
 ## Refinements y Transforms
 
-Los Refinements y Transforms deben permanecer puros y deterministas.
+Los Refinements y Transforms ejecutados durante la validación deben ser puros y deterministas.
 
-Pueden validar relaciones entre valores del propio input, pero no deben:
+No deben:
 
-- consultar la base de datos;
+- realizar I/O;
+- consultar persistencia;
 - invocar servicios externos;
 - ejecutar autorización;
 - depender de estado mutable externo.
 
-Las reglas que requieran estado de aplicación pertenecen al caso de uso, no al Request Schema.
+Las reglas que necesiten estado de aplicación pertenecen al caso de uso correspondiente.
 
-## Campos y límites
+## Errores
 
-Cada Request Schema debe definir deliberadamente:
+Los errores propios de Zod, Standard Schema o del Pipe no deben exponerse directamente como contrato público.
 
-- campos aceptados;
-- formatos;
-- rangos;
-- longitudes;
-- nullability y optionality;
-- límites específicos del contrato.
-
-Los límites pertenecientes a convenciones compartidas, como pagination, deben seguir su documento owner en lugar de redefinirse localmente.
-
-## parse y safeParse
-
-Fuera de la integración automática del Pipe, elija deliberadamente entre `parse` y `safeParse`.
-
-Utilice `parse` cuando el input inválido deba abortar el flujo y `safeParse` cuando el caller necesite inspeccionar el resultado.
-
-## Errores de validación
-
-Los errores producidos por Zod o Standard Schema no deben exponerse directamente.
-
-Deben traducirse al Error Response global según `error-handling.md`.
-
-Los errores estructurales de Request utilizan `400 Bad Request`.
+Su traducción pertenece al Error Boundary definido en `error-handling.md`.
 
 ## Reglas
 
 1. Trate todo input externo como no confiable hasta validarlo.
-2. Utilice `StandardSchemaValidationPipe` como mecanismo predeterminado de Request validation.
-3. Utilice Zod 4 Schemas compatibles con Standard Schema para contratos HTTP de entrada.
-4. Valide y normalice el input antes de delegarlo a Services.
-5. Limite coercion a boundaries externos.
-6. Mantenga Refinements y Transforms libres de I/O, autorización y estado externo.
-7. Defina deliberadamente campos, formatos, límites, optionality y nullability.
-8. Mantenga convenciones compartidas, como pagination, bajo su documento owner.
-9. Elija `parse` o `safeParse` deliberadamente cuando valide fuera del Pipe.
-10. Traduzca Validation Errors mediante el Error Boundary global.
+2. Utilice Zod 4 con `StandardSchemaValidationPipe` como estrategia predeterminada.
+3. Valide y normalice el input antes de delegarlo a Services.
+4. Limite coercion a boundaries externos.
+5. Mantenga Refinements y Transforms libres de I/O, autorización y estado externo.
+6. Delegue contratos HTTP y errores públicos a sus documentos owners.
