@@ -1,8 +1,8 @@
 # Autenticación
 
-Este documento define la arquitectura de autenticación para el Boilerplate de API de NestJS.
+Este documento define la arquitectura de autenticación del proyecto.
 
-La autenticación es propiedad de la funcionalidad `auth` y se mantiene separada de la gestión de usuarios.
+La autenticación pertenece al Feature `auth` y se mantiene separada de la gestión de usuarios.
 
 ## Límite de módulo
 
@@ -12,7 +12,7 @@ La autenticación se ubica en:
 src/modules/auth/
 ```
 
-La gestión de usuarios pertenece a una funcionalidad separada:
+La gestión de usuarios pertenece a un Feature separado:
 
 ```text
 src/modules/users/
@@ -29,125 +29,122 @@ UsersService
 UsersRepository
 ```
 
-La persistencia específica de autenticación sigue siendo propiedad de la funcionalidad de autenticación.
+La persistencia específica de autenticación sigue perteneciendo al Feature de autenticación.
 
 ## Responsabilidades
 
-`AuthModule` es propietario de:
+`AuthModule` es responsable de:
 
-- flujos de registro;
-- validación de credenciales;
-- inicio de sesión;
-- generación y validación de tokens de acceso;
-- ciclo de vida de tokens de actualización;
-- guards de autenticación;
+- registration flows;
+- credential validation;
+- login;
+- generación y validación de Access Tokens;
+- lifecycle de Refresh Tokens;
+- Authentication Guards;
 - configuración de autenticación.
 
-`UsersModule` es propietario de:
+`UsersModule` es responsable de:
 
 - datos de usuario;
 - creación y gestión de usuarios;
-- búsqueda de usuarios;
-- estado de usuario requerido por otras funcionalidades de la aplicación.
+- user lookup;
+- estado de usuario requerido por otros Features de la aplicación.
 
 Las responsabilidades de autenticación no deben agregarse a `UsersService` simplemente porque la autenticación opera
 sobre usuarios.
 
 ## Registro
 
-El registro es un caso de uso de autenticación, no una operación CRUD de usuario genérica.
+El registro es un caso de uso de autenticación, no una operación CRUD genérica de usuario.
 
-El flujo de registro debe:
+El registration flow debe:
 
 ```text
-Validar entrada
+Validate input
     ↓
-Comprobar disponibilidad de la cuenta
+Check account availability
     ↓
-Aplicar hash a las credenciales
+Hash credentials
     ↓
-Crear usuario
+Create user
     ↓
-Emitir tokens de autenticación
+Issue authentication tokens
 ```
 
-`AuthService` coordina el flujo de registro, mientras que `UsersService` sigue siendo responsable de la creación de
+`AuthService` coordina el registration flow, mientras que `UsersService` sigue siendo responsable de la creación de
 usuarios.
 
-Las contraseñas de texto plano nunca deben persistirse.
+Las plain-text passwords nunca deben persistirse.
 
-## Inicio de sesión
+## Login
 
-El inicio de sesión valida las credenciales enviadas y emite tokens de autenticación.
+El login valida las credenciales enviadas y emite authentication tokens.
 
 ```text
-Credenciales
+Credentials
     ↓
-Buscar usuario
+Find user
     ↓
-Verificar contraseña
+Verify password
     ↓
-Validar estado de la cuenta
+Validate account state
     ↓
-Emitir tokens
+Issue tokens
 ```
 
 Los fallos de autenticación no deben revelar si existe una cuenta, salvo que la API pública requiera explícitamente esa
 distinción.
 
-## Almacenamiento de contraseñas
+## Password Storage
 
-Las contraseñas deben procesarse con un algoritmo de hash de contraseñas diseñado para el almacenamiento de
-credenciales.
+Las passwords deben procesarse con un password-hashing algorithm diseñado para credential storage.
 
-Persista únicamente el hash de contraseña resultante.
+Persista únicamente el password hash resultante.
 
 ```text
-Contraseña
+Password
    ↓
-Hash de contraseña
+Password hashing
    ↓
-Hash de contraseña
+Password hash
    ↓
-Persistencia
+Persistence
 ```
 
-Las contraseñas y los hashes de contraseñas nunca deben devolverse mediante respuestas de API públicas ni incluirse en
-tokens de autenticación.
+Las passwords y los password hashes nunca deben devolverse mediante respuestas de API públicas ni incluirse en
+authentication tokens.
 
-## Tokens de acceso
+## Access Tokens
 
-El proyecto utiliza tokens de acceso JWT para solicitudes de API autenticadas.
+El proyecto utiliza JWT Access Tokens para Requests autenticados a la API.
 
-Los tokens de acceso deben tener una duración corta.
+Los Access Tokens deben tener una duración corta.
 
-Las cargas útiles de JWT deben contener únicamente la información mínima requerida para identificar y validar al
-principal autenticado.
+Los JWT payloads deben contener únicamente la información mínima requerida para identificar y validar al authenticated
+principal.
 
-La información confidencial no debe almacenarse en las cargas útiles de los tokens.
+La información confidencial no debe almacenarse en los token payloads.
 
 El identificador de usuario debe representarse mediante el claim estándar `sub`.
 
-La validación de tokens debe incluir la expiración y las restricciones de firma configuradas.
+La token validation debe incluir expiration y las signing constraints configuradas.
 
-## Tokens de actualización
+## Refresh Tokens
 
-Los tokens de actualización permiten que los clientes obtengan nuevos tokens de acceso sin enviar credenciales
-repetidamente.
+Los Refresh Tokens permiten que los clients obtengan nuevos Access Tokens sin enviar credenciales repetidamente.
 
-Los tokens de actualización deben tener una duración mayor que los tokens de acceso y seguir siendo revocables de forma
+Los Refresh Tokens deben tener una duración mayor que los Access Tokens y seguir siendo revocables de forma
 independiente.
 
-La persistencia del lado del servidor no debe almacenar credenciales reutilizables de tokens de actualización en texto
-plano.
+La persistencia del lado del servidor no debe almacenar credenciales reutilizables de Refresh Tokens en plain text.
 
-Una representación de token persistida comprometida no debe ser suficiente para autenticarse como el usuario.
+Una representación persistida de un token comprometido no debe ser suficiente para autenticarse como el usuario.
 
-La rotación de tokens de actualización debe invalidar el token utilizado previamente cuando se emite uno nuevo.
+La Refresh Token rotation debe invalidar el token utilizado previamente cuando se emite uno nuevo.
 
 ## Configuración de tokens
 
-La configuración de autenticación pertenece a la funcionalidad `auth`.
+La configuración de autenticación pertenece al Feature `auth`.
 
 ```text
 src/modules/auth/
@@ -157,30 +154,29 @@ src/modules/auth/
 
 La configuración debe incluir valores como:
 
-- secretos o claves de firma;
-- duraciones de tokens;
-- emisor;
-- audiencia.
+- signing secrets o keys;
+- token lifetimes;
+- issuer;
+- audience.
 
-Los secretos deben ingresar a la aplicación a través del límite de configuración y nunca deben codificarse de forma
-rígida.
+Los secrets deben ingresar a la aplicación a través del límite de configuración y nunca deben hardcodearse.
 
-## Autenticación de solicitudes
+## Request Authentication
 
-Las rutas protegidas deben usar guards de NestJS para aplicar la autenticación.
+Las rutas protegidas deben usar NestJS Guards para aplicar la autenticación.
 
-La lógica de autenticación no debe repetirse manualmente dentro de los controladores.
+La lógica de autenticación no debe repetirse manualmente dentro de los Controllers.
 
-El límite de autenticación debe:
+El authentication boundary debe:
 
-1. extraer el token de acceso;
+1. extraer el Access Token;
 2. validar el token;
-3. validar al principal autenticado cuando sea necesario;
-4. exponer al principal autenticado al contexto de la solicitud.
+3. validar al authenticated principal cuando sea necesario;
+4. exponer al authenticated principal al Request context.
 
 Los tokens expirados, inválidos o inaceptables por otros motivos deben resultar en un fallo de autenticación.
 
-## Validación de usuarios
+## User Validation
 
 Una firma JWT válida por sí sola no garantiza que la cuenta asociada aún deba tener acceso.
 
@@ -197,26 +193,25 @@ Los estados exactos de cuenta admitidos por la aplicación pueden evolucionar in
 
 Las implementaciones de autenticación no deben:
 
-- exponer contraseñas ni hashes de contraseñas;
-- incluir información confidencial en las cargas útiles de JWT;
-- codificar de forma rígida secretos de tokens;
+- exponer passwords ni password hashes;
+- incluir información confidencial en JWT payloads;
+- hardcodear token secrets;
 - aceptar tokens expirados;
-- almacenar credenciales de actualización reutilizables en texto plano;
-- exponer elementos internos de autenticación mediante los controladores;
-- omitir los límites de funcionalidades para acceder directamente a la persistencia de usuarios.
+- almacenar credenciales reutilizables de Refresh Tokens en plain text;
+- exponer detalles internos de autenticación mediante Controllers;
+- omitir los límites de Features para acceder directamente a la persistencia de usuarios.
 
 ## Reglas
 
-1. Mantenga la autenticación y la gestión de usuarios como responsabilidades de funcionalidades separadas.
+1. Mantenga la autenticación y la gestión de usuarios como responsabilidades de Features separados.
 2. Coordine el registro mediante `AuthService` mientras delega la gestión de usuarios a `UsersService`.
-3. Aplique hash a las contraseñas antes de persistirlas y nunca almacene credenciales de texto plano.
-4. Utilice tokens de acceso JWT de corta duración.
-5. Mantenga las cargas útiles de JWT mínimas y sin datos confidenciales.
-6. Utilice tokens de actualización revocables de forma independiente.
-7. Almacene de forma segura las representaciones de persistencia de tokens de actualización, en lugar de tokens
-   reutilizables de texto plano.
-8. Rote los tokens de actualización cuando se usen.
-9. Mantenga los secretos de autenticación en una configuración validada propiedad de la funcionalidad.
-10. Proteja las rutas autenticadas mediante guards.
+3. Aplique hashing a las passwords antes de persistirlas y nunca almacene plain-text credentials.
+4. Utilice JWT Access Tokens de corta duración.
+5. Mantenga los JWT payloads mínimos y sin datos confidenciales.
+6. Utilice Refresh Tokens revocables de forma independiente.
+7. Almacene de forma segura las representaciones persistidas de Refresh Tokens, en lugar de reusable plain-text tokens.
+8. Rote los Refresh Tokens cuando se usen.
+9. Mantenga los authentication secrets en una configuración validada propiedad del Feature.
+10. Proteja las rutas autenticadas mediante Guards.
 11. Valide el estado relevante del usuario durante la autenticación cuando sea necesario.
-12. Mantenga la persistencia específica de autenticación dentro de la funcionalidad `auth`.
+12. Mantenga la persistencia específica de autenticación dentro del Feature `auth`.
