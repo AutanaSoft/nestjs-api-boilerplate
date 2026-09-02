@@ -1,72 +1,84 @@
 # Descripción general de la arquitectura
 
-El proyecto sigue una arquitectura de aplicación modular construida alrededor de límites explícitos de Features.
+Status: Target
 
-La arquitectura está diseñada para mantenerse simple en APIs pequeñas, a la vez que permite que cada Feature crezca sin
-requerir una reestructuración de todo el repositorio.
+Este documento define la arquitectura de alto nivel para las aplicaciones creadas a partir de este template.
 
-## Modelo arquitectónico
+## Objetivos
 
-Las capacidades de la aplicación se implementan como Feature Modules independientes de NestJS.
+El template proporciona una base reutilizable para construir APIs HTTP con NestJS y TypeScript.
 
-Cada módulo es responsable de un área funcional cohesiva y expone únicamente las capacidades que otros módulos requieren.
+La arquitectura debe:
 
-Los módulos colaboran mediante imports y exports explícitos de NestJS, en lugar de compartir detalles internos de
-implementación.
+- permanecer simple para aplicaciones pequeñas;
+- permitir crecimiento incremental por Feature;
+- mantener ownership y dependencias explícitos;
+- separar comportamiento de aplicación e infraestructura;
+- proporcionar una base mantenible, segura y verificable.
 
-## Principios
+Los requisitos funcionales de Features concretos no pertenecen a este documento.
 
-### Feature Ownership
+## Constraints
 
-El comportamiento de la aplicación pertenece al Feature responsable de él.
+La arquitectura parte de las siguientes restricciones:
 
-Un Feature mantiene bajo su responsabilidad su transport, lógica de aplicación, acceso a persistencia, contratos y
-componentes de soporte, salvo que una responsabilidad sea genuinamente compartida en toda la aplicación.
+- NestJS 12 y TypeScript como plataforma de aplicación;
+- Node.js 26 o superior como runtime soportado;
+- pnpm como package manager del proyecto;
+- aplicación HTTP modular basada en el sistema de Modules y Providers de NestJS.
 
-### Límites explícitos
+Las decisiones tecnológicas específicas de cada responsabilidad transversal se mantienen en sus documentos owners.
 
-Las dependencias entre módulos deben ser visibles mediante module imports y Providers exportados.
+## Context & Scope
 
-Los Providers internos deben permanecer privados, salvo que otro módulo tenga una razón concreta para consumirlos.
+El sistema es un template para construir una API HTTP.
 
-### Responsabilidad única
+Su arquitectura cubre:
 
-Controllers, Services, Repositories y otros Providers deben tener responsabilidades cohesivas.
+- estructura de la aplicación;
+- límites entre Features;
+- dependencias internas;
+- integración con infraestructura;
+- conceptos técnicos transversales.
 
-Los componentes deben dividirse cuando comiencen a asumir comportamientos no relacionados, en lugar de crecer hasta
-convertirse en clases de propósito general.
+Los clientes HTTP y sistemas externos interactúan con la aplicación mediante boundaries explícitos.
 
-### Aislamiento de persistencia
+Las reglas del contrato HTTP público se mantienen en `../api/`.
 
-Los Application Services no deben depender directamente de APIs específicas del ORM.
+## Solution Strategy
 
-El comportamiento de persistencia se aísla detrás de Repositories, de modo que los detalles de implementación de la base
-de datos permanezcan fuera de la lógica de aplicación.
+Las capacidades de aplicación se organizan mediante Feature Modules con ownership explícito.
 
-### Separación de infraestructura
+Cada Feature mantiene sus componentes específicos y expone únicamente las capacidades requeridas por otros módulos.
 
-La infraestructura transversal, como la conectividad de la base de datos y la configuración de la aplicación, se
-mantiene separada de los Feature Modules de la aplicación.
+La colaboración entre Features se realiza mediante imports y exports de NestJS, evitando dependencias directas sobre
+detalles internos.
 
-La infraestructura da soporte a los Features, pero no define sus responsabilidades de aplicación.
+La estructura estática objetivo se define en `project-structure.md`.
 
-### Complejidad incremental
+### Responsabilidades
 
-La estructura arquitectónica debe crecer según los requisitos reales de la aplicación.
+Controllers, Services, Repositories y otros Providers deben mantener responsabilidades cohesivas.
 
-Los Features pequeños pueden mantenerse simples. Los Features más grandes pueden introducir Controllers, Services,
-Repositories u organización interna adicionales sin cambiar el modelo arquitectónico general.
+La complejidad interna de un Feature puede crecer cuando sus requisitos lo justifiquen sin alterar el modelo
+arquitectónico general.
 
-### Independencia tecnológica
+### Persistencia
 
-La arquitectura estructural no debe depender innecesariamente de una base de datos, ORM, estrategia de autenticación o
-Provider externo específico.
+Los detalles de persistencia permanecen separados del comportamiento de aplicación.
 
-Las decisiones específicas de tecnología deben respetar los límites arquitectónicos definidos por el proyecto.
+La estrategia completa se define en `data-access.md`.
 
-## Dirección de las dependencias
+### Infraestructura
 
-El flujo de dependencias típico es:
+La infraestructura transversal permanece fuera de los Feature Modules y proporciona capacidades técnicas sin asumir
+ownership funcional.
+
+La estrategia de configuración se define en `configuration.md`.
+
+### Dependencias
+
+La dirección conceptual de dependencias es:
 
 ```text
 Transport
@@ -78,16 +90,45 @@ Persistence
 Infrastructure
 ```
 
-Las dependencias deben preservar estos límites e impedir que los detalles de implementación de nivel inferior se filtren
-hacia responsabilidades de aplicación de nivel superior.
+Entre Features, las dependencias deben atravesar APIs de módulos expuestas explícitamente.
 
-Entre Features, las dependencias deben pasar por APIs de módulos expuestas explícitamente.
+Los detalles de implementación de niveles inferiores no deben propagarse hacia responsabilidades de aplicación de nivel
+superior.
 
-## Alcance arquitectónico
+### Complejidad incremental
 
-Esta arquitectura define las convenciones predeterminadas para las aplicaciones creadas a partir de este template.
+La arquitectura introduce estructura únicamente cuando existe una responsabilidad que la justifique.
 
-No aplica por completo Clean Architecture, Hexagonal Architecture, Domain-Driven Design ni otra arquitectura formal.
+No requiere aplicar de forma completa Clean Architecture, Hexagonal Architecture, Domain-Driven Design u otro modelo
+formal.
 
-Se pueden adoptar patrones de esos enfoques cuando mejoren los límites, la mantenibilidad o la capacidad de prueba. La
-complejidad arquitectónica adicional debe justificarse mediante los requisitos de la aplicación.
+Patrones adicionales pueden incorporarse cuando mejoren límites o mantenibilidad y su complejidad esté justificada.
+
+## Building Blocks
+
+Los building blocks principales son:
+
+```text
+Application
+├── Feature Modules
+└── Shared Infrastructure
+```
+
+Los Feature Modules poseen capacidades de aplicación.
+
+Shared Infrastructure proporciona capacidades técnicas transversales.
+
+La descomposición estática detallada y las reglas de module ownership se definen en `project-structure.md`.
+
+## Quality Requirements
+
+Las decisiones arquitectónicas deben favorecer:
+
+- **Simplicity**: evitar estructura o abstracciones sin una responsabilidad real.
+- **Maintainability**: mantener responsabilidades y ownership explícitos.
+- **Evolvability**: permitir que Features crezcan de forma independiente.
+- **Security**: conservar los boundaries y controles técnicos definidos por el proyecto.
+- **Testability**: permitir verificar componentes en el límite adecuado sin depender innecesariamente de
+  infraestructura.
+
+Las estrategias específicas de seguridad, testing y otros conceptos transversales pertenecen a sus documentos owners.
