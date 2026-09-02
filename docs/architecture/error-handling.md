@@ -2,7 +2,8 @@
 
 Status: Target
 
-Este documento define la estrategia arquitectónica para representar errores internos y traducirlos en los boundaries de la aplicación.
+Este documento define la estrategia arquitectónica para representar errores internos y traducirlos en los boundaries de
+la aplicación.
 
 La semántica pública de HTTP Status Codes se define en `../api/conventions.md`.
 
@@ -24,7 +25,8 @@ Los Controllers no deben repetir mappings de errores que puedan resolverse en el
 
 ## Application Errors
 
-Las condiciones esperadas del comportamiento de aplicación deben representarse mediante errores independientes del transport.
+Las condiciones esperadas del comportamiento de aplicación deben representarse mediante errores independientes del
+transport.
 
 Los Services no deben necesitar conocer qué representación HTTP corresponderá posteriormente a esos errores.
 
@@ -46,13 +48,16 @@ HTTP Error Boundary
 
 Los detalles específicos de una tecnología no deben propagarse fuera del boundary que la integra.
 
-No todo fallo de infraestructura requiere un Application Error específico. Los errores inesperados pueden propagarse hasta el Error Boundary y tratarse como errores internos.
+No todo fallo de infraestructura requiere un Application Error específico. Los errores inesperados pueden propagarse
+hasta el Error Boundary y tratarse como errores internos.
 
 ## Validation Errors
 
-Los errores producidos durante Request validation deben alcanzar el Error Boundary mediante una representación controlada.
+Los errores producidos durante Request validation deben alcanzar el Error Boundary mediante una representación
+controlada.
 
-Los detalles propios de Zod, Standard Schema o del mecanismo de validación no deben convertirse directamente en el contrato público.
+Los detalles propios de Zod, Standard Schema o del mecanismo de validación no deben convertirse directamente en el
+contrato público.
 
 La estrategia de Request validation se define en `validation.md`.
 
@@ -80,11 +85,13 @@ try {
 }
 ```
 
-Un error desconocido que alcance el Error Boundary debe tratarse como un fallo interno y producir una representación pública segura.
+Un error desconocido que alcance el Error Boundary debe tratarse como un fallo interno y producir una representación
+pública segura.
 
 ## Observabilidad
 
-Los errores inesperados deben proporcionar suficiente contexto interno para diagnóstico sin alterar el contrato público ni exponer información sensible.
+Los errores inesperados deben proporcionar suficiente contexto interno para diagnóstico sin alterar el contrato público
+ni exponer información sensible.
 
 Logging, request correlation y telemetry se definen en `observability.md`.
 

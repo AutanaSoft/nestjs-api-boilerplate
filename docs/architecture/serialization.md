@@ -8,7 +8,8 @@ Las convenciones de los contratos HTTP públicos se definen en `../api/http-cont
 
 ## Límite de salida
 
-Los resultados internos no deben convertirse automáticamente en contratos públicos sólo porque puedan serializarse como JSON.
+Los resultados internos no deben convertirse automáticamente en contratos públicos sólo porque puedan serializarse como
+JSON.
 
 ```text
 Service Result
@@ -63,7 +64,8 @@ La serialización debe construir deliberadamente la representación pública cor
 
 ## Representaciones externas
 
-Los valores específicos del runtime o infraestructura que no tengan una representación JSON directa deben convertirse antes de alcanzar la Response pública.
+Los valores específicos del runtime o infraestructura que no tengan una representación JSON directa deben convertirse
+antes de alcanzar la Response pública.
 
 La representación concreta pertenece al contrato público correspondiente.
 
@@ -73,7 +75,8 @@ Las Responses paginadas deben seguir la convención definida en `../api/paginati
 
 ## Responses especiales
 
-Archivos, streams u otros tipos de Response que requieran mecanismos específicos no necesitan forzarse mediante un Response Schema de objeto.
+Archivos, streams u otros tipos de Response que requieran mecanismos específicos no necesitan forzarse mediante un
+Response Schema de objeto.
 
 La excepción debe ser explícita en el boundary correspondiente.
 

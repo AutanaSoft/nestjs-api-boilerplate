@@ -28,7 +28,8 @@ Los Services no deben depender directamente de Prisma Client ni contener queries
 
 Cada Repository pertenece al Feature propietario de los datos y comportamiento persistente correspondiente.
 
-Los Repositories deben permanecer privados para su Feature salvo que exista una razón arquitectónica explícita para exponerlos.
+Los Repositories deben permanecer privados para su Feature salvo que exista una razón arquitectónica explícita para
+exponerlos.
 
 Otros Features deben consumir la API exportada por el módulo propietario, no sus Repositories.
 
@@ -66,7 +67,8 @@ El migration history forma parte del repositorio y debe mantenerse junto con los
 
 ## Transactions
 
-Utilice transactions cuando una operación requiera múltiples cambios persistentes que deban completarse o fallar como una unidad.
+Utilice transactions cuando una operación requiera múltiples cambios persistentes que deban completarse o fallar como
+una unidad.
 
 El transaction boundary pertenece a la operación de aplicación que define esa atomicidad.
 
@@ -78,7 +80,8 @@ No cree transactions internas que impidan una transaction de aplicación más am
 
 Los Repositories son responsables de diseñar relation loading eficiente.
 
-Evite ejecutar queries adicionales por cada elemento de una colección cuando los datos puedan recuperarse mediante una estrategia de carga adecuada.
+Evite ejecutar queries adicionales por cada elemento de una colección cuando los datos puedan recuperarse mediante una
+estrategia de carga adecuada.
 
 Utilice `select`, `include` y las estrategias de relation loading deliberadamente según los datos requeridos.
 

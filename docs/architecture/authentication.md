@@ -8,20 +8,21 @@ La autorización se define por separado en `authorization.md`.
 
 ## Decisiones
 
-| Responsabilidad | Decisión |
-| --- | --- |
-| Access Tokens | JWT |
-| JWT integration | `@nestjs/jwt` |
-| Password hashing | Argon2id |
-| Password hashing library | `argon2` |
-| Refresh Tokens | Opaque tokens |
-| Refresh Token state | Server-side |
-| Request authentication | NestJS Guards |
-| Authentication context | `AuthenticatedPrincipal` |
+| Responsabilidad          | Decisión                 |
+| ------------------------ | ------------------------ |
+| Access Tokens            | JWT                      |
+| JWT integration          | `@nestjs/jwt`            |
+| Password hashing         | Argon2id                 |
+| Password hashing library | `argon2`                 |
+| Refresh Tokens           | Opaque tokens            |
+| Refresh Token state      | Server-side              |
+| Request authentication   | NestJS Guards            |
+| Authentication context   | `AuthenticatedPrincipal` |
 
 Passport no forma parte de la arquitectura predeterminada.
 
-No introduzca una estrategia alternativa de JWT, password hashing o authentication framework sin una decisión arquitectónica explícita.
+No introduzca una estrategia alternativa de JWT, password hashing o authentication framework sin una decisión
+arquitectónica explícita.
 
 ## Module Boundary
 
@@ -113,7 +114,8 @@ El Guard es responsable de:
 
 La autorización no pertenece al Guard de autenticación.
 
-La estrategia preferida es authentication global con excepciones públicas declaradas explícitamente mediante `@Public()`.
+La estrategia preferida es authentication global con excepciones públicas declaradas explícitamente mediante
+`@Public()`.
 
 ## AuthenticatedPrincipal
 

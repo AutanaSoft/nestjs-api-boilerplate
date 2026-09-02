@@ -3,8 +3,8 @@
 Status: Implemented
 
 La API aplica Helmet, una lista explícita de orígenes CORS permitidos y global Rate Limiting en memoria desde el
-configuration namespace `http`. Establezca las environment variables indicadas a continuación y luego reinicie el proceso
-para que los cambios surtan efecto.
+configuration namespace `http`. Establezca las environment variables indicadas a continuación y luego reinicie el
+proceso para que los cambios surtan efecto.
 
 ## Ruta rápida
 

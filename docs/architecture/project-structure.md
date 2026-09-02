@@ -31,9 +31,11 @@ La infraestructura transversal permanece fuera de `src/modules`.
 
 Un Feature Module es el límite principal de ownership de una capacidad.
 
-El código específico de un Feature debe permanecer dentro de su módulo propietario, salvo que represente infraestructura genuinamente transversal.
+El código específico de un Feature debe permanecer dentro de su módulo propietario, salvo que represente infraestructura
+genuinamente transversal.
 
-Los Features deben mantenerse planos mientras sean pequeños e introducir directorios por responsabilidad únicamente cuando el crecimiento lo justifique.
+Los Features deben mantenerse planos mientras sean pequeños e introducir directorios por responsabilidad únicamente
+cuando el crecimiento lo justifique.
 
 Una estructura puede evolucionar hacia:
 

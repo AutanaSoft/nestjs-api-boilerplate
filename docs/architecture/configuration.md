@@ -55,7 +55,8 @@ La configuración global puede residir en:
 src/config/
 ```
 
-La configuración específica de un Feature o infraestructura debe permanecer junto a su owner cuando exista uno más claro.
+La configuración específica de un Feature o infraestructura debe permanecer junto a su owner cuando exista uno más
+claro.
 
 No centralice configuración únicamente por conveniencia técnica.
 
@@ -114,7 +115,8 @@ Deben ingresar mediante una external configuration source y atravesar el configu
 
 ## Configuración HTTP
 
-Los valores concretos, defaults y restricciones operativas del namespace HTTP se documentan en `../configuration/http-security.md`.
+Los valores concretos, defaults y restricciones operativas del namespace HTTP se documentan en
+`../configuration/http-security.md`.
 
 Ese documento no sustituye esta estrategia arquitectónica; mantiene la referencia de configuración runtime concreta.
 

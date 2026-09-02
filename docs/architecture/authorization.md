@@ -49,11 +49,13 @@ Cuando se utilicen Permissions, deben seguir nombres estables. La convención pr
 <resource>:<action>
 ```
 
-Cuando Roles y Permissions coexistan, los Roles deben agrupar Permissions y los componentes protegidos deben declarar la capacidad realmente requerida.
+Cuando Roles y Permissions coexistan, los Roles deben agrupar Permissions y los componentes protegidos deben declarar la
+capacidad realmente requerida.
 
 ## Metadata y Guards
 
-Los requisitos que puedan evaluarse antes de cargar un recurso deben declararse mediante metadata y resolverse con Guards.
+Los requisitos que puedan evaluarse antes de cargar un recurso deben declararse mediante metadata y resolverse con
+Guards.
 
 ```typescript
 @RequirePermissions(Permission.ResourceUpdate)
@@ -87,11 +89,13 @@ Policy
 Continue / Reject
 ```
 
-No duplique acceso a persistencia en un Guard y posteriormente en el Service únicamente para mantener toda la autorización dentro del Guard.
+No duplique acceso a persistencia en un Guard y posteriormente en el Service únicamente para mantener toda la
+autorización dentro del Guard.
 
 Los Services y Policies no deben utilizar `HttpException` como representación general de una denegación.
 
-Cuando una decisión de autorización forme parte del caso de uso, utilice un Application Error independiente del transport y deje su traducción al Error Boundary definido en `error-handling.md`.
+Cuando una decisión de autorización forme parte del caso de uso, utilice un Application Error independiente del
+transport y deje su traducción al Error Boundary definido en `error-handling.md`.
 
 ## Deny by Default
 
@@ -105,9 +109,11 @@ Insufficient authorization evidence → Deny
 
 Las claims de autorización incluidas en credentials pueden quedar desactualizadas durante su vigencia.
 
-Mantenga las claims mínimas y utilice estado actual o mecanismos de invalidación cuando los cambios de autorización necesiten efecto inmediato.
+Mantenga las claims mínimas y utilice estado actual o mecanismos de invalidación cuando los cambios de autorización
+necesiten efecto inmediato.
 
-El cliente no debe ser una fuente confiable de identidad, Roles, Permissions u ownership mediante Request Body, Query Params, Route Params o Headers arbitrarios.
+El cliente no debe ser una fuente confiable de identidad, Roles, Permissions u ownership mediante Request Body, Query
+Params, Route Params o Headers arbitrarios.
 
 ## Resource Visibility
 
@@ -117,7 +123,8 @@ La decisión debe resolverse antes de seleccionar la Response pública.
 
 La serialización no sustituye una decisión de autorización.
 
-Cuando la existencia de un recurso sea información sensible, la Policy puede definir una estrategia de no divulgación. Su representación HTTP pública debe seguir las convenciones de API.
+Cuando la existencia de un recurso sea información sensible, la Policy puede definir una estrategia de no divulgación.
+Su representación HTTP pública debe seguir las convenciones de API.
 
 ## Reglas
 

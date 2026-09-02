@@ -10,9 +10,11 @@ El proyecto utiliza Vitest como Test Runner.
 
 Las pruebas deben verificar el comportamiento en el límite práctico más pequeño.
 
-Utilice Unit Tests para comportamiento aislado y E2E Tests cuando el comportamiento deba verificarse mediante el límite real de la aplicación.
+Utilice Unit Tests para comportamiento aislado y E2E Tests cuando el comportamiento deba verificarse mediante el límite
+real de la aplicación.
 
-No utilice E2E Tests para reemplazar Unit Tests enfocados ni Unit Tests para afirmar integración que sólo existe en runtime.
+No utilice E2E Tests para reemplazar Unit Tests enfocados ni Unit Tests para afirmar integración que sólo existe en
+runtime.
 
 ## Unit Tests
 
@@ -26,7 +28,8 @@ Los Unit Tests deben aislar el componente bajo prueba de dependencias fuera de s
 
 Utilice Test Doubles únicamente cuando la prueba no pretenda verificar la implementación real de esa dependencia.
 
-No mockee detalles internos del componente bajo prueba ni reproduzca innecesariamente la implementación completa de una dependencia.
+No mockee detalles internos del componente bajo prueba ni reproduzca innecesariamente la implementación completa de una
+dependencia.
 
 ## Assertions
 
@@ -45,7 +48,8 @@ Cada escenario debe utilizar datos propios y evitar shared mutable state.
 
 Utilice factories o builders cuando múltiples pruebas necesiten inputs válidos equivalentes.
 
-Los inputs inválidos deben derivarse preferiblemente de un input válido modificando únicamente la condición relevante para el escenario.
+Los inputs inválidos deben derivarse preferiblemente de un input válido modificando únicamente la condición relevante
+para el escenario.
 
 ## Determinismo
 

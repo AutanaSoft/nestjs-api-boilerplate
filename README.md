@@ -33,29 +33,29 @@ pnpm install
 
 Use the focused references for architecture, API conventions, configuration, testing, and project policies.
 
-| Topic | Reference |
-| --- | --- |
-| Architecture overview | [Architecture overview](docs/architecture/overview.md) |
+| Topic                                  | Reference                                                   |
+| -------------------------------------- | ----------------------------------------------------------- |
+| Architecture overview                  | [Architecture overview](docs/architecture/overview.md)      |
 | Project structure and module ownership | [Project structure](docs/architecture/project-structure.md) |
-| Application configuration architecture | [Configuration](docs/architecture/configuration.md) |
-| Database and persistence architecture | [Data access](docs/architecture/data-access.md) |
-| Authentication architecture | [Authentication](docs/architecture/authentication.md) |
-| Authorization architecture | [Authorization](docs/architecture/authorization.md) |
-| Request validation | [Validation](docs/architecture/validation.md) |
-| Response serialization | [Serialization](docs/architecture/serialization.md) |
-| Error handling | [Error handling](docs/architecture/error-handling.md) |
-| Observability | [Observability](docs/architecture/observability.md) |
-| REST API conventions | [API conventions](docs/api/conventions.md) |
-| HTTP contracts | [HTTP contracts](docs/api/http-contracts.md) |
-| Cursor pagination | [Pagination](docs/api/pagination.md) |
-| API versioning | [Versioning](docs/api/versioning.md) |
-| OpenAPI | [OpenAPI](docs/api/openapi.md) |
-| HTTP security configuration | [HTTP security](docs/configuration/http-security.md) |
-| Testing conventions | [Testing](docs/testing/testing.md) |
-| End-to-end testing | [E2E testing](docs/testing/e2e-testing.md) |
-| Contribution workflow | [Contributing guide](CONTRIBUTING.md) |
-| Vulnerability reporting | [Security policy](SECURITY.md) |
-| Community standards | [Code of conduct](CODE_OF_CONDUCT.md) |
+| Application configuration architecture | [Configuration](docs/architecture/configuration.md)         |
+| Database and persistence architecture  | [Data access](docs/architecture/data-access.md)             |
+| Authentication architecture            | [Authentication](docs/architecture/authentication.md)       |
+| Authorization architecture             | [Authorization](docs/architecture/authorization.md)         |
+| Request validation                     | [Validation](docs/architecture/validation.md)               |
+| Response serialization                 | [Serialization](docs/architecture/serialization.md)         |
+| Error handling                         | [Error handling](docs/architecture/error-handling.md)       |
+| Observability                          | [Observability](docs/architecture/observability.md)         |
+| REST API conventions                   | [API conventions](docs/api/conventions.md)                  |
+| HTTP contracts                         | [HTTP contracts](docs/api/http-contracts.md)                |
+| Cursor pagination                      | [Pagination](docs/api/pagination.md)                        |
+| API versioning                         | [Versioning](docs/api/versioning.md)                        |
+| OpenAPI                                | [OpenAPI](docs/api/openapi.md)                              |
+| HTTP security configuration            | [HTTP security](docs/configuration/http-security.md)        |
+| Testing conventions                    | [Testing](docs/testing/testing.md)                          |
+| End-to-end testing                     | [E2E testing](docs/testing/e2e-testing.md)                  |
+| Contribution workflow                  | [Contributing guide](CONTRIBUTING.md)                       |
+| Vulnerability reporting                | [Security policy](SECURITY.md)                              |
+| Community standards                    | [Code of conduct](CODE_OF_CONDUCT.md)                       |
 
 ## Available scripts
 

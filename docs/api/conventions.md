@@ -24,7 +24,8 @@ Utilice:
 
 Evite rutas centradas innecesariamente en acciones o detalles internos.
 
-Los recursos anidados deben utilizarse únicamente cuando la relación con el recurso padre forme parte relevante del contexto público.
+Los recursos anidados deben utilizarse únicamente cuando la relación con el recurso padre forme parte relevante del
+contexto público.
 
 ## GET
 
@@ -87,18 +88,18 @@ Una Response `204 No Content` no debe contener body.
 
 Convención base:
 
-| Situación | Status |
-| --- | --- |
-| Lectura exitosa | `200 OK` |
-| Creación exitosa | `201 Created` |
-| Operación exitosa sin body | `204 No Content` |
-| Request inválido | `400 Bad Request` |
-| Principal no autenticado | `401 Unauthorized` |
-| Principal autenticado sin autorización | `403 Forbidden` |
-| Recurso no disponible | `404 Not Found` |
-| Conflicto de estado | `409 Conflict` |
-| Rate limit excedido | `429 Too Many Requests` |
-| Error interno inesperado | `500 Internal Server Error` |
+| Situación                              | Status                      |
+| -------------------------------------- | --------------------------- |
+| Lectura exitosa                        | `200 OK`                    |
+| Creación exitosa                       | `201 Created`               |
+| Operación exitosa sin body             | `204 No Content`            |
+| Request inválido                       | `400 Bad Request`           |
+| Principal no autenticado               | `401 Unauthorized`          |
+| Principal autenticado sin autorización | `403 Forbidden`             |
+| Recurso no disponible                  | `404 Not Found`             |
+| Conflicto de estado                    | `409 Conflict`              |
+| Rate limit excedido                    | `429 Too Many Requests`     |
+| Error interno inesperado               | `500 Internal Server Error` |
 
 No utilice `200 OK` para representar errores mediante campos dentro del Response Body.
 
@@ -106,7 +107,8 @@ La forma pública del Error Response se define en `http-contracts.md`.
 
 ## Resource Visibility
 
-Cuando revelar la existencia de un recurso sea sensible, una política de autorización puede requerir una Response equivalente a `404 Not Found` en lugar de `403 Forbidden`.
+Cuando revelar la existencia de un recurso sea sensible, una política de autorización puede requerir una Response
+equivalente a `404 Not Found` en lugar de `403 Forbidden`.
 
 Esta excepción debe ser deliberada y consistente para el contrato correspondiente.
 

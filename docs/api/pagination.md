@@ -10,11 +10,11 @@ La estrategia estándar es **bidirectional cursor pagination**.
 
 La entrada utiliza:
 
-| Campo | Semántica |
-| --- | --- |
-| `limit` | Cantidad máxima de elementos solicitados |
-| `after` | Cursor para navegación hacia adelante |
-| `before` | Cursor para navegación hacia atrás |
+| Campo    | Semántica                                |
+| -------- | ---------------------------------------- |
+| `limit`  | Cantidad máxima de elementos solicitados |
+| `after`  | Cursor para navegación hacia adelante    |
+| `before` | Cursor para navegación hacia atrás       |
 
 Convenciones:
 
