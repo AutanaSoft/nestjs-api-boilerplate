@@ -2,15 +2,11 @@
 
 Este documento define las convenciones para convertir resultados internos de aplicación en Responses HTTP públicas.
 
-Las reglas compartidas de ownership, Schema/Type, separación de contratos y Standard Schema se definen en
-`http-contracts.md`.
+Las reglas compartidas de ownership, Schema/Type y separación de contratos se definen en `http-contracts.md`.
 
 ## Límite de salida
 
-Los valores retornados por Services no deben convertirse automáticamente en contratos públicos sólo porque sean
-serializables como JSON.
-
-La dirección esperada es:
+Los valores retornados por Services no deben convertirse automáticamente en contratos públicos sólo porque sean serializables como JSON.
 
 ```text
 Service Result
@@ -26,15 +22,9 @@ Response Schema
 HTTP Response
 ```
 
-El Controller debe exponer únicamente datos que formen parte del contrato público del Endpoint.
-
 ## StandardSchemaSerializerInterceptor
 
-El proyecto utiliza `StandardSchemaSerializerInterceptor` como mecanismo predeterminado para Response serialization
-schema-first con Zod 4.
-
-El Interceptor valida y transforma el valor retornado por el handler utilizando el Response Schema definido mediante
-`@SerializeOptions({ schema })`.
+El proyecto utiliza `StandardSchemaSerializerInterceptor` como mecanismo predeterminado para Response serialization schema-first con Zod 4.
 
 ```typescript
 @UseInterceptors(StandardSchemaSerializerInterceptor)
@@ -45,14 +35,11 @@ findOne(@Param('id') id: string) {
 }
 ```
 
-Cuando esta estrategia sea global para la aplicación, el Interceptor puede registrarse en el bootstrap compartido y cada
-Endpoint debe declarar su Response Schema cuando corresponda.
+Cuando la estrategia sea global, el Interceptor puede registrarse en el bootstrap compartido y cada Endpoint debe declarar su Response Schema cuando corresponda.
 
-La serialización schema-first es la estrategia predeterminada del proyecto. `ClassSerializerInterceptor` y
-`class-transformer` no deben introducirse como una segunda estrategia paralela salvo que un requisito documentado lo
-justifique.
+`ClassSerializerInterceptor` y `class-transformer` no deben introducirse como una estrategia paralela por defecto.
 
-## Response Schema
+## Response Schemas
 
 Cada Response pública estructurada y estable debe declarar un Schema compatible con Standard Schema.
 
@@ -64,24 +51,19 @@ export const userResponseSchema = z.object({
 });
 ```
 
-El Response Schema define la forma pública final. Si el valor retornado no cumple el contrato, la serialización debe
-fallar en lugar de enviar una Response incompatible silenciosamente.
-
-Las reglas generales de ownership y derivación del Type se encuentran en `http-contracts.md`.
+El Response Schema define la forma pública final. Si el valor retornado no cumple el contrato, la serialización debe fallar en lugar de enviar una Response incompatible.
 
 ## Mappers
 
-`StandardSchemaSerializerInterceptor` no sustituye un Mapper cuando existe una transformación semántica entre el resultado
-de aplicación y el contrato HTTP.
+Utilice un Mapper únicamente cuando exista una transformación semántica real entre el resultado de aplicación y la Response pública.
 
-Utilice un Mapper cuando sea necesario:
+Puede utilizarse para:
 
-- seleccionar campos públicos;
-- renombrar propiedades;
-- construir estructuras anidadas;
-- convertir valores de dominio;
-- preparar relaciones;
-- convertir tipos que no tienen representación JSON pública adecuada.
+- seleccionar o renombrar campos;
+- construir estructuras públicas;
+- convertir fechas o tipos no JSON;
+- adaptar relaciones;
+- transformar valores de dominio.
 
 ```typescript
 export const toUserResponse = (user: UserResult) => ({
@@ -91,135 +73,59 @@ export const toUserResponse = (user: UserResult) => ({
 });
 ```
 
-El flujo sería:
+Los Mappers deben permanecer puros y libres de I/O, reglas de negocio y decisiones de autorización.
 
-```text
-Service Result
-    ↓
-Response Mapper
-    ↓
-Controller
-    ↓
-StandardSchemaSerializerInterceptor
-    ↓
-Response Schema
-```
-
-No agregue Mappers cuando el resultado de aplicación ya representa correctamente el contrato público y no existe
-transformación real que justificar.
-
-## Persistencia
+## Persistencia y campos públicos
 
 Los records de Prisma no deben devolverse directamente desde Controllers como contrato público por defecto.
 
-Un Repository puede recuperar campos adicionales para resolver un caso de uso sin que esos campos formen parte de la
-Response.
+El Response Contract debe seleccionar positivamente los campos públicos y no depender de la forma generada por persistencia.
 
-El Service debe exponer un resultado apropiado para la aplicación. El límite de transporte, mediante Mapper cuando sea
-necesario y Response Schema siempre que corresponda, define la salida pública.
+No exponga accidentalmente:
 
-No dependa de la forma generada por Prisma como definición implícita de la API.
-
-## Sensitive Fields
-
-Los campos sensibles deben excluirse mediante construcción positiva del contrato público.
-
-El Response Schema debe enumerar los campos permitidos. No dependa únicamente de eliminar campos sensibles después de
-haber construido una representación completa.
-
-Los campos que normalmente no deben aparecer en Responses públicas incluyen, según corresponda:
-
-- passwords;
-- password hashes;
-- Refresh Token hashes o representaciones persistidas;
-- secrets;
-- tokens internos;
+- passwords o hashes;
+- tokens o secrets internos;
 - security metadata;
-- claves internas de proveedores externos;
-- campos administrativos no incluidos en el contrato;
-- detalles internos de persistencia.
+- claves internas de providers;
+- relaciones o campos de persistencia no incluidos en el contrato.
 
-`StandardSchemaSerializerInterceptor` proporciona una verificación adicional del contrato final, pero no sustituye una
-selección clara de datos en la arquitectura interna.
+Las relaciones cargadas por Prisma no forman parte automáticamente de la Response.
 
-## Relaciones
+## Representaciones JSON
 
-Las relaciones cargadas por Prisma no forman parte automáticamente del Response Contract.
+Las Responses deben utilizar representaciones JSON estables.
 
-Incluya únicamente las relaciones requeridas por el Endpoint.
+Fechas públicas deben representarse mediante strings en el formato definido por el contrato. Valores como `bigint`, `Decimal`, `Buffer` u otros tipos específicos del runtime u ORM deben convertirse antes de alcanzar la Response pública.
 
-Evite devolver grafos relacionales completos por conveniencia.
-
-Cuando una relación pública requiera una forma distinta de su representación interna, utilice un Mapper antes del
-Interceptor.
-
-## Fechas y tipos no JSON
-
-Las Responses deben definir representaciones JSON estables.
-
-Las fechas públicas deben representarse mediante strings en un formato documentado y consistente, normalmente ISO 8601.
-
-Valores como `bigint`, `Decimal`, `Buffer` u otros tipos específicos del runtime u ORM deben convertirse antes de alcanzar
-la Response pública cuando formen parte del contrato.
-
-El Mapper o un Transform puro del Response Schema puede realizar esa conversión cuando corresponda.
-
-## Collections
+## Colecciones
 
 Las Responses de colección deben definir explícitamente la forma de cada item y su metadata pública.
 
-```typescript
-export const userListResponseSchema = z.object({
-  data: z.array(userResponseSchema),
-});
-```
+La estructura de pagination debe seguir `../api/pagination.md` y no redefinirse de forma diferente en cada Feature.
 
-La estructura de paginación debe seguir la convención global de paginación y no definirse de forma diferente en cada
-Feature.
+## Responses especiales
 
-## Streams y Responses especiales
+Archivos, streams u otros transports especiales pueden utilizar el mecanismo específico de NestJS correspondiente y no necesitan forzarse artificialmente a través de un Response Schema de objeto.
 
-No todos los handlers HTTP deben pasar por serialización de objetos estándar.
-
-Responses especiales como archivos o streams deben seguir el mecanismo apropiado de NestJS y no forzarse artificialmente
-a través de un Response Schema de objeto cuando el transporte requiera otro comportamiento.
-
-Estas excepciones deben ser explícitas en el Endpoint.
+Las excepciones deben ser explícitas en el Endpoint.
 
 ## Errores de serialización
 
-Un fallo del Response Schema representa un incumplimiento interno del contrato, no un error causado por input del cliente.
+Un fallo del Response Schema representa un incumplimiento interno del contrato de salida y debe manejarse según `error-handling.md`.
 
-No exponga el error de Zod, detalles del Interceptor ni stack traces directamente al cliente.
-
-El fallo debe traducirse mediante la convención global de manejo de errores y registrarse con suficiente contexto para
-diagnóstico.
-
-## Testing
-
-Los Mappers puros pueden probarse mediante Unit Tests.
-
-Los E2E Tests deben verificar que:
-
-- la Response cumple el Schema público;
-- las transformaciones esperadas se aplican;
-- los campos sensibles permanecen ausentes;
-- las relaciones no autorizadas no se filtran;
-- cambios internos de Prisma no amplían automáticamente la API pública.
+No debe atribuirse al cliente ni exponerse como un error de Zod o del Interceptor.
 
 ## Reglas
 
-1. Trate la serialización como un límite explícito entre resultados internos y Responses HTTP públicas.
-2. Utilice `StandardSchemaSerializerInterceptor` como mecanismo predeterminado para Response serialization schema-first.
-3. Declare el Response Schema mediante `@SerializeOptions({ schema })` en los Endpoints estructurados que corresponda.
-4. Utilice Zod 4 Schemas compatibles con Standard Schema para definir Responses públicas.
-5. Utilice Mappers sólo cuando exista una transformación real entre el resultado de aplicación y la Response pública.
-6. No utilice `ClassSerializerInterceptor` o `class-transformer` como estrategia paralela por defecto.
-7. No devuelva records de Prisma directamente como contrato público por defecto.
-8. Construya Responses mediante selección positiva de campos públicos.
-9. No exponga passwords, hashes, secrets, tokens internos ni security metadata fuera de contratos que explícitamente los requieran.
-10. No exponga relaciones completas sólo porque hayan sido cargadas por persistencia.
-11. Convierta fechas y tipos no JSON a representaciones públicas estables.
-12. Mantenga los Mappers libres de I/O, reglas de negocio y decisiones de autorización.
-13. Trate los fallos del Response Schema como incumplimientos internos del contrato y no como errores de Request.
-14. Verifique mediante E2E Tests los Response Contracts y la ausencia de campos sensibles.
+1. Mantenga un límite explícito entre resultados internos y Responses públicas.
+2. Utilice `StandardSchemaSerializerInterceptor` como mecanismo predeterminado de Response serialization.
+3. Declare Response Schemas mediante Standard Schema en Endpoints estructurados.
+4. Utilice Mappers sólo cuando exista una transformación semántica real.
+5. No utilice `ClassSerializerInterceptor` o `class-transformer` como estrategia paralela por defecto.
+6. No utilice records de Prisma como contratos públicos implícitos.
+7. Construya Responses mediante selección positiva de campos públicos.
+8. No exponga secrets, tokens, hashes, security metadata ni relaciones no declaradas.
+9. Convierta fechas y tipos no JSON a representaciones públicas estables.
+10. Mantenga los Mappers puros y libres de autorización o I/O.
+11. Utilice la convención global de pagination para Responses paginadas.
+12. Trate fallos del Response Schema como errores internos del contrato.
