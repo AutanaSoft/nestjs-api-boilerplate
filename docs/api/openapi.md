@@ -1,58 +1,40 @@
 # OpenAPI
 
-Este documento define las convenciones para generar y mantener la especificación OpenAPI de la API.
+Status: Target
 
-## Convención
+Este documento define las convenciones para representar y mantener el contrato público mediante OpenAPI.
 
-La especificación OpenAPI debe generarse desde el código mediante `@nestjs/swagger`.
+La especificación se genera mediante `@nestjs/swagger`.
 
-```typescript
-const documentFactory = () =>
-  SwaggerModule.createDocument(app, config, documentOptions);
-```
-
-El documento generado debe representar el contrato HTTP público de la aplicación.
+Los detalles internos de integración no pertenecen a este documento.
 
 ## Source of Truth
 
-Los Request y Response Schemas definidos con Zod son la fuente de verdad para la estructura de datos.
+OpenAPI es una representación del contrato HTTP público, no un owner paralelo.
 
-La generación OpenAPI debe reutilizar esos Schemas mediante el soporte de Standard Schema.
+Debe permanecer consistente con:
 
-```typescript
-const documentOptions: SwaggerDocumentOptions = {
-  standardSchemaConverter: (schema, { schemaType }) => {
-    const converted = createSchema(schema as never, {
-      io: schemaType,
-      openapiVersion: '3.2.0',
-    });
+- `conventions.md`;
+- `http-contracts.md`;
+- `pagination.md`;
+- `versioning.md`;
+- los contratos concretos de cada Feature.
 
-    return {
-      schema: converted.schema,
-      components: converted.components,
-    };
-  },
-};
-```
+No mantenga manualmente una segunda definición incompatible de un contrato existente únicamente para generar documentación.
 
-No duplique manualmente en decorators un Schema que ya exista como contrato Zod.
+Las estrategias técnicas de validation y serialization se definen en `../architecture/validation.md` y `../architecture/serialization.md`.
 
-## Versioning
+## Version
 
-La especificación debe reflejar las rutas versionadas definidas por la API.
+Utilice una versión de OpenAPI capaz de representar todos los métodos HTTP publicados por la API.
 
-```text
-/api/v1/users
-/api/v2/users
-```
-
-El versionado OpenAPI debe mantenerse consistente con `docs/api/versioning.md`.
+Cuando la API exponga `QUERY`, utilice OpenAPI 3.2 y represente la operación mediante los mecanismos definidos por esa versión.
 
 ## Operations
 
-Todos los Endpoints públicos deben aparecer en la especificación.
+Todas las operaciones HTTP públicas deben aparecer en la especificación.
 
-Esto incluye los métodos HTTP utilizados por la API:
+Esto incluye, cuando estén expuestas:
 
 ```text
 GET
@@ -63,40 +45,43 @@ PATCH
 DELETE
 ```
 
-La especificación debe utilizar OpenAPI 3.2 cuando se documenten Endpoints `QUERY`.
+Los workarounds requeridos por limitaciones del generator deben permanecer aislados y eliminarse cuando exista soporte nativo equivalente.
 
-Mientras `@nestjs/swagger` no genere estas operaciones de forma nativa en la versión utilizada por el proyecto, debe incorporarse la operación `query` explícitamente durante la generación del documento OpenAPI.
+## Versioning
 
-El soporte de `QUERY` de `@nestjs/swagger` debe verificarse al actualizar la dependencia; cualquier workaround debe eliminarse cuando exista soporte nativo equivalente.
+La especificación debe reflejar correctamente las rutas y contratos de cada versión publicada.
+
+Las reglas de versionado se definen en `versioning.md`.
 
 ## Security
 
-Los Endpoints protegidos deben reflejar sus requisitos de autenticación mediante los Security Schemes correspondientes.
+Las operaciones protegidas deben representar sus requisitos de authentication mediante los Security Schemes correspondientes.
 
-La especificación no debe presentar como público un Endpoint que requiera autenticación.
+La especificación no debe presentar una operación protegida como pública.
 
 ## Errors
 
-Los Responses de error documentados deben utilizar el Error Response definido por la arquitectura.
+Las Responses de error deben utilizar el contrato compartido definido en `http-contracts.md`.
 
-No cree formatos de error diferentes únicamente para la documentación OpenAPI.
+No defina un formato paralelo exclusivamente para OpenAPI.
 
 ## Operation IDs
 
 Cada operación pública debe tener un `operationId` estable y único.
 
-Cambiar un `operationId` puede romper clientes generados y debe tratarse como un cambio contractual cuando exista dependencia externa sobre él.
+Un cambio de `operationId` debe tratarse como contractual cuando clientes o tooling externos dependan de él.
 
 ## Reglas
 
-1. Genere OpenAPI mediante `@nestjs/swagger`.
-2. Utilice los Zod Schemas como fuente de verdad para Request y Response contracts.
-3. Reutilice Standard Schema para generar los Schemas OpenAPI.
-4. No duplique contratos mediante decorators cuando ya estén definidos por Zod.
-5. Mantenga OpenAPI consistente con el versionado de la API.
-6. Documente todos los Endpoints públicos y sus métodos HTTP.
-7. Utilice OpenAPI 3.2 para documentar Endpoints `QUERY` y mantenga cualquier workaround aislado hasta que `@nestjs/swagger` tenga soporte nativo equivalente.
-8. Mantenga los Security Schemes consistentes con los requisitos reales de autenticación.
-9. Reutilice el Error Response estándar.
-10. Utilice `operationId` estable y único para cada operación pública.
-11. Mantenga la especificación generada alineada con el comportamiento observable de la API.
+1. Genere la especificación mediante `@nestjs/swagger`.
+2. Trate OpenAPI como representación del contrato público, no como un owner paralelo.
+3. Mantenga los Schemas OpenAPI alineados con los contratos canónicos.
+4. No duplique manualmente contratos existentes únicamente para documentación.
+5. Utilice OpenAPI 3.2 cuando sea necesario representar `QUERY`.
+6. Documente todas las operaciones HTTP públicas.
+7. Mantenga workarounds de tooling aislados y temporales.
+8. Mantenga OpenAPI consistente con el versionado publicado.
+9. Represente correctamente los requisitos de authentication.
+10. Reutilice el Error Response definido en `http-contracts.md`.
+11. Mantenga `operationId` estable y único.
+12. Mantenga la especificación alineada con el comportamiento observable de la API.
