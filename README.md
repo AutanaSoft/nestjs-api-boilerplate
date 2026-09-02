@@ -31,21 +31,31 @@ pnpm install
 
 ## Documentation
 
-Use the focused references for architecture, configuration, testing, and project policies beyond the quick start.
+Use the focused references for architecture, API conventions, configuration, operations, testing, and project policies.
 
-| Topic                                       | Reference                                                          |
-| ------------------------------------------- | ------------------------------------------------------------------ |
-| Architecture principles                     | [Architecture overview](docs/architecture/overview.md)             |
-| Project structure and module conventions    | [Project structure](docs/architecture/project-structure.md)        |
-| Database and persistence architecture       | [Data access](docs/architecture/data-access.md)                    |
-| Application configuration architecture      | [Configuration](docs/architecture/configuration.md)                |
-| Authentication architecture                 | [Authentication](docs/architecture/authentication.md)              |
-| Testing conventions                         | [Testing](docs/architecture/testing.md)                            |
-| End-to-end testing architecture             | [E2E testing](docs/architecture/e2e-testing.md)                    |
-| HTTP security and environment configuration | [HTTP security configuration](docs/configuration/http-security.md) |
-| Contribution workflow                       | [Contributing guide](CONTRIBUTING.md)                              |
-| Vulnerability reporting                     | [Security policy](SECURITY.md)                                     |
-| Community standards                         | [Code of conduct](CODE_OF_CONDUCT.md)                              |
+| Topic | Reference |
+| --- | --- |
+| Architecture principles | [Architecture overview](docs/architecture/overview.md) |
+| Project structure and module conventions | [Project structure](docs/architecture/project-structure.md) |
+| HTTP contract architecture | [HTTP contracts](docs/architecture/http-contracts.md) |
+| Request validation | [Validation](docs/architecture/validation.md) |
+| Response serialization | [Serialization](docs/architecture/serialization.md) |
+| Error handling | [Error handling](docs/architecture/error-handling.md) |
+| Database and persistence architecture | [Data access](docs/architecture/data-access.md) |
+| Application configuration architecture | [Configuration](docs/architecture/configuration.md) |
+| Authentication architecture | [Authentication](docs/architecture/authentication.md) |
+| Authorization architecture | [Authorization](docs/architecture/authorization.md) |
+| REST API conventions | [API conventions](docs/api/conventions.md) |
+| Cursor pagination | [Pagination](docs/api/pagination.md) |
+| API versioning | [Versioning](docs/api/versioning.md) |
+| OpenAPI generation | [OpenAPI](docs/api/openapi.md) |
+| HTTP security configuration | [HTTP security](docs/configuration/http-security.md) |
+| Observability | [Observability](docs/operations/observability.md) |
+| Testing conventions | [Testing](docs/architecture/testing.md) |
+| End-to-end testing architecture | [E2E testing](docs/architecture/e2e-testing.md) |
+| Contribution workflow | [Contributing guide](CONTRIBUTING.md) |
+| Vulnerability reporting | [Security policy](SECURITY.md) |
+| Community standards | [Code of conduct](CODE_OF_CONDUCT.md) |
 
 ## Available scripts
 
