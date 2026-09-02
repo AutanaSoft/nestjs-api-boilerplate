@@ -1,49 +1,52 @@
-# E2E Testing
+# Pruebas E2E
 
-This document defines the end-to-end testing architecture for the NestJS API Boilerplate.
+Este documento define la arquitectura de pruebas de extremo a extremo para el Boilerplate de API de NestJS.
 
-E2E tests verify the delivered application through its public HTTP boundary using production-like runtime behavior and
-isolated real infrastructure.
+Las pruebas E2E verifican la aplicación entregada a través de su límite HTTP público mediante un comportamiento de
+tiempo de ejecución similar al de producción e infraestructura real aislada.
 
-## Application Boundary
+## Límite de la aplicación
 
-E2E tests must start from the same application root and shared bootstrap behavior used by production.
+Las pruebas E2E deben comenzar desde la misma raíz de aplicación y el comportamiento de arranque compartido que utiliza
+producción.
 
-Public-request behavior that affects runtime contracts must remain equivalent, including applicable:
+El comportamiento de solicitudes públicas que afecta los contratos de tiempo de ejecución debe mantenerse equivalente,
+incluidos los elementos aplicables:
 
-- HTTP adapter configuration;
-- global pipes;
-- filters;
-- interceptors;
-- serialization;
-- authentication;
-- application configuration.
+- configuración del adaptador HTTP;
+- pipes globales;
+- filtros;
+- interceptores;
+- serialización;
+- autenticación;
+- configuración de la aplicación.
 
-E2E-specific setup may isolate infrastructure or external providers, but it must not replace the internal application
-flow being tested.
+La configuración específica de E2E puede aislar infraestructura o proveedores externos, pero no debe reemplazar el flujo
+interno de la aplicación que se está probando.
 
-## Lifecycle Ownership
+## Propiedad del ciclo de vida
 
-A shared E2E environment must have one explicit lifecycle owner.
+Un entorno E2E compartido debe tener un único propietario explícito del ciclo de vida.
 
-The lifecycle owner is responsible for:
+El propietario del ciclo de vida es responsable de:
 
-- application creation;
-- test environment configuration;
-- temporary database creation;
-- migrations;
-- feature-suite registration;
-- application teardown;
-- database teardown;
-- environment restoration.
+- creación de la aplicación;
+- configuración del entorno de pruebas;
+- creación de bases de datos temporales;
+- migraciones;
+- registro de suites de funcionalidades;
+- desmontaje de la aplicación;
+- desmontaje de la base de datos;
+- restauración del entorno.
 
-The test runner should discover only lifecycle-owner files.
+El ejecutor de pruebas debe descubrir únicamente archivos del propietario del ciclo de vida.
 
-Imported feature orchestrators and suites must not also be discovered and executed independently.
+Los orquestadores y las suites de funcionalidades importados no deben descubrirse ni ejecutarse también de forma
+independiente.
 
-## Structure
+## Estructura
 
-A growing E2E suite may use:
+Una suite E2E en crecimiento puede usar:
 
 ```text
 test/
@@ -53,7 +56,7 @@ test/
 └── modules/
 ```
 
-For example:
+Por ejemplo:
 
 ```text
 test/
@@ -74,201 +77,211 @@ test/
         └── suites/
 ```
 
-Directories should be introduced as the suite grows rather than as mandatory empty boilerplate.
+Los directorios deben introducirse a medida que la suite crece, en lugar de como boilerplate vacío obligatorio.
 
-Vitest discovery must be configured so imported orchestrators and suites are not executed independently.
+El descubrimiento de Vitest debe configurarse para que los orquestadores y las suites importados no se ejecuten de forma
+independiente.
 
-## Test Independence
+## Independencia de las pruebas
 
-Independent endpoint scenarios should establish their own prerequisites and remain safe to reorder.
+Los escenarios de endpoints independientes deben establecer sus propios requisitos previos y permanecer seguros al
+reordenarse.
 
-Tests must not silently depend on state produced by a preceding test.
+Las pruebas no deben depender silenciosamente del estado producido por una prueba anterior.
 
-An ordered business flow may intentionally share state when the sequence itself is the behavior being tested.
+Un flujo de negocio ordenado puede compartir intencionalmente el estado cuando la secuencia en sí sea el comportamiento
+que se está probando.
 
-Shared flow state must be explicit and owned by a typed feature context rather than global mutable variables.
+El estado de flujo compartido debe ser explícito y ser propiedad de un contexto de funcionalidad tipado, en lugar de
+variables globales mutables.
 
-## Real Infrastructure
+## Infraestructura real
 
-E2E tests must use real persistence.
+Las pruebas E2E deben utilizar persistencia real.
 
-For this project, the E2E environment should use an isolated PostgreSQL database and the production Prisma persistence
-path.
+Para este proyecto, el entorno E2E debe usar una base de datos PostgreSQL aislada y la ruta de persistencia de Prisma de
+producción.
 
-The environment must:
+El entorno debe:
 
-1. create an isolated database;
-2. apply committed Prisma migrations;
-3. configure the application to use that database;
-4. start the application;
-5. execute the scenarios;
-6. close application and persistence resources;
-7. remove the temporary database.
+1. crear una base de datos aislada;
+2. aplicar las migraciones de Prisma confirmadas en el repositorio;
+3. configurar la aplicación para usar esa base de datos;
+4. iniciar la aplicación;
+5. ejecutar los escenarios;
+6. cerrar los recursos de aplicación y persistencia;
+7. eliminar la base de datos temporal.
 
-E2E execution must fail closed when the configured database cannot be proven safe for testing.
+La ejecución de E2E debe fallar de forma segura cuando no pueda demostrarse que la base de datos configurada es segura
+para las pruebas.
 
-Development and production databases must never be reused as E2E databases.
+Las bases de datos de desarrollo y producción nunca deben reutilizarse como bases de datos E2E.
 
-## Real Application Components
+## Componentes reales de la aplicación
 
-The following components should remain real in E2E tests:
+Los siguientes componentes deben mantenerse reales en las pruebas E2E:
 
-- controllers;
+- controladores;
 - guards;
 - pipes;
-- interceptors;
-- application services;
-- repositories;
+- interceptores;
+- servicios de aplicación;
+- repositorios;
 - Prisma;
 - PostgreSQL;
-- authentication flows.
+- flujos de autenticación.
 
-Do not replace repositories or application services with in-memory implementations and describe the resulting scenario
-as full E2E coverage.
+No reemplace repositorios ni servicios de aplicación por implementaciones en memoria y describa el escenario resultante
+como cobertura E2E completa.
 
-## Authentication
+## Autenticación
 
-Authenticated E2E scenarios should obtain credentials through the public authentication flow.
+Los escenarios E2E autenticados deben obtener credenciales mediante el flujo de autenticación público.
 
-Do not use hardcoded or pre-issued access tokens when the application itself is responsible for issuing them.
+No use tokens de acceso codificados de forma rígida ni preemitidos cuando la aplicación misma sea responsable de
+emitirlos.
 
-This ensures authentication configuration, token issuance, guards, and user validation participate in the tested
-runtime.
+Esto garantiza que la configuración de autenticación, la emisión de tokens, los guards y la validación de usuarios
+participen en el tiempo de ejecución probado.
 
 ## Fixtures
 
-Fixtures own fresh request data used by E2E scenarios.
+Los fixtures son propietarios de datos de solicitud nuevos utilizados por los escenarios E2E.
 
-Prefer canonical factories that generate valid payloads with unique identities.
+Prefiera fábricas canónicas que generen cargas útiles válidas con identidades únicas.
 
-For example:
+Por ejemplo:
 
 ```text
 createValidUserPayload()
 createValidRegistrationPayload()
 ```
 
-Fixtures must not become shared mutable state.
+Los fixtures no deben convertirse en estado mutable compartido.
 
-Invalid payloads should be derived from fresh valid payloads by modifying only the property relevant to the scenario.
+Las cargas útiles inválidas deben derivarse de cargas útiles válidas nuevas modificando únicamente la propiedad
+relevante para el escenario.
 
-## Data Creation
+## Creación de datos
 
-Create application data through public HTTP endpoints whenever the relevant behavior is available.
+Cree datos de aplicación mediante endpoints HTTP públicos siempre que el comportamiento relevante esté disponible.
 
-For example, when testing user retrieval, creating the user through the public API is preferred over inserting the user
-directly through Prisma.
+Por ejemplo, al probar la recuperación de usuarios, es preferible crear el usuario mediante la API pública en lugar de
+insertarlo directamente mediante Prisma.
 
-This ensures the prerequisite passes through the same validation and business rules as normal application usage.
+Esto garantiza que el requisito previo pase por las mismas reglas de validación y negocio que el uso normal de la
+aplicación.
 
 ## Seeds
 
-Direct persistence seeds are allowed only for explicit preconditions that:
+Los seeds de persistencia directa se permiten únicamente para condiciones previas explícitas que:
 
-- have no public creation API;
-- would be unnecessarily expensive to create through HTTP;
-- require high-volume setup;
-- represent a special persisted state unavailable through public APIs.
+- no tienen una API pública de creación;
+- serían innecesariamente costosas de crear mediante HTTP;
+- requieren configuración de alto volumen;
+- representan un estado persistido especial no disponible mediante API públicas.
 
-Seeds must be:
+Los seeds deben ser:
 
-- minimal;
-- deterministic;
-- isolated;
-- reproducible;
-- performed against the real E2E persistence layer.
+- mínimos;
+- deterministas;
+- aislados;
+- reproducibles;
+- realizados contra la capa real de persistencia E2E.
 
-A seed must never bypass the behavior the scenario claims to test.
+Un seed nunca debe omitir el comportamiento que el escenario afirma probar.
 
-## Assertions
+## Aserciones
 
-E2E assertions should focus on publicly observable behavior.
+Las aserciones E2E deben centrarse en el comportamiento observable públicamente.
 
-Prefer assertions against:
+Prefiera aserciones contra:
 
-- HTTP status;
-- response contracts;
-- headers;
+- estado HTTP;
+- contratos de respuesta;
+- encabezados;
 - cookies;
-- authorization behavior;
-- observable persisted effects;
-- observable external effects;
-- absence of forbidden fields.
+- comportamiento de autorización;
+- efectos persistidos observables;
+- efectos externos observables;
+- ausencia de campos prohibidos.
 
-Do not assert internal service, repository, or ORM method calls.
+No compruebe llamadas internas de métodos de servicios, repositorios u ORM.
 
-When practical, verify persistence effects through a subsequent public HTTP request rather than querying the database
-directly.
+Cuando sea práctico, verifique los efectos de persistencia mediante una solicitud HTTP pública posterior, en lugar de
+consultar directamente la base de datos.
 
-## Sensitive Output
+## Salida confidencial
 
-E2E tests should explicitly verify that sensitive fields are absent from responses where they do not belong.
+Las pruebas E2E deben verificar explícitamente que los campos confidenciales estén ausentes de respuestas donde no
+correspondan.
 
-Examples include:
+Los ejemplos incluyen:
 
-- passwords;
-- password hashes;
-- secrets;
-- internal security metadata;
-- refresh-token persistence values.
+- contraseñas;
+- hashes de contraseñas;
+- secretos;
+- metadatos de seguridad internos;
+- valores de persistencia de tokens de actualización.
 
-## External Services
+## Servicios externos
 
-Keep internal application behavior real.
+Mantenga real el comportamiento interno de la aplicación.
 
-External out-of-process dependencies may be isolated when calling the real provider would be unsafe, nondeterministic,
-expensive, or unavailable.
+Las dependencias externas fuera de proceso pueden aislarse cuando llamar al proveedor real sea inseguro, no
+determinista, costoso o no esté disponible.
 
-Examples include:
+Los ejemplos incluyen:
 
-- email;
-- payments;
+- correo electrónico;
+- pagos;
 - SMS;
 - webhooks.
 
-Replace only the adapter that crosses the process boundary.
+Reemplace únicamente el adaptador que cruza el límite del proceso.
 
 ```text
-Application flow
+Flujo de la aplicación
       ↓
-External adapter
+Adaptador externo
       ↓
-Test replacement
+Reemplazo de prueba
 ```
 
-Do not replace the application service that owns the use case.
+No reemplace el servicio de aplicación que posee el caso de uso.
 
-The test replacement should capture the outgoing contract so the scenario can verify the expected external effect
-without executing the real side effect.
+El reemplazo de prueba debe capturar el contrato saliente para que el escenario pueda verificar el efecto externo
+esperado sin ejecutar el efecto secundario real.
 
-## Teardown
+## Desmontaje
 
-The lifecycle owner must release every resource created by the E2E environment.
+El propietario del ciclo de vida debe liberar cada recurso creado por el entorno E2E.
 
-This includes applicable:
+Esto incluye los elementos aplicables:
 
-- NestJS application instances;
-- Prisma clients;
-- database connections;
-- temporary databases;
-- external-provider test doubles;
-- modified environment state.
+- instancias de aplicaciones NestJS;
+- clientes de Prisma;
+- conexiones de bases de datos;
+- bases de datos temporales;
+- dobles de prueba de proveedores externos;
+- estado de entorno modificado.
 
-Do not rely on forced process termination to hide leaked resources.
+No dependa de la terminación forzada del proceso para ocultar recursos no liberados.
 
-## Rules
+## Reglas
 
-1. Verify E2E behavior through the public HTTP boundary.
-2. Use production-derived application bootstrap behavior.
-3. Give each shared E2E environment one explicit lifecycle owner.
-4. Configure Vitest discovery to prevent imported suites from executing independently.
-5. Prefer independent and reorderable endpoint scenarios.
-6. Make intentional ordered business flows explicit through typed contexts.
-7. Use isolated real PostgreSQL persistence with committed Prisma migrations.
-8. Keep controllers, services, repositories, Prisma, authentication, and other internal application components real.
-9. Create prerequisites through HTTP whenever the corresponding public behavior exists.
-10. Use direct seeds only for documented and minimal preconditions.
-11. Assert public contracts and observable effects rather than internal calls.
-12. Explicitly assert that sensitive fields are absent from unrelated responses.
-13. Replace only justified out-of-process external adapters.
-14. Fully dispose application, database, and test-environment resources after execution.
+1. Verifique el comportamiento E2E mediante el límite HTTP público.
+2. Utilice comportamiento de arranque de aplicación derivado de producción.
+3. Asigne a cada entorno E2E compartido un único propietario explícito del ciclo de vida.
+4. Configure el descubrimiento de Vitest para impedir que las suites importadas se ejecuten de forma independiente.
+5. Prefiera escenarios de endpoints independientes y reordenables.
+6. Haga explícitos los flujos de negocio ordenados intencionales mediante contextos tipados.
+7. Utilice persistencia PostgreSQL real aislada con migraciones de Prisma confirmadas en el repositorio.
+8. Mantenga reales los controladores, servicios, repositorios, Prisma, autenticación y otros componentes internos de la
+   aplicación.
+9. Cree requisitos previos mediante HTTP siempre que exista el comportamiento público correspondiente.
+10. Utilice seeds directos únicamente para condiciones previas documentadas y mínimas.
+11. Aserte contratos públicos y efectos observables, en lugar de llamadas internas.
+12. Aserte explícitamente que los campos confidenciales estén ausentes de respuestas no relacionadas.
+13. Reemplace únicamente adaptadores externos fuera de proceso justificados.
+14. Libere por completo los recursos de aplicación, base de datos y entorno de pruebas después de la ejecución.

@@ -1,23 +1,24 @@
-# Testing
+# Pruebas
 
-This document defines the general testing conventions for the NestJS API Boilerplate.
+Este documento define las convenciones generales de pruebas para el Boilerplate de API de NestJS.
 
-The project uses Vitest as its test runner.
+El proyecto utiliza Vitest como ejecutor de pruebas.
 
-## Test Scope
+## Alcance de las pruebas
 
-Tests should verify behavior at the smallest practical boundary.
+Las pruebas deben verificar el comportamiento en el límite práctico más pequeño.
 
-Use unit tests for isolated application behavior and E2E tests for behavior that must be proven through the public HTTP
-API and real application infrastructure.
+Utilice pruebas unitarias para comportamiento de aplicación aislado y pruebas E2E para comportamiento que deba
+demostrarse mediante la API HTTP pública y la infraestructura real de la aplicación.
 
-Do not use E2E tests to replace focused unit tests, and do not use unit tests to claim coverage of runtime integration.
+No utilice pruebas E2E para reemplazar pruebas unitarias enfocadas, ni pruebas unitarias para afirmar cobertura de
+integración en tiempo de ejecución.
 
-## Unit Tests
+## Pruebas unitarias
 
-Unit tests should remain close to the code they verify.
+Las pruebas unitarias deben mantenerse cerca del código que verifican.
 
-For example:
+Por ejemplo:
 
 ```text
 src/modules/users/
@@ -27,101 +28,106 @@ src/modules/users/
 └── users.controller.spec.ts
 ```
 
-Tests should follow the same feature ownership as production code.
+Las pruebas deben seguir la misma propiedad de funcionalidades que el código de producción.
 
-Do not create a repository-wide directory organized only by technical test type for feature-owned unit tests.
+No cree un directorio para todo el repositorio organizado únicamente por tipo técnico de prueba para pruebas unitarias
+propiedad de funcionalidades.
 
-## Isolation
+## Aislamiento
 
-Unit tests should isolate the component under test from external dependencies and unrelated collaborators.
+Las pruebas unitarias deben aislar el componente bajo prueba de dependencias externas y colaboradores no relacionados.
 
-Dependencies may be replaced with controlled test doubles when the test does not intend to verify those implementations.
+Las dependencias pueden reemplazarse por dobles de prueba controlados cuando la prueba no pretenda verificar esas
+implementaciones.
 
-For example, a service unit test may replace its repository with a test double:
+Por ejemplo, una prueba unitaria de servicio puede reemplazar su repositorio por un doble de prueba:
 
 ```text
 UsersService
     ↓
-Test UsersRepository
+UsersRepository de prueba
 ```
 
-The test should verify the service contract and behavior rather than ORM or database implementation details.
+La prueba debe verificar el contrato y comportamiento del servicio, en lugar de los detalles de implementación de ORM o
+base de datos.
 
-## Test Doubles
+## Dobles de prueba
 
-Use test doubles only at dependencies outside the responsibility being tested.
+Utilice dobles de prueba únicamente en las dependencias fuera de la responsabilidad que se está probando.
 
-Avoid mocking implementation details internal to the component under test.
+Evite simular detalles de implementación internos del componente bajo prueba.
 
-Test doubles should expose the smallest behavior required by the scenario and should not reproduce the complete
-implementation of the real dependency.
+Los dobles de prueba deben exponer el comportamiento más pequeño requerido por el escenario y no deben reproducir la
+implementación completa de la dependencia real.
 
-## Assertions
+## Aserciones
 
-Prefer assertions against observable results and contracts.
+Prefiera aserciones contra resultados y contratos observables.
 
-Examples include:
+Los ejemplos incluyen:
 
-- returned values;
-- thrown errors;
-- state transitions owned by the component;
-- calls to an external dependency when that interaction is part of the component contract.
+- valores devueltos;
+- errores lanzados;
+- transiciones de estado propiedad del componente;
+- llamadas a una dependencia externa cuando esa interacción forma parte del contrato del componente.
 
-Avoid assertions that unnecessarily couple tests to private implementation details.
+Evite aserciones que acoplen innecesariamente las pruebas a detalles de implementación privados.
 
-## Test Data
+## Datos de prueba
 
-Tests should create fresh data for each scenario.
+Las pruebas deben crear datos nuevos para cada escenario.
 
-Avoid mutable test objects shared between cases.
+Evite objetos de prueba mutables compartidos entre casos.
 
-Use factories or canonical builders when multiple tests require equivalent valid inputs.
+Utilice fábricas o constructores canónicos cuando múltiples pruebas requieran entradas válidas equivalentes.
 
-Invalid test inputs should preferably be derived from a fresh valid input by modifying only the property relevant to the
-scenario.
+Las entradas de prueba inválidas deben derivarse preferiblemente de una entrada válida nueva modificando únicamente la
+propiedad relevante para el escenario.
 
-## Determinism
+## Determinismo
 
-Tests must not depend on:
+Las pruebas no deben depender de:
 
-- execution order;
-- data created by unrelated tests;
-- production services;
-- uncontrolled network access;
-- shared mutable global state.
+- orden de ejecución;
+- datos creados por pruebas no relacionadas;
+- servicios de producción;
+- acceso a red no controlado;
+- estado global mutable compartido.
 
-Time, randomness, and other nondeterministic dependencies should be controlled when they affect the behavior under test.
+El tiempo, la aleatoriedad y otras dependencias no deterministas deben controlarse cuando afecten el comportamiento bajo
+prueba.
 
-## Coverage
+## Cobertura
 
-Coverage is a diagnostic signal, not an architectural target by itself.
+La cobertura es una señal de diagnóstico, no un objetivo arquitectónico por sí mismo.
 
-Prioritize meaningful coverage of:
+Priorice una cobertura significativa de:
 
-- business rules;
-- validation behavior;
-- security-sensitive behavior;
-- error paths;
-- module boundaries;
-- persistence behavior where appropriate.
+- reglas de negocio;
+- comportamiento de validación;
+- comportamiento sensible a la seguridad;
+- rutas de error;
+- límites de módulos;
+- comportamiento de persistencia cuando corresponda.
 
-Do not add low-value tests solely to increase a coverage percentage.
+No agregue pruebas de bajo valor únicamente para aumentar un porcentaje de cobertura.
 
-## E2E Boundary
+## Límite E2E
 
-End-to-end testing has different lifecycle, infrastructure, fixture, and external-boundary requirements.
+Las pruebas de extremo a extremo tienen requisitos distintos de ciclo de vida, infraestructura, fixtures y límites
+externos.
 
-Those conventions are defined separately in `e2e-testing.md`.
+Esas convenciones se definen por separado en `e2e-testing.md`.
 
-## Rules
+## Reglas
 
-1. Use Vitest as the project test runner.
-2. Keep feature-owned unit tests close to their production code.
-3. Test behavior at the smallest practical boundary.
-4. Isolate unrelated dependencies in unit tests.
-5. Avoid testing private implementation details.
-6. Use fresh and deterministic test data.
-7. Do not make tests depend on execution order or shared mutable state.
-8. Use test doubles only at boundaries outside the responsibility under test.
-9. Prioritize meaningful behavioral coverage over coverage percentages.
-10. Use E2E tests when behavior must be verified through the real application boundary.
+1. Utilice Vitest como ejecutor de pruebas del proyecto.
+2. Mantenga las pruebas unitarias propiedad de funcionalidades cerca de su código de producción.
+3. Pruebe el comportamiento en el límite práctico más pequeño.
+4. Aísle dependencias no relacionadas en las pruebas unitarias.
+5. Evite probar detalles de implementación privados.
+6. Utilice datos de prueba nuevos y deterministas.
+7. No haga que las pruebas dependan del orden de ejecución ni del estado mutable compartido.
+8. Utilice dobles de prueba únicamente en los límites fuera de la responsabilidad bajo prueba.
+9. Priorice una cobertura de comportamiento significativa sobre los porcentajes de cobertura.
+10. Utilice pruebas E2E cuando el comportamiento deba verificarse a través del límite real de la aplicación.

@@ -1,37 +1,39 @@
-# HTTP security configuration
+# Configuración de seguridad HTTP
 
-The API applies Helmet, an explicit CORS allowlist, and in-memory global rate limiting from the `http` configuration
-namespace. Set the environment variables below, then restart the process for changes to take effect.
+La API aplica Helmet, una lista de permitidos CORS explícita y limitación global de tasa en memoria desde el espacio de
+nombres de configuración `http`. Establezca las variables de entorno a continuación y luego reinicie el proceso para que
+los cambios surtan efecto.
 
-## Quick path
+## Ruta rápida
 
-1. Set `CORS_ORIGINS` to the browser origins that may call the API.
-2. Set `TRUST_PROXY_HOPS` only when the deployment proxy topology is known.
-3. Tune the throttling window and limit for the deployment, then restart the API.
+1. Establezca `CORS_ORIGINS` con los orígenes de navegador que pueden llamar a la API.
+2. Establezca `TRUST_PROXY_HOPS` únicamente cuando se conozca la topología del proxy de despliegue.
+3. Ajuste la ventana y el límite de throttling para el despliegue, y luego reinicie la API.
 
-## Environment variables
+## Variables de entorno
 
-| Variable               | Default                                    | Rules                                                                  |
-| ---------------------- | ------------------------------------------ | ---------------------------------------------------------------------- |
-| `NODE_ENV`             | `development`                              | Non-empty environment name.                                            |
-| `PORT`                 | `3000`                                     | Integer from 1 through 65535.                                          |
-| `CORS_ORIGINS`         | `http://localhost:3000` outside production | Comma-separated HTTP(S) origins. Required and non-empty in production. |
-| `THROTTLE_TTL_SECONDS` | `60`                                       | Positive integer request window in seconds.                            |
-| `THROTTLE_LIMIT`       | `100`                                      | Positive integer requests allowed per window.                          |
-| `TRUST_PROXY_HOPS`     | `0`                                        | Integer from 0 through 255.                                            |
+| Variable               | Predeterminado                              | Reglas                                                                      |
+| ---------------------- | ------------------------------------------- | --------------------------------------------------------------------------- |
+| `NODE_ENV`             | `development`                               | Nombre de entorno no vacío.                                                 |
+| `PORT`                 | `3000`                                      | Entero de 1 a 65535.                                                        |
+| `CORS_ORIGINS`         | `http://localhost:3000` fuera de producción | Orígenes HTTP(S) separados por comas. Obligatorio y no vacío en producción. |
+| `THROTTLE_TTL_SECONDS` | `60`                                        | Ventana de solicitudes en segundos con entero positivo.                     |
+| `THROTTLE_LIMIT`       | `100`                                       | Solicitudes permitidas por ventana con entero positivo.                     |
+| `TRUST_PROXY_HOPS`     | `0`                                         | Entero de 0 a 255.                                                          |
 
-Origins are trimmed and normalized. Empty entries, duplicates, wildcards, credentials in URLs, non-HTTP(S) protocols,
-paths other than `/`, query strings, and fragments are rejected. CORS credentials are always disabled.
+Los orígenes se recortan y normalizan. Se rechazan las entradas vacías, los duplicados, los comodines, las credenciales
+en URL, los protocolos no HTTP(S), las rutas distintas de `/`, las cadenas de consulta y los fragmentos. Las
+credenciales CORS siempre están deshabilitadas.
 
-## Examples
+## Ejemplos
 
-Development with a local browser client:
+Desarrollo con un cliente de navegador local:
 
 ```sh
 CORS_ORIGINS=http://localhost:3000 PORT=3001 pnpm start:dev
 ```
 
-Production with two browser clients and a reverse proxy:
+Producción con dos clientes de navegador y un proxy inverso:
 
 ```sh
 NODE_ENV=production \
@@ -42,24 +44,25 @@ THROTTLE_LIMIT=100 \
 pnpm start:prod
 ```
 
-## Deployment notes
+## Notas de despliegue
 
-### Production CORS is explicit
+### CORS de producción es explícito
 
-Production startup fails unless `CORS_ORIGINS` is explicitly supplied with at least one valid origin. CORS is not
-authentication or authorization: it only instructs compatible browsers which cross-origin requests they may expose.
-Protect APIs with appropriate authentication and authorization controls.
+El inicio en producción falla a menos que se proporcione explícitamente `CORS_ORIGINS` con al menos un origen válido.
+CORS no es autenticación ni autorización: únicamente indica a los navegadores compatibles qué solicitudes entre orígenes
+pueden exponer. Proteja las API con controles adecuados de autenticación y autorización.
 
-### Trust proxy requires topology knowledge
+### Confiar en el proxy requiere conocer la topología
 
-Set `TRUST_PROXY_HOPS` only to the number of trusted proxy hops directly in front of the API. An overly permissive value
-can let clients influence the apparent client address, which affects rate-limit tracking.
+Establezca `TRUST_PROXY_HOPS` únicamente en el número de saltos de proxy de confianza directamente delante de la API. Un
+valor demasiado permisivo puede permitir que los clientes influyan en la dirección aparente del cliente, lo que afecta
+el seguimiento de límites de tasa.
 
-### Throttling is local to one process
+### El throttling es local a un proceso
 
-The configured Nest throttler uses in-memory storage. Each replica has its own counters, so a client can receive up to
-the limit at each replica. Use a shared throttler storage or an edge rate limiter when limits must apply across multiple
-replicas.
+El throttler de Nest configurado utiliza almacenamiento en memoria. Cada réplica tiene sus propios contadores, por lo
+que un cliente puede recibir hasta el límite en cada réplica. Utilice almacenamiento compartido para el throttler o un
+limitador de tasa en el borde cuando los límites deban aplicarse entre múltiples réplicas.
 
-All values are read and validated during application startup. Restart the API after changing them; runtime environment
-changes do not reconfigure a running process.
+Todos los valores se leen y validan durante el inicio de la aplicación. Reinicie la API después de cambiarlos; los
+cambios de entorno en tiempo de ejecución no reconfiguran un proceso en ejecución.

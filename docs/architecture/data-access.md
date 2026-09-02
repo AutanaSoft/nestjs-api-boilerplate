@@ -1,32 +1,33 @@
-# Data Access
+# Acceso a datos
 
-This document defines the persistence architecture for the NestJS API Boilerplate.
+Este documento define la arquitectura de persistencia para el Boilerplate de API de NestJS.
 
-The project uses PostgreSQL as the default relational database and Prisma as its ORM.
+El proyecto utiliza PostgreSQL como base de datos relacional predeterminada y Prisma como su ORM.
 
-## Persistence Boundary
+## Límite de persistencia
 
-Feature modules access persistence through repositories.
+Los módulos de funcionalidades acceden a la persistencia mediante repositorios.
 
-Application services must not depend directly on Prisma Client or contain Prisma-specific queries.
+Los servicios de aplicación no deben depender directamente de Prisma Client ni contener consultas específicas de Prisma.
 
-The default dependency direction is:
+La dirección de dependencias predeterminada es:
 
 ```text
-Service
+Servicio
    ↓
-Repository
+Repositorio
    ↓
 Prisma
    ↓
 PostgreSQL
 ```
 
-Repositories own persistence-specific behavior and keep ORM implementation details outside application services.
+Los repositorios son propietarios del comportamiento específico de persistencia y mantienen los detalles de
+implementación de ORM fuera de los servicios de aplicación.
 
-## Repository Ownership
+## Propiedad de los repositorios
 
-Repositories belong to the feature that owns the persisted data.
+Los repositorios pertenecen a la funcionalidad que posee los datos persistidos.
 
 ```text
 src/modules/users/
@@ -34,28 +35,29 @@ src/modules/users/
     └── users.repository.ts
 ```
 
-A repository may remain at the feature root while the feature is small and move into `repositories/` as the feature
-grows.
+Un repositorio puede permanecer en la raíz de la funcionalidad mientras esta sea pequeña y moverse a `repositories/` a
+medida que la funcionalidad crece.
 
-Repositories should normally remain private to their owning module.
+Los repositorios normalmente deben permanecer privados para su módulo propietario.
 
-Other modules should consume the feature's exported service API rather than its repositories.
+Otros módulos deben consumir la API de servicio exportada por la funcionalidad, en lugar de sus repositorios.
 
-## Repository Responsibilities
+## Responsabilidades de los repositorios
 
-Repositories are responsible for:
+Los repositorios son responsables de:
 
-- Prisma queries;
-- relation loading;
-- filters and ordering;
-- persistence-specific projections;
-- database writes;
-- persistence mapping when required;
-- transaction-aware persistence operations.
+- consultas de Prisma;
+- carga de relaciones;
+- filtros y ordenamiento;
+- proyecciones específicas de persistencia;
+- escrituras en la base de datos;
+- mapeo de persistencia cuando sea necesario;
+- operaciones de persistencia conscientes de transacciones.
 
-Repositories should expose operations meaningful to the application rather than exposing Prisma Client directly.
+Los repositorios deben exponer operaciones significativas para la aplicación, en lugar de exponer Prisma Client
+directamente.
 
-For example:
+Por ejemplo:
 
 ```typescript
 @Injectable()
@@ -72,9 +74,10 @@ export class UsersRepository {
 }
 ```
 
-## Database Infrastructure
+## Infraestructura de base de datos
 
-Prisma client construction and lifecycle belong to database infrastructure outside feature modules.
+La construcción y el ciclo de vida del cliente de Prisma pertenecen a la infraestructura de base de datos fuera de los
+módulos de funcionalidades.
 
 ```text
 src/
@@ -82,13 +85,13 @@ src/
 └── modules/
 ```
 
-Feature repositories consume the database infrastructure through dependency injection.
+Los repositorios de funcionalidades consumen la infraestructura de base de datos mediante inyección de dependencias.
 
-Application services must not inject the Prisma client directly.
+Los servicios de aplicación no deben inyectar el cliente de Prisma directamente.
 
-## Prisma Schema
+## Esquema de Prisma
 
-The Prisma schema and migration history live outside `src`.
+El esquema de Prisma y el historial de migraciones se ubican fuera de `src`.
 
 ```text
 prisma/
@@ -96,99 +99,107 @@ prisma/
 └── migrations/
 ```
 
-The Prisma schema defines the persistence model. It must not be treated as the application or HTTP contract.
+El esquema de Prisma define el modelo de persistencia. No debe tratarse como el contrato de la aplicación o HTTP.
 
-Application inputs, outputs, and persistence records remain separate concerns.
+Las entradas, salidas y registros de persistencia de la aplicación siguen siendo responsabilidades separadas.
 
-## Migrations
+## Migraciones
 
-Database schema changes must be versioned through Prisma Migrate.
+Los cambios de esquema de la base de datos deben versionarse mediante Prisma Migrate.
 
-Migration files are part of the repository and must be reviewed alongside the application changes that require them.
+Los archivos de migración son parte del repositorio y deben revisarse junto con los cambios de aplicación que los
+requieren.
 
-Schema changes must not depend on manually modifying production databases.
+Los cambios de esquema no deben depender de la modificación manual de bases de datos de producción.
 
-`prisma db push` may be used for local prototyping when appropriate, but it does not replace migration history for
-application changes intended to be committed.
+`prisma db push` puede usarse para prototipado local cuando sea adecuado, pero no reemplaza el historial de migraciones
+para cambios de aplicación destinados a confirmarse en el repositorio.
 
-## Transactions
+## Transacciones
 
-Use transactions when a single application operation requires multiple database writes that must succeed or fail
-together.
+Utilice transacciones cuando una única operación de aplicación requiera múltiples escrituras en la base de datos que
+deban tener éxito o fallar juntas.
 
-Transaction ownership belongs to the application operation that defines the atomic boundary.
+La propiedad de la transacción pertenece a la operación de aplicación que define el límite atómico.
 
-Repositories participating in that operation must execute through the same transaction context.
+Los repositorios que participan en esa operación deben ejecutarse mediante el mismo contexto de transacción.
 
-Do not create independent transactions inside repositories when doing so would break a broader application transaction.
+No cree transacciones independientes dentro de los repositorios cuando hacerlo rompería una transacción de aplicación
+más amplia.
 
-## Relations and N+1 Queries
+## Relaciones y consultas N+1
 
-Repositories are responsible for loading relations efficiently.
+Los repositorios son responsables de cargar las relaciones de manera eficiente.
 
-Do not load collections and then execute one database query per record to retrieve related data.
+No cargue colecciones y luego ejecute una consulta a la base de datos por cada registro para obtener datos relacionados.
 
-Avoid patterns equivalent to:
+Evite patrones equivalentes a:
 
 ```text
-load users
+cargar usuarios
    ↓
-for each user
+para cada usuario
    ↓
-load user's relations
+cargar las relaciones del usuario
 ```
 
-Prefer relation queries that allow Prisma to resolve the required data as part of the repository operation.
+Prefiera consultas de relaciones que permitan a Prisma resolver los datos requeridos como parte de la operación del
+repositorio.
 
-Use `select` or `include` deliberately and request only relations required by the application operation.
+Utilice `select` o `include` deliberadamente y solicite únicamente las relaciones requeridas por la operación de
+aplicación.
 
-When supported and appropriate, prefer relation loading strategies that avoid unnecessary round trips to the database.
+Cuando se admita y sea adecuado, prefiera estrategias de carga de relaciones que eviten viajes de ida y vuelta
+innecesarios a la base de datos.
 
-Query behavior should be verified when working with large collections or nested relations rather than assuming that ORM
-abstraction guarantees optimal execution.
+El comportamiento de las consultas debe verificarse al trabajar con colecciones grandes o relaciones anidadas, en lugar
+de asumir que la abstracción de ORM garantiza una ejecución óptima.
 
-## Query Scope
+## Alcance de consultas
 
-Repositories should retrieve only the data required by their caller.
+Los repositorios deben recuperar únicamente los datos requeridos por quien los llama.
 
-Prefer explicit projections when an operation requires a subset of a model.
+Prefiera proyecciones explícitas cuando una operación requiera un subconjunto de un modelo.
 
-Avoid loading complete relational graphs by default.
+Evite cargar grafos relacionales completos de forma predeterminada.
 
-Relation loading must be intentional and belong to the repository operation responsible for the query.
+La carga de relaciones debe ser intencional y pertenecer a la operación del repositorio responsable de la consulta.
 
-## Raw Queries
+## Consultas sin procesar
 
-Use Prisma's normal query API by default.
+Utilice de forma predeterminada la API de consultas normal de Prisma.
 
-Raw SQL should be reserved for cases where the required database behavior cannot be expressed clearly or efficiently
-through the regular Prisma API.
+El SQL sin procesar debe reservarse para casos en los que el comportamiento requerido de la base de datos no pueda
+expresarse con claridad o eficiencia mediante la API habitual de Prisma.
 
-Raw queries must remain inside the persistence boundary and must use parameterized APIs.
+Las consultas sin procesar deben permanecer dentro del límite de persistencia y deben usar API parametrizadas.
 
-Application services must not contain raw SQL.
+Los servicios de aplicación no deben contener SQL sin procesar.
 
-## Persistence Contracts
+## Contratos de persistencia
 
-Persistence structures must not be used directly as HTTP or application input contracts.
+Las estructuras de persistencia no deben usarse directamente como contratos de entrada HTTP o de aplicación.
 
-For example, a Prisma-generated user type must not become the request contract for creating a user.
+Por ejemplo, un tipo de usuario generado por Prisma no debe convertirse en el contrato de solicitud para crear un
+usuario.
 
-Application and persistence concerns may share fields while remaining separate contracts.
+Las responsabilidades de aplicación y persistencia pueden compartir campos y, a la vez, seguir siendo contratos
+separados.
 
-This prevents persistence-specific fields from unintentionally becoming part of the public application API.
+Esto evita que los campos específicos de persistencia se conviertan involuntariamente en parte de la API pública de la
+aplicación.
 
-## Rules
+## Reglas
 
-1. Use PostgreSQL as the default relational database.
-2. Use Prisma as the default ORM.
-3. Access persistence through feature-owned repositories.
-4. Keep Prisma-specific logic inside the persistence boundary.
-5. Do not inject Prisma Client directly into application services.
-6. Keep repositories private to their feature by default.
-7. Version database changes with Prisma Migrate.
-8. Use shared transactions for operations that require atomic multi-step persistence.
-9. Prevent N+1 queries by designing relation loading at the repository level.
-10. Load only the fields and relations required by an operation.
-11. Keep raw SQL inside repositories and use parameterized APIs.
-12. Keep persistence models separate from application and transport contracts.
+1. Utilice PostgreSQL como base de datos relacional predeterminada.
+2. Utilice Prisma como ORM predeterminado.
+3. Acceda a la persistencia mediante repositorios propiedad de funcionalidades.
+4. Mantenga la lógica específica de Prisma dentro del límite de persistencia.
+5. No inyecte Prisma Client directamente en los servicios de aplicación.
+6. Mantenga los repositorios privados para su funcionalidad de forma predeterminada.
+7. Versione los cambios de la base de datos con Prisma Migrate.
+8. Utilice transacciones compartidas para operaciones que requieren persistencia atómica de varios pasos.
+9. Prevenga las consultas N+1 diseñando la carga de relaciones en el nivel de repositorio.
+10. Cargue únicamente los campos y relaciones requeridos por una operación.
+11. Mantenga el SQL sin procesar dentro de los repositorios y utilice API parametrizadas.
+12. Mantenga los modelos de persistencia separados de los contratos de aplicación y transporte.

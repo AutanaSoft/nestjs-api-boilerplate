@@ -1,92 +1,95 @@
-# Architecture Overview
+# Descripción general de la arquitectura
 
-The NestJS API Boilerplate follows a modular application architecture built around explicit feature boundaries.
+El Boilerplate de API de NestJS sigue una arquitectura de aplicación modular construida alrededor de límites explícitos
+de funcionalidades.
 
-The architecture is designed to remain simple for small APIs while allowing individual features to grow without
-requiring a repository-wide restructuring.
+La arquitectura está diseñada para mantenerse simple en API pequeñas, a la vez que permite que las funcionalidades
+individuales crezcan sin requerir una reestructuración de todo el repositorio.
 
-## Architectural Model
+## Modelo arquitectónico
 
-Application capabilities are implemented as independent NestJS feature modules.
+Las capacidades de la aplicación se implementan como módulos de funcionalidades independientes de NestJS.
 
-Each module owns a cohesive functional area and exposes only the capabilities required by other modules.
+Cada módulo es propietario de un área funcional cohesiva y expone únicamente las capacidades que otros módulos
+requieren.
 
-Modules collaborate through explicit NestJS imports and exports rather than shared internal implementation details.
+Los módulos colaboran mediante importaciones y exportaciones explícitas de NestJS, en lugar de detalles internos de
+implementación compartidos.
 
-## Principles
+## Principios
 
-### Feature Ownership
+### Propiedad de funcionalidades
 
-Application behavior belongs to the feature responsible for it.
+El comportamiento de la aplicación pertenece a la funcionalidad responsable de él.
 
-A feature owns its transport, application logic, persistence access, contracts, and supporting components unless a
-concern is genuinely shared across the application.
+Una funcionalidad es propietaria de su transporte, lógica de aplicación, acceso a persistencia, contratos y componentes
+de soporte, salvo que una responsabilidad se comparta genuinamente en toda la aplicación.
 
-### Explicit Boundaries
+### Límites explícitos
 
-Dependencies between modules must be visible through module imports and exported providers.
+Las dependencias entre módulos deben ser visibles mediante las importaciones de módulos y los proveedores exportados.
 
-Internal providers should remain private unless another module has a concrete reason to consume them.
+Los proveedores internos deben permanecer privados, salvo que otro módulo tenga una razón concreta para consumirlos.
 
-### Single Responsibility
+### Responsabilidad única
 
-Controllers, services, repositories, and other providers should have cohesive responsibilities.
+Los controladores, servicios, repositorios y otros proveedores deben tener responsabilidades cohesivas.
 
-Components should be split when they begin to own unrelated behavior rather than growing into general-purpose classes.
+Los componentes deben dividirse cuando comiencen a asumir comportamientos no relacionados, en lugar de crecer hasta
+convertirse en clases de propósito general.
 
-### Persistence Isolation
+### Aislamiento de persistencia
 
-Application services should not depend directly on ORM-specific APIs.
+Los servicios de aplicación no deben depender directamente de API específicas de ORM.
 
-Persistence behavior is isolated behind repositories so database implementation details remain outside application
-logic.
+El comportamiento de persistencia se aísla detrás de repositorios, de modo que los detalles de implementación de la base
+de datos permanezcan fuera de la lógica de aplicación.
 
-### Infrastructure Separation
+### Separación de infraestructura
 
-Cross-cutting infrastructure such as database connectivity and application configuration is separate from application
-feature modules.
+La infraestructura transversal, como la conectividad de la base de datos y la configuración de la aplicación, se
+mantiene separada de los módulos de funcionalidades de la aplicación.
 
-Infrastructure supports features but does not define their application responsibilities.
+La infraestructura da soporte a las funcionalidades, pero no define sus responsabilidades de aplicación.
 
-### Incremental Complexity
+### Complejidad incremental
 
-Architectural structure should grow with actual application requirements.
+La estructura arquitectónica debe crecer según los requisitos reales de la aplicación.
 
-Small features may remain simple. Larger features may introduce additional controllers, services, repositories, or
-internal organization without changing the overall architectural model.
+Las funcionalidades pequeñas pueden mantenerse simples. Las funcionalidades más grandes pueden introducir controladores,
+servicios, repositorios u organización interna adicionales sin cambiar el modelo arquitectónico general.
 
-### Technology Independence
+### Independencia tecnológica
 
-Structural architecture should not depend unnecessarily on a specific database, ORM, authentication strategy, or
-external provider.
+La arquitectura estructural no debe depender innecesariamente de una base de datos, ORM, estrategia de autenticación o
+proveedor externo específico.
 
-Technology-specific decisions must respect the architectural boundaries defined by the project.
+Las decisiones específicas de tecnología deben respetar los límites arquitectónicos definidos por el proyecto.
 
-## Dependency Direction
+## Dirección de las dependencias
 
-The typical dependency flow is:
+El flujo de dependencias típico es:
 
 ```text
-Transport
+Transporte
    ↓
-Application
+Aplicación
    ↓
-Persistence
+Persistencia
    ↓
-Infrastructure
+Infraestructura
 ```
 
-Dependencies should preserve these boundaries and prevent lower-level implementation details from leaking into
-higher-level application responsibilities.
+Las dependencias deben preservar estos límites e impedir que los detalles de implementación de nivel inferior se filtren
+hacia responsabilidades de aplicación de nivel superior.
 
-Between features, dependencies must pass through explicitly exposed module APIs.
+Entre funcionalidades, las dependencias deben pasar por API de módulos expuestas explícitamente.
 
-## Architectural Scope
+## Alcance arquitectónico
 
-This architecture defines the default conventions for applications created from the boilerplate.
+Esta arquitectura define las convenciones predeterminadas para las aplicaciones creadas a partir del boilerplate.
 
-It does not enforce Clean Architecture, Hexagonal Architecture, Domain-Driven Design, or another formal architecture in
-full.
+No aplica por completo Clean Architecture, Hexagonal Architecture, Domain-Driven Design ni otra arquitectura formal.
 
-Patterns from those approaches may be adopted when they improve boundaries, maintainability, or testability. Additional
-architectural complexity must be justified by application requirements.
+Se pueden adoptar patrones de esos enfoques cuando mejoren los límites, la mantenibilidad o la capacidad de prueba. La
+complejidad arquitectónica adicional debe justificarse mediante los requisitos de la aplicación.
