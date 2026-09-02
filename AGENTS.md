@@ -9,33 +9,50 @@ Read this file completely before making the first modification. Each section def
 ## Repository Context
 
 - Consult `README.md` when the task requires project overview, prerequisites, or setup instructions.
-- Consult the relevant documentation under `docs/` when the task requires additional context about architecture,
-  conventions, or technical decisions. Do not read unrelated documentation by default.
+- Consult the relevant documentation under `docs/` when the task requires context about architecture, public API
+  conventions, testing, configuration, or technical decisions.
+- Do not read unrelated documentation by default.
 
 ## Architecture and Conventions
 
-- Treat the relevant documents under `docs/` as normative within their documented scope:
-  - `docs/architecture/` owns architectural boundaries and application design decisions.
-  - `docs/api/` owns public HTTP and REST API conventions.
-  - `docs/configuration/` owns runtime and HTTP configuration conventions.
-  - `docs/operations/` owns operational conventions such as observability.
-- Prefer the document with the narrowest matching responsibility when several documents are relevant. Do not duplicate a
-  rule into another document when an existing owner already defines it.
-- Apply only the installed skill rules relevant to the task and consistent with the documented project architecture.
-- For feature organization, module sharing, service responsibility, and persistence boundaries, apply:
-  - `nestjs-best-practices/rules/arch-feature-modules.md`
-  - `nestjs-best-practices/rules/arch-module-sharing.md`
-  - `nestjs-best-practices/rules/arch-single-responsibility.md`
-  - `nestjs-best-practices/rules/arch-use-repository-pattern.md`
-- For NestJS end-to-end testing, apply the `nestjs-e2e-practices` skill and its relevant reference cards:
-  - `e2e-orchestrate-execution-and-lifecycle.md`
-  - `e2e-run-real-application-and-infrastructure.md`
-  - `e2e-build-data-and-assert-contracts.md`
-  - `e2e-isolate-external-service-boundaries.md`
-- Do not introduce a framework, library, ORM, or architectural pattern that conflicts with a documented project
-  decision.
-- If the existing implementation conflicts with documented architecture, report the divergence before modifying either
-  side.
+Use the document owner that matches the responsibility being changed:
+
+- `docs/architecture/` defines how the system is built, including structural boundaries and crosscutting technical
+  strategies.
+- `docs/api/` defines conventions of the public HTTP contract.
+- `docs/testing/` defines testing strategies and conventions.
+- `docs/adr/`, when present, preserves the rationale for significant architectural decisions.
+- `docs/prd/`, when present, defines functional requirements and behavior of Features.
+- `docs/configuration/` contains concrete operator-facing runtime configuration references.
+
+Do not duplicate a rule already owned by another document. Use a brief cross-reference when another owner must be
+consulted.
+
+Do not place functional Feature requirements in Architecture, architectural decisions in PRDs, public HTTP conventions
+in Architecture, or general Testing conventions outside `docs/testing/`.
+
+Additional documentation categories should exist only when they have a concrete responsibility not already owned
+elsewhere.
+
+Apply only the installed skill rules relevant to the task and consistent with documented project decisions.
+
+For feature organization, module sharing, service responsibility, and persistence boundaries, apply:
+
+- `nestjs-best-practices/rules/arch-feature-modules.md`
+- `nestjs-best-practices/rules/arch-module-sharing.md`
+- `nestjs-best-practices/rules/arch-single-responsibility.md`
+- `nestjs-best-practices/rules/arch-use-repository-pattern.md`
+
+For NestJS end-to-end testing, apply the `nestjs-e2e-practices` skill and its relevant reference cards:
+
+- `e2e-orchestrate-execution-and-lifecycle.md`
+- `e2e-run-real-application-and-infrastructure.md`
+- `e2e-build-data-and-assert-contracts.md`
+- `e2e-isolate-external-service-boundaries.md`
+
+Do not introduce a framework, library, ORM, or architectural pattern that conflicts with a documented project decision.
+
+If the implementation conflicts with documented architecture, report the divergence before modifying either side.
 
 ## Code Style
 
@@ -73,8 +90,9 @@ Read this file completely before making the first modification. Each section def
 - Internal helpers and straightforward private methods normally do not require documentation.
 - Add inline comments only when they explain intent, architectural reasoning, non-obvious behavior, compatibility
   constraints, security requirements, or implementation limitations.
-- Keep documentation close to the code or architectural boundary that owns the documented behavior.
-- Update documentation when a change modifies a documented public contract or architectural decision.
+- Keep documentation close to the code or responsibility that owns the documented behavior.
+- Update the relevant document owner when a change modifies a documented architectural decision, public contract,
+  testing convention, configuration reference, or Feature requirement.
 - Do not keep commented-out code; Git history preserves prior versions.
 
 ## Planning and Verification
