@@ -52,8 +52,14 @@ describe('AppController (e2e)', () => {
   });
 
   it('allows configured CORS origins and denies unconfigured origins', async () => {
-    const allowed = await request(app.getHttpServer()).get('/').set('Origin', 'https://allowed.example').expect(200);
-    const denied = await request(app.getHttpServer()).get('/').set('Origin', 'https://denied.example').expect(200);
+    const allowed = await request(app.getHttpServer())
+      .get('/')
+      .set('Origin', 'https://allowed.example')
+      .expect(200);
+    const denied = await request(app.getHttpServer())
+      .get('/')
+      .set('Origin', 'https://denied.example')
+      .expect(200);
 
     expect(allowed.headers['access-control-allow-origin']).toBe('https://allowed.example');
     expect(allowed.headers['access-control-allow-credentials']).toBeUndefined();

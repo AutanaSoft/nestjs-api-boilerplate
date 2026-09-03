@@ -4,8 +4,8 @@ Status: Target
 
 Este documento define las convenciones compartidas de los contratos HTTP públicos de la API.
 
-Los contratos concretos de un Feature pertenecen a su PRD o especificación funcional cuando exista una responsabilidad
-que justifique mantenerlos allí.
+Los contratos concretos de un Feature pertenecen a su PRD o especificación funcional cuando exista
+una responsabilidad que justifique mantenerlos allí.
 
 ## Alcance
 
@@ -21,8 +21,8 @@ Los contratos HTTP pueden incluir:
 
 Las convenciones REST generales se definen en `conventions.md`.
 
-La implementación técnica de Request validation y Response serialization se define en `../architecture/validation.md` y
-`../architecture/serialization.md`.
+La implementación técnica de Request validation y Response serialization se define en
+`../architecture/validation.md` y `../architecture/serialization.md`.
 
 ## Ownership
 
@@ -36,7 +36,8 @@ No mantenga definiciones públicas equivalentes bajo múltiples owners.
 
 ## Separación de contratos
 
-Los contratos HTTP son independientes de los modelos internos de aplicación, persistencia e infraestructura.
+Los contratos HTTP son independientes de los modelos internos de aplicación, persistencia e
+infraestructura.
 
 Compartir campos no convierte esas representaciones en el mismo contrato.
 
@@ -48,8 +49,8 @@ Request y Response son contratos diferentes aunque compartan información.
 
 Cada uno debe modelar únicamente los campos y la semántica que corresponden a su boundary.
 
-Los campos internos no forman parte de una Response pública únicamente porque estén disponibles en el modelo de
-aplicación o persistencia.
+Los campos internos no forman parte de una Response pública únicamente porque estén disponibles en
+el modelo de aplicación o persistencia.
 
 ## Nullability y ausencia
 
@@ -58,8 +59,8 @@ La semántica pública debe distinguir explícitamente entre:
 - una propiedad omitida;
 - una propiedad presente con valor `null`.
 
-La elección debe responder al significado real del contrato y mantenerse consistente entre documentación e
-implementación.
+La elección debe responder al significado real del contrato y mantenerse consistente entre
+documentación e implementación.
 
 ## Composición
 
@@ -101,7 +102,8 @@ El Error Response no debe exponer:
 
 La selección de HTTP Status Codes se define en `conventions.md`.
 
-La traducción entre errores internos y el contrato HTTP se define en `../architecture/error-handling.md`.
+La traducción entre errores internos y el contrato HTTP se define en
+`../architecture/error-handling.md`.
 
 ## Enforcement y documentación
 

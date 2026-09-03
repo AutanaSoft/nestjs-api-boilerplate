@@ -1,7 +1,8 @@
 # NestJS API Boilerplate
 
-A public NestJS 12 template for building secure TypeScript APIs. It includes validated HTTP configuration, security
-headers, CORS controls, and rate limiting so a new API starts with a practical baseline.
+A public NestJS 12 template for building secure TypeScript APIs. It includes validated HTTP
+configuration, security headers, CORS controls, and rate limiting so a new API starts with a
+practical baseline.
 
 ## Quick start
 
@@ -31,7 +32,8 @@ pnpm install
 
 ## Documentation
 
-Use the focused references for architecture, API conventions, configuration, testing, and project policies.
+Use the focused references for architecture, API conventions, configuration, testing, and project
+policies.
 
 | Topic                                  | Reference                                                   |
 | -------------------------------------- | ----------------------------------------------------------- |
@@ -73,7 +75,8 @@ Use the focused references for architecture, API conventions, configuration, tes
 
 ## Quality checks
 
-Before opening a pull request, run the focused checks for your changes. The complete local check sequence is:
+Before opening a pull request, run the focused checks for your changes. The complete local check
+sequence is:
 
 ```bash
 pnpm lint
@@ -83,7 +86,8 @@ pnpm test:e2e
 pnpm build
 ```
 
-GitHub Actions runs formatting verification, linting, tests, and the build on pushes and pull requests.
+GitHub Actions runs formatting verification, linting, tests, and the build on pushes and pull
+requests.
 
 ## Contributing
 

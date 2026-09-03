@@ -2,14 +2,15 @@
 
 Status: Target
 
-Este documento define la estrategia técnica para convertir resultados internos de aplicación en Responses HTTP públicas.
+Este documento define la estrategia técnica para convertir resultados internos de aplicación en
+Responses HTTP públicas.
 
 Las convenciones de los contratos HTTP públicos se definen en `../api/http-contracts.md`.
 
 ## Límite de salida
 
-Los resultados internos no deben convertirse automáticamente en contratos públicos sólo porque puedan serializarse como
-JSON.
+Los resultados internos no deben convertirse automáticamente en contratos públicos sólo porque
+puedan serializarse como JSON.
 
 ```text
 Service Result
@@ -25,21 +26,26 @@ Response Schema
 HTTP Response
 ```
 
-El Response Schema declarado para la operación define la representación que el mecanismo de serialización debe producir.
+El Response Schema declarado para la operación define la representación que el mecanismo de
+serialización debe producir.
 
 ## Standard Schema
 
-El proyecto utiliza `StandardSchemaSerializerInterceptor` como estrategia predeterminada de Response serialization.
+El proyecto utiliza `StandardSchemaSerializerInterceptor` como estrategia predeterminada de Response
+serialization.
 
-El Interceptor debe validar y serializar el valor retornado contra el Response Schema correspondiente.
+El Interceptor debe validar y serializar el valor retornado contra el Response Schema
+correspondiente.
 
-`ClassSerializerInterceptor` y `class-transformer` no deben introducirse como estrategia paralela por defecto.
+`ClassSerializerInterceptor` y `class-transformer` no deben introducirse como estrategia paralela
+por defecto.
 
 El ownership y la semántica del contrato público pertenecen a `../api/http-contracts.md`.
 
 ## Mappers
 
-Utilice un Mapper cuando exista una transformación semántica entre el resultado interno y la representación pública.
+Utilice un Mapper cuando exista una transformación semántica entre el resultado interno y la
+representación pública.
 
 Los Mappers pueden:
 
@@ -64,8 +70,8 @@ La serialización debe construir deliberadamente la representación pública cor
 
 ## Representaciones externas
 
-Los valores específicos del runtime o infraestructura que no tengan una representación JSON directa deben convertirse
-antes de alcanzar la Response pública.
+Los valores específicos del runtime o infraestructura que no tengan una representación JSON directa
+deben convertirse antes de alcanzar la Response pública.
 
 La representación concreta pertenece al contrato público correspondiente.
 
@@ -75,8 +81,8 @@ Las Responses paginadas deben seguir la convención definida en `../api/paginati
 
 ## Responses especiales
 
-Archivos, streams u otros tipos de Response que requieran mecanismos específicos no necesitan forzarse mediante un
-Response Schema de objeto.
+Archivos, streams u otros tipos de Response que requieran mecanismos específicos no necesitan
+forzarse mediante un Response Schema de objeto.
 
 La excepción debe ser explícita en el boundary correspondiente.
 

@@ -2,7 +2,8 @@
 
 Status: Target
 
-Este documento define la estructura estática objetivo de la aplicación y las reglas de ownership entre sus componentes.
+Este documento define la estructura estática objetivo de la aplicación y las reglas de ownership
+entre sus componentes.
 
 ## Organización
 
@@ -31,11 +32,11 @@ La infraestructura transversal permanece fuera de `src/modules`.
 
 Un Feature Module es el límite principal de ownership de una capacidad.
 
-El código específico de un Feature debe permanecer dentro de su módulo propietario, salvo que represente infraestructura
-genuinamente transversal.
+El código específico de un Feature debe permanecer dentro de su módulo propietario, salvo que
+represente infraestructura genuinamente transversal.
 
-Los Features deben mantenerse planos mientras sean pequeños e introducir directorios por responsabilidad únicamente
-cuando el crecimiento lo justifique.
+Los Features deben mantenerse planos mientras sean pequeños e introducir directorios por
+responsabilidad únicamente cuando el crecimiento lo justifique.
 
 Una estructura puede evolucionar hacia:
 
@@ -61,7 +62,8 @@ Los módulos deben exportar únicamente las capacidades que otros módulos neces
 
 ## Controllers
 
-Los Controllers poseen responsabilidades de transport y delegan el comportamiento de aplicación a Services.
+Los Controllers poseen responsabilidades de transport y delegan el comportamiento de aplicación a
+Services.
 
 No deben contener lógica sustancial de negocio ni acceso directo a persistencia.
 
@@ -81,7 +83,8 @@ Los Repositories representan el boundary entre un Feature y su persistencia.
 
 Su estrategia, responsabilidades, lifecycle y reglas de acceso se definen en `data-access.md`.
 
-La estructura del Feature sólo requiere que los Repositories permanezcan bajo el ownership del Feature correspondiente.
+La estructura del Feature sólo requiere que los Repositories permanezcan bajo el ownership del
+Feature correspondiente.
 
 ## Contracts
 
@@ -109,11 +112,13 @@ No mueva código a `common` únicamente porque sea reutilizado o porque su owner
 
 1. Organice las capacidades de aplicación mediante Feature Modules bajo `src/modules`.
 2. Mantenga el código específico de cada Feature dentro de su módulo propietario.
-3. Introduzca directorios por responsabilidad únicamente cuando el crecimiento del Feature lo justifique.
+3. Introduzca directorios por responsabilidad únicamente cuando el crecimiento del Feature lo
+   justifique.
 4. Asigne a cada Provider un único módulo propietario.
 5. Comparta Providers mediante imports y exports explícitos.
 6. Mantenga Controllers enfocados en transport.
 7. Mantenga Services enfocados en comportamiento cohesivo.
-8. Mantenga Repositories bajo el ownership del Feature y delegue sus reglas detalladas a `data-access.md`.
+8. Mantenga Repositories bajo el ownership del Feature y delegue sus reglas detalladas a
+   `data-access.md`.
 9. Mantenga infraestructura transversal fuera de `src/modules`.
 10. Reserve `src/common` para responsabilidades genuinamente transversales.

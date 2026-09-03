@@ -4,7 +4,8 @@ Status: Target
 
 Este documento define las convenciones generales del contrato HTTP público de la API.
 
-Los contratos, paginación, versionado y OpenAPI tienen documentos owners específicos dentro de `docs/api/`.
+Los contratos, paginación, versionado y OpenAPI tienen documentos owners específicos dentro de
+`docs/api/`.
 
 ## Recursos y rutas
 
@@ -24,8 +25,8 @@ Utilice:
 
 Evite rutas centradas innecesariamente en acciones o detalles internos.
 
-Los recursos anidados deben utilizarse únicamente cuando la relación con el recurso padre forme parte relevante del
-contexto público.
+Los recursos anidados deben utilizarse únicamente cuando la relación con el recurso padre forme
+parte relevante del contexto público.
 
 ## GET
 
@@ -53,7 +54,8 @@ La representación OpenAPI de `QUERY` se define en `openapi.md`.
 
 ## POST
 
-`POST` se utiliza para crear recursos o ejecutar operaciones cuya semántica no corresponda a otro método estándar.
+`POST` se utiliza para crear recursos o ejecutar operaciones cuya semántica no corresponda a otro
+método estándar.
 
 Una creación exitosa utiliza normalmente `201 Created`.
 
@@ -61,7 +63,8 @@ Cuando el recurso creado tenga una URI pública identificable, la Response debe 
 
 ## PUT
 
-`PUT` representa el reemplazo completo de la representación modificable de un recurso conocido y debe ser idempotent.
+`PUT` representa el reemplazo completo de la representación modificable de un recurso conocido y
+debe ser idempotent.
 
 No utilice `PUT` para actualizaciones parciales.
 
@@ -78,7 +81,8 @@ Una actualización puede utilizar:
 
 ## DELETE
 
-`DELETE` provoca que el recurso deje de estar disponible bajo su URI según la semántica pública correspondiente.
+`DELETE` provoca que el recurso deje de estar disponible bajo su URI según la semántica pública
+correspondiente.
 
 Una operación exitosa sin body utiliza normalmente `204 No Content`.
 
@@ -107,8 +111,8 @@ La forma pública del Error Response se define en `http-contracts.md`.
 
 ## Resource Visibility
 
-Cuando revelar la existencia de un recurso sea sensible, una política de autorización puede requerir una Response
-equivalente a `404 Not Found` en lugar de `403 Forbidden`.
+Cuando revelar la existencia de un recurso sea sensible, una política de autorización puede requerir
+una Response equivalente a `404 Not Found` en lugar de `403 Forbidden`.
 
 Esta excepción debe ser deliberada y consistente para el contrato correspondiente.
 
@@ -127,7 +131,8 @@ POST    no necesariamente idempotent
 PATCH   depende de la operación
 ```
 
-Operaciones no idempotentes sensibles a reintentos pueden definir un `Idempotency-Key` cuando su contrato lo requiera.
+Operaciones no idempotentes sensibles a reintentos pueden definir un `Idempotency-Key` cuando su
+contrato lo requiera.
 
 No lo aplique globalmente sin necesidad.
 

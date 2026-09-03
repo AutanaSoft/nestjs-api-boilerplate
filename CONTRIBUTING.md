@@ -1,6 +1,7 @@
 # Contributing
 
-Thank you for improving the NestJS API Boilerplate. Keep contributions focused, tested, and safe to review.
+Thank you for improving the NestJS API Boilerplate. Keep contributions focused, tested, and safe to
+review.
 
 ## Quick path
 
@@ -17,8 +18,8 @@ cp .env.example .env
 pnpm start:dev
 ```
 
-Do not commit `.env` files, credentials, or private keys. Use `.env.example` only for non-sensitive configuration
-examples.
+Do not commit `.env` files, credentials, or private keys. Use `.env.example` only for non-sensitive
+configuration examples.
 
 ## Checks
 
@@ -40,9 +41,10 @@ The pull request checks run formatting verification, linting, tests, and the pro
 - Keep each pull request limited to one reviewable change.
 - Add or update tests for behavior changes.
 - Update documentation and configuration examples when their user-facing contract changes.
-- Use a Conventional Commit-style title with a non-empty scope, such as `fix(http): validate proxy hops`.
+- Use a Conventional Commit-style title with a non-empty scope, such as
+  `fix(http): validate proxy hops`.
 
 ## Reporting issues
 
-Use the GitHub issue forms for reproducible bugs and feature requests. Report security vulnerabilities privately as
-explained in [SECURITY.md](SECURITY.md).
+Use the GitHub issue forms for reproducible bugs and feature requests. Report security
+vulnerabilities privately as explained in [SECURITY.md](SECURITY.md).

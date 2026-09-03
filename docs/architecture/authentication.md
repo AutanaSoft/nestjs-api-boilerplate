@@ -21,8 +21,8 @@ La autorización se define por separado en `authorization.md`.
 
 Passport no forma parte de la arquitectura predeterminada.
 
-No introduzca una estrategia alternativa de JWT, password hashing o authentication framework sin una decisión
-arquitectónica explícita.
+No introduzca una estrategia alternativa de JWT, password hashing o authentication framework sin una
+decisión arquitectónica explícita.
 
 ## Module Boundary
 
@@ -60,13 +60,15 @@ src/modules/auth/
 └── types/
 ```
 
-Los directorios deben introducirse únicamente cuando exista código que justifique su responsabilidad.
+Los directorios deben introducirse únicamente cuando exista código que justifique su
+responsabilidad.
 
 ## Access Tokens
 
 Los Access Tokens utilizan JWT mediante `@nestjs/jwt`.
 
-Deben ser short-lived y contener únicamente las claims necesarias para establecer el principal autenticado.
+Deben ser short-lived y contener únicamente las claims necesarias para establecer el principal
+autenticado.
 
 Las claims base son:
 
@@ -76,7 +78,8 @@ iat
 exp
 ```
 
-Claims adicionales como `iss`, `aud` o `sid` pueden incluirse cuando la estrategia correspondiente lo requiera.
+Claims adicionales como `iss`, `aud` o `sid` pueden incluirse cuando la estrategia correspondiente
+lo requiera.
 
 No incluya información sensible ni records completos de usuario.
 
@@ -91,7 +94,8 @@ Su estado se mantiene server-side para soportar:
 - revocation;
 - session management.
 
-Los tokens reutilizables no deben persistirse directamente; debe almacenarse una representación segura.
+Los tokens reutilizables no deben persistirse directamente; debe almacenarse una representación
+segura.
 
 La persistencia específica de sesiones pertenece a `AuthModule`.
 
@@ -101,7 +105,8 @@ Las passwords utilizan Argon2id mediante `argon2`.
 
 Las plain-text passwords no deben persistirse.
 
-El módulo propietario del usuario almacena únicamente el password hash necesario para authentication.
+El módulo propietario del usuario almacena únicamente el password hash necesario para
+authentication.
 
 ## Request Authentication
 
@@ -114,12 +119,13 @@ El Guard es responsable de:
 
 La autorización no pertenece al Guard de autenticación.
 
-La estrategia preferida es authentication global con excepciones públicas declaradas explícitamente mediante
-`@Public()`.
+La estrategia preferida es authentication global con excepciones públicas declaradas explícitamente
+mediante `@Public()`.
 
 ## AuthenticatedPrincipal
 
-La identidad autenticada se representa mediante un contrato interno independiente de JWT, persistencia y HTTP.
+La identidad autenticada se representa mediante un contrato interno independiente de JWT,
+persistencia y HTTP.
 
 ```typescript
 export interface AuthenticatedPrincipal {

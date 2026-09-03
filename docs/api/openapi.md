@@ -2,7 +2,8 @@
 
 Status: Target
 
-Este documento define las convenciones para representar y mantener el contrato público mediante OpenAPI.
+Este documento define las convenciones para representar y mantener el contrato público mediante
+OpenAPI.
 
 La especificación se genera mediante `@nestjs/swagger`.
 
@@ -20,18 +21,18 @@ Debe permanecer consistente con:
 - `versioning.md`;
 - los contratos concretos de cada Feature.
 
-No mantenga manualmente una segunda definición incompatible de un contrato existente únicamente para generar
-documentación.
+No mantenga manualmente una segunda definición incompatible de un contrato existente únicamente para
+generar documentación.
 
-Las estrategias técnicas de validation y serialization se definen en `../architecture/validation.md` y
-`../architecture/serialization.md`.
+Las estrategias técnicas de validation y serialization se definen en `../architecture/validation.md`
+y `../architecture/serialization.md`.
 
 ## Version
 
 Utilice una versión de OpenAPI capaz de representar todos los métodos HTTP publicados por la API.
 
-Cuando la API exponga `QUERY`, utilice OpenAPI 3.2 y represente la operación mediante los mecanismos definidos por esa
-versión.
+Cuando la API exponga `QUERY`, utilice OpenAPI 3.2 y represente la operación mediante los mecanismos
+definidos por esa versión.
 
 ## Operations
 
@@ -48,8 +49,8 @@ PATCH
 DELETE
 ```
 
-Los workarounds requeridos por limitaciones del generator deben permanecer aislados y eliminarse cuando exista soporte
-nativo equivalente.
+Los workarounds requeridos por limitaciones del generator deben permanecer aislados y eliminarse
+cuando exista soporte nativo equivalente.
 
 ## Versioning
 
@@ -59,8 +60,8 @@ Las reglas de versionado se definen en `versioning.md`.
 
 ## Security
 
-Las operaciones protegidas deben representar sus requisitos de authentication mediante los Security Schemes
-correspondientes.
+Las operaciones protegidas deben representar sus requisitos de authentication mediante los Security
+Schemes correspondientes.
 
 La especificación no debe presentar una operación protegida como pública.
 
@@ -74,7 +75,8 @@ No defina un formato paralelo exclusivamente para OpenAPI.
 
 Cada operación pública debe tener un `operationId` estable y único.
 
-Un cambio de `operationId` debe tratarse como contractual cuando clientes o tooling externos dependan de él.
+Un cambio de `operationId` debe tratarse como contractual cuando clientes o tooling externos
+dependan de él.
 
 ## Reglas
 

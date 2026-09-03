@@ -4,20 +4,20 @@ Status: Target
 
 Este documento define las convenciones específicas de E2E Testing.
 
-El baseline HTTP E2E ya forma parte del proyecto. Las reglas de infraestructura, persistencia y autenticación aplican a
-medida que esas capacidades formen parte de la aplicación.
+El baseline HTTP E2E ya forma parte del proyecto. Las reglas de infraestructura, persistencia y
+autenticación aplican a medida que esas capacidades formen parte de la aplicación.
 
 Las convenciones generales de testing se definen en `testing.md`.
 
 ## Límite de la aplicación
 
-Los E2E Tests deben ejecutar la aplicación desde la misma application root y reutilizar el bootstrap compartido con
-producción.
+Los E2E Tests deben ejecutar la aplicación desde la misma application root y reutilizar el bootstrap
+compartido con producción.
 
 Los componentes internos relevantes para el comportamiento probado deben permanecer reales.
 
-La configuración específica de E2E puede aislar infraestructura o external Providers, pero no debe sustituir el flujo
-interno que el escenario pretende verificar.
+La configuración específica de E2E puede aislar infraestructura o external Providers, pero no debe
+sustituir el flujo interno que el escenario pretende verificar.
 
 ## Lifecycle Ownership
 
@@ -54,9 +54,11 @@ Los directorios se introducen únicamente cuando exista contenido que lo justifi
 
 ## Independencia
 
-Los escenarios independientes deben preparar sus propios prerequisites y permanecer seguros al reordenarse.
+Los escenarios independientes deben preparar sus propios prerequisites y permanecer seguros al
+reordenarse.
 
-Un ordered business flow puede compartir estado cuando la secuencia sea parte explícita del comportamiento probado.
+Un ordered business flow puede compartir estado cuando la secuencia sea parte explícita del
+comportamiento probado.
 
 Ese estado debe pertenecer a un contexto tipado de la suite y no a variables globales implícitas.
 
@@ -64,13 +66,13 @@ Las reglas generales de determinismo y Test Data se definen en `testing.md`.
 
 ## Infraestructura real
 
-Cuando una capacidad dependa de infraestructura persistente, los E2E Tests deben utilizar una instancia real y aislada
-de la misma tecnología utilizada por la aplicación.
+Cuando una capacidad dependa de infraestructura persistente, los E2E Tests deben utilizar una
+instancia real y aislada de la misma tecnología utilizada por la aplicación.
 
 La arquitectura de persistencia se define en `../architecture/data-access.md`.
 
-Cuando PostgreSQL y Prisma formen parte de la aplicación, el entorno E2E debe utilizar una base de datos PostgreSQL
-aislada y el production Prisma persistence path.
+Cuando PostgreSQL y Prisma formen parte de la aplicación, el entorno E2E debe utilizar una base de
+datos PostgreSQL aislada y el production Prisma persistence path.
 
 El entorno debe aplicar las migrations versionadas y eliminar los recursos temporales al finalizar.
 
@@ -88,19 +90,21 @@ No sustituya componentes internos relevantes para el comportamiento E2E, como:
 - Repositories;
 - persistence infrastructure.
 
-Un escenario que reemplaza la lógica interna que afirma verificar no representa cobertura E2E completa de esa
-responsabilidad.
+Un escenario que reemplaza la lógica interna que afirma verificar no representa cobertura E2E
+completa de esa responsabilidad.
 
 ## Autenticación
 
-Cuando la aplicación sea responsable de emitir credentials, los escenarios autenticados deben obtenerlas mediante el
-public authentication flow.
+Cuando la aplicación sea responsable de emitir credentials, los escenarios autenticados deben
+obtenerlas mediante el public authentication flow.
 
-No utilice tokens pre-issued para omitir el flujo de autenticación que el escenario necesita verificar.
+No utilice tokens pre-issued para omitir el flujo de autenticación que el escenario necesita
+verificar.
 
 ## Prerequisites
 
-Cree application data mediante la API pública cuando exista una operación pública razonable para producir ese estado.
+Cree application data mediante la API pública cuando exista una operación pública razonable para
+producir ese estado.
 
 Utilice direct persistence Seeds únicamente cuando el prerequisite:
 
@@ -130,8 +134,8 @@ Cuando sea práctico, verifique persisted effects mediante una operación públi
 
 ## External Boundaries
 
-Las dependencias externas out-of-process pueden aislarse cuando utilizar el Provider real sea inseguro, no determinista,
-costoso o no esté disponible.
+Las dependencias externas out-of-process pueden aislarse cuando utilizar el Provider real sea
+inseguro, no determinista, costoso o no esté disponible.
 
 Reemplace únicamente el adapter que cruza el process boundary.
 
@@ -174,4 +178,5 @@ No dependa de forced process termination para ocultar recursos no liberados.
 9. Verifique comportamiento observable y no internal calls.
 10. Aísle únicamente external out-of-process boundaries cuando sea necesario.
 11. Libere todos los recursos creados por el test environment.
-12. Aplique las convenciones generales de determinismo, Test Data y aislamiento definidas en `testing.md`.
+12. Aplique las convenciones generales de determinismo, Test Data y aislamiento definidas en
+    `testing.md`.

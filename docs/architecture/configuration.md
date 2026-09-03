@@ -22,7 +22,8 @@ Typed configuration
 Application consumer
 ```
 
-Los componentes de aplicación no deben acceder directamente a `process.env` ni a otros external configuration providers.
+Los componentes de aplicación no deben acceder directamente a `process.env` ni a otros external
+configuration providers.
 
 ## Namespaces
 
@@ -55,8 +56,8 @@ La configuración global puede residir en:
 src/config/
 ```
 
-La configuración específica de un Feature o infraestructura debe permanecer junto a su owner cuando exista uno más
-claro.
+La configuración específica de un Feature o infraestructura debe permanecer junto a su owner cuando
+exista uno más claro.
 
 No centralice configuración únicamente por conveniencia técnica.
 
@@ -86,7 +87,8 @@ La configuración inválida requerida por la aplicación debe provocar un fallo 
 
 Los consumidores no deben repetir validaciones que pertenecen al configuration namespace.
 
-Los external values deben tratarse como untrusted input y normalizarse antes de formar la configuración final.
+Los external values deben tratarse como untrusted input y normalizarse antes de formar la
+configuración final.
 
 ## Typed Injection
 
@@ -94,13 +96,15 @@ Los consumidores de un namespace conocido deben inyectar su typed configuration 
 
 Evite dispersar string-based configuration lookups por la aplicación.
 
-`ConfigService` debe reservarse para casos que realmente requieran acceso dinámico o agregación entre namespaces.
+`ConfigService` debe reservarse para casos que realmente requieran acceso dinámico o agregación
+entre namespaces.
 
 ## Inmutabilidad
 
 La startup configuration debe tratarse como read-only.
 
-Los mutable runtime settings pertenecen a una responsabilidad distinta y no deben modelarse como startup configuration.
+Los mutable runtime settings pertenecen a una responsabilidad distinta y no deben modelarse como
+startup configuration.
 
 ## Secrets
 
@@ -111,14 +115,16 @@ Los secrets no deben hardcodearse ni exponerse mediante:
 - diagnostic responses;
 - archivos versionados.
 
-Deben ingresar mediante una external configuration source y atravesar el configuration boundary correspondiente.
+Deben ingresar mediante una external configuration source y atravesar el configuration boundary
+correspondiente.
 
 ## Configuración HTTP
 
 Los valores concretos, defaults y restricciones operativas del namespace HTTP se documentan en
 `../configuration/http-security.md`.
 
-Ese documento no sustituye esta estrategia arquitectónica; mantiene la referencia de configuración runtime concreta.
+Ese documento no sustituye esta estrategia arquitectónica; mantiene la referencia de configuración
+runtime concreta.
 
 ## Reglas
 

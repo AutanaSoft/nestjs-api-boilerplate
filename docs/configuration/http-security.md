@@ -2,9 +2,9 @@
 
 Status: Implemented
 
-La API aplica Helmet, una lista explícita de orígenes CORS permitidos y global Rate Limiting en memoria desde el
-configuration namespace `http`. Establezca las environment variables indicadas a continuación y luego reinicie el
-proceso para que los cambios surtan efecto.
+La API aplica Helmet, una lista explícita de orígenes CORS permitidos y global Rate Limiting en
+memoria desde el configuration namespace `http`. Establezca las environment variables indicadas a
+continuación y luego reinicie el proceso para que los cambios surtan efecto.
 
 ## Ruta rápida
 
@@ -23,9 +23,9 @@ proceso para que los cambios surtan efecto.
 | `THROTTLE_LIMIT`       | `100`                                       | Requests permitidos por window con entero positivo.                         |
 | `TRUST_PROXY_HOPS`     | `0`                                         | Entero de 0 a 255.                                                          |
 
-Los origins se recortan y normalizan. Se rechazan las entradas vacías, duplicados, wildcards, credentials en URLs,
-protocolos no HTTP(S), paths distintos de `/`, query strings y fragments. Las CORS credentials siempre están
-deshabilitadas.
+Los origins se recortan y normalizan. Se rechazan las entradas vacías, duplicados, wildcards,
+credentials en URLs, protocolos no HTTP(S), paths distintos de `/`, query strings y fragments. Las
+CORS credentials siempre están deshabilitadas.
 
 ## Ejemplos
 
@@ -50,21 +50,22 @@ pnpm start:prod
 
 ### CORS de producción es explícito
 
-El startup en producción falla a menos que se proporcione explícitamente `CORS_ORIGINS` con al menos un origin válido.
-CORS no es authentication ni authorization: únicamente indica a los browsers compatibles qué cross-origin Requests
-pueden exponer. Proteja las APIs con controles adecuados de authentication y authorization.
+El startup en producción falla a menos que se proporcione explícitamente `CORS_ORIGINS` con al menos
+un origin válido. CORS no es authentication ni authorization: únicamente indica a los browsers
+compatibles qué cross-origin Requests pueden exponer. Proteja las APIs con controles adecuados de
+authentication y authorization.
 
 ### Confiar en el proxy requiere conocer la topology
 
-Establezca `TRUST_PROXY_HOPS` únicamente en el número de trusted proxy hops directamente delante de la API. Un valor
-demasiado permisivo puede permitir que los clients influyan en la client address aparente, lo que afecta el seguimiento
-de Rate Limits.
+Establezca `TRUST_PROXY_HOPS` únicamente en el número de trusted proxy hops directamente delante de
+la API. Un valor demasiado permisivo puede permitir que los clients influyan en la client address
+aparente, lo que afecta el seguimiento de Rate Limits.
 
 ### El Throttling es local a un proceso
 
-El NestJS Throttler configurado utiliza in-memory storage. Cada replica tiene sus propios counters, por lo que un client
-puede recibir hasta el limit en cada replica. Utilice shared storage para el Throttler o un edge Rate Limiter cuando los
-límites deban aplicarse entre múltiples replicas.
+El NestJS Throttler configurado utiliza in-memory storage. Cada replica tiene sus propios counters,
+por lo que un client puede recibir hasta el limit en cada replica. Utilice shared storage para el
+Throttler o un edge Rate Limiter cuando los límites deban aplicarse entre múltiples replicas.
 
-Todos los valores se leen y validan durante application startup. Reinicie la API después de cambiarlos; los runtime
-environment changes no reconfiguran un proceso en ejecución.
+Todos los valores se leen y validan durante application startup. Reinicie la API después de
+cambiarlos; los runtime environment changes no reconfiguran un proceso en ejecución.

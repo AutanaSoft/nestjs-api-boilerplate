@@ -14,7 +14,8 @@ La observabilidad se basa en:
 
 La aplicación debe utilizar structured logging.
 
-Los mensajes deben ser estables y el contexto relevante debe representarse mediante campos estructurados.
+Los mensajes deben ser estables y el contexto relevante debe representarse mediante campos
+estructurados.
 
 No registre:
 
@@ -23,7 +24,8 @@ No registre:
 - passwords;
 - payloads sensibles completos.
 
-Los errores inesperados deben registrar contexto diagnóstico suficiente sin exponer información sensible.
+Los errores inesperados deben registrar contexto diagnóstico suficiente sin exponer información
+sensible.
 
 ## Request Correlation
 
@@ -33,9 +35,11 @@ Cada Request debe disponer de un identificador de correlación:
 requestId
 ```
 
-El mismo `requestId` debe propagarse durante el lifecycle de la Request y utilizarse en los eventos relacionados.
+El mismo `requestId` debe propagarse durante el lifecycle de la Request y utilizarse en los eventos
+relacionados.
 
-Cuando `requestId` forme parte de una Response pública, su contrato se define en `../api/http-contracts.md`.
+Cuando `requestId` forme parte de una Response pública, su contrato se define en
+`../api/http-contracts.md`.
 
 ## Metrics
 
@@ -73,7 +77,8 @@ No incluya información sensible en span attributes.
 
 OpenTelemetry es la estrategia aprobada para instrumentación de Metrics y Traces.
 
-La instrumentación debe permanecer independiente del backend utilizado para almacenar, consultar o visualizar telemetry.
+La instrumentación debe permanecer independiente del backend utilizado para almacenar, consultar o
+visualizar telemetry.
 
 ## Reglas
 

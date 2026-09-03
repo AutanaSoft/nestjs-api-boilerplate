@@ -72,7 +72,9 @@ export function buildHttpConfig(environment: HttpEnvironment = process.env): Htt
     throw new Error('CORS_ORIGINS is required in production');
   }
 
-  const corsOrigins = parseCorsOrigins(corsOriginsValue === undefined ? DEFAULT_CORS_ORIGIN : corsOriginsValue);
+  const corsOrigins = parseCorsOrigins(
+    corsOriginsValue === undefined ? DEFAULT_CORS_ORIGIN : corsOriginsValue,
+  );
 
   return httpConfigSchema.parse({
     nodeEnv: parsedEnvironment.NODE_ENV,

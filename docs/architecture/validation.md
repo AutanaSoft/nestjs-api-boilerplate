@@ -2,7 +2,8 @@
 
 Status: Target
 
-Este documento define la estrategia técnica para validar datos que ingresan a la aplicación mediante el límite HTTP.
+Este documento define la estrategia técnica para validar datos que ingresan a la aplicación mediante
+el límite HTTP.
 
 Las convenciones de los contratos HTTP públicos se definen en `../api/http-contracts.md`.
 
@@ -30,9 +31,11 @@ Los Services deben recibir valores ya validados y normalizados respecto al contr
 
 ## Standard Schema
 
-El proyecto utiliza Zod 4 y `StandardSchemaValidationPipe` como estrategia predeterminada de Request validation.
+El proyecto utiliza Zod 4 y `StandardSchemaValidationPipe` como estrategia predeterminada de Request
+validation.
 
-El Pipe debe validar contra el Schema canónico correspondiente y entregar el valor resultante de la validación.
+El Pipe debe validar contra el Schema canónico correspondiente y entregar el valor resultante de la
+validación.
 
 Los detalles y ownership del contrato público pertenecen a `../api/http-contracts.md`.
 
@@ -58,7 +61,8 @@ Las reglas que necesiten estado de aplicación pertenecen al caso de uso corresp
 
 ## Errores
 
-Los errores propios de Zod, Standard Schema o del Pipe no deben exponerse directamente como contrato público.
+Los errores propios de Zod, Standard Schema o del Pipe no deben exponerse directamente como contrato
+público.
 
 Su traducción pertenece al Error Boundary definido en `error-handling.md`.
 

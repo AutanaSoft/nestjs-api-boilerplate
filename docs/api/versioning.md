@@ -70,7 +70,8 @@ El periodo de coexistencia debe permitir una migración explícita de los client
 
 ## Deprecation
 
-Una versión u operación no debe retirarse sin deprecation cuando existan consumidores que puedan depender de ella.
+Una versión u operación no debe retirarse sin deprecation cuando existan consumidores que puedan
+depender de ella.
 
 La deprecation debe:
 
