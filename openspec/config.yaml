@@ -1,0 +1,61 @@
+strict_tdd: true
+context: |
+  nestjs-api-boilerplate is a Node.js/TypeScript ESM project.
+  Detected markers: package.json, tsconfig.json, pnpm package manager, GitHub Actions.
+  Package managers: pnpm.
+  Additional evidence: Test-like files detected (4); examples: src/app.controller.spec.ts, src/app.setup.spec.ts, src/config/http.config.spec.ts, test/app.e2e-spec.ts.
+  Primary test command: pnpm test.
+  Unit tests: Vitest (pnpm test).
+  Integration tests: Supertest (pnpm test).
+  E2E tests: Playwright (pnpm run test:e2e).
+rules:
+  proposal:
+    require_problem_statement: true
+  spec:
+    require_acceptance_criteria: true
+  design:
+    require_tradeoffs: true
+  tasks:
+    protect_review_workload: true
+  apply:
+    test_command: 'pnpm test'
+  verify:
+    test_command: 'pnpm test'
+testing:
+  detected: '2026-09-10'
+  runner:
+    command: 'pnpm test'
+    framework: 'Vitest'
+  layers:
+    unit: 'Vitest'
+    integration: 'Supertest'
+    e2e: 'Playwright'
+  commands:
+    unit:
+      - scope: '.'
+        command: 'pnpm test'
+        framework: 'Vitest'
+    integration:
+      - scope: '.'
+        command: 'pnpm test'
+        framework: 'Supertest'
+    e2e:
+      - scope: '.'
+        command: 'pnpm run test:e2e'
+        framework: 'Playwright'
+  coverage:
+    command: ''
+    commands: []
+quality:
+  lint: 'pnpm run lint'
+  lint_commands:
+    - scope: '.'
+      command: 'pnpm run lint'
+      framework: 'linter'
+  typecheck: ''
+  typecheck_commands: []
+  format: 'pnpm run format'
+  format_commands:
+    - scope: '.'
+      command: 'pnpm run format'
+      framework: 'formatter'
