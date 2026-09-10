@@ -358,3 +358,73 @@ push, or PR was created.
 - `actionContext.mode`: `repo-local`
 - `allowedEditRoots`: repository root
 - Warnings: none
+
+## Unit 4 — E2E documentation and OpenSpec metadata
+
+**Status:** complete. Only Unit 4 was applied on `feature/e2e-foundation-04-docs`.
+
+### Completed tasks
+
+- [x] RED — Audited the declarative E2E surfaces before editing.
+- [x] GREEN — Aligned OpenSpec metadata and the E2E convention document with Vitest.
+- [x] TRIANGULATE — Cross-checked metadata, runner configuration, package command, owner, and suite.
+- [x] REFACTOR — Formatted the documentation, YAML, and tasks artifact and validated Markdown.
+
+The four Unit 4 checkboxes are visibly marked `[x]` in `tasks.md`.
+
+### Files changed
+
+- `docs/testing/e2e-testing.md`
+- `openspec/config.yaml`
+- `openspec/changes/establish-e2e-test-foundation/tasks.md`
+- `openspec/changes/establish-e2e-test-foundation/apply-progress.md`
+
+### TDD Cycle Evidence
+
+| Task   | Test file                                    | Layer             | Safety net                         | RED                                                                                                       | GREEN                                                                                                                                                                          | TRIANGULATE                                                                                                                                                       | REFACTOR                                                                         |
+| ------ | -------------------------------------------- | ----------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Unit 4 | N/A (declarative documentation and metadata) | Declarative audit | N/A; no code or test files changed | Pre-edit audit found Playwright in E2E metadata and no concrete owner/suite guidance in the E2E document. | Replaced E2E-only metadata with Vitest while retaining `pnpm run test:e2e`; documented the implemented owner, suite, bootstrap, environment, contracts, and future boundaries. | Confirmed no Playwright remains in `openspec/config.yaml`; `vitest.config.e2e.ts`, `package.json`, `main.e2e-spec.ts`, and the app suite agree with the document. | Prettier completed without changes after formatting; `markdownlint-cli2` passed. |
+
+Triangulation uses independent declarative surfaces rather than artificial tests because this unit
+has no production logic or branching behavior.
+
+### Verification
+
+- `pnpm exec prettier --write openspec/config.yaml docs/testing/e2e-testing.md openspec/changes/establish-e2e-test-foundation/tasks.md`:
+  passed; no subsequent changes.
+- `pnpm exec markdownlint-cli2 docs/testing/e2e-testing.md openspec/changes/establish-e2e-test-foundation/tasks.md`:
+  passed, 0 issues.
+- `pnpm run lint`: passed.
+- `pnpm test`: passed, 5 files and 31 tests.
+- `pnpm run test:e2e`: passed, 1 file and 4 tests.
+- `pnpm build`: passed; TypeScript found 0 issues and SWC compiled 6 files.
+- `git diff --check`: passed.
+
+### Design conformance and deviations
+
+`openspec/config.yaml` now identifies Vitest and retains `pnpm run test:e2e` without changing
+`strict_tdd: true` or unit commands. The E2E guide documents the sole discovered owner, explicit
+registration, per-scenario applications, production-derived bootstrap, bounded environment
+ownership, and the four existing HTTP contracts. It labels persistence, authentication, external
+adapters, and data rules as future and not implemented. `vitest.config.ts` was not changed; its
+discovery separation remains deferred. No deviations.
+
+### Remaining implementation tasks
+
+None. All 16 implementation-owned tasks are visibly marked `[x]` in `tasks.md`.
+
+### Workload and PR boundary
+
+The resolved delivery path is `feature-branch-chain`. This is the Unit 4 documentation and metadata
+slice. Rollback boundary: revert only `docs/testing/e2e-testing.md` and the E2E metadata in
+`openspec/config.yaml`; retain Vitest metadata while it remains the real runner. No commit, branch,
+push, or PR was created.
+
+### Consumed structured status
+
+- `changeName`: `establish-e2e-test-foundation`
+- `applyState`: `ready`
+- `artifactStore`: `openspec`
+- `actionContext.mode`: `repo-local`
+- `allowedEditRoots`: repository root
+- Warnings: none

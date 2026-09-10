@@ -315,7 +315,7 @@ del repositorio; no se revierte por una regresión de organización de pruebas.
 
 ### RED
 
-- [ ] RED — Auditar `openspec/config.yaml`, `docs/testing/e2e-testing.md`, `vitest.config.e2e.ts` y
+- [x] RED — Auditar `openspec/config.yaml`, `docs/testing/e2e-testing.md`, `vitest.config.e2e.ts` y
       `package.json` antes de editar, registrando como discrepancias verificables la referencia E2E
       a Playwright y la ausencia de instrucciones concretas para `test/main.e2e-spec.ts`,
       `*.e2e-suite.ts` y `pnpm run test:e2e`. <!-- sdd-owner: implementation -->
@@ -325,7 +325,7 @@ artificial para documentación ni modificar `package.json` para ocultar la discr
 
 ### GREEN
 
-- [ ] GREEN — Editar `openspec/config.yaml` y `docs/testing/e2e-testing.md` para declarar `Vitest` y
+- [x] GREEN — Editar `openspec/config.yaml` y `docs/testing/e2e-testing.md` para declarar `Vitest` y
       `pnpm run test:e2e`, describir el flujo implementado y separar explícitamente las extensiones
       futuras no implementadas. <!-- sdd-owner: implementation -->
 
@@ -353,7 +353,7 @@ En `docs/testing/e2e-testing.md` se debe documentar, como mínimo:
 
 ### TRIANGULATE
 
-- [ ] TRIANGULATE — Contrastar `openspec/config.yaml`, `docs/testing/e2e-testing.md`,
+- [x] TRIANGULATE — Contrastar `openspec/config.yaml`, `docs/testing/e2e-testing.md`,
       `vitest.config.e2e.ts`, `package.json`, `test/main.e2e-spec.ts` y
       `test/modules/app/app.e2e-suite.ts` para demostrar alineación entre metadatos, ejecución,
       estructura y documentación. <!-- sdd-owner: implementation -->
@@ -376,7 +376,7 @@ Prisma, autenticación, fixtures, seeds o adaptadores externos implementados, y 
 
 ### REFACTOR
 
-- [ ] REFACTOR — Refinar `docs/testing/e2e-testing.md`, `openspec/config.yaml` y
+- [x] REFACTOR — Refinar `docs/testing/e2e-testing.md`, `openspec/config.yaml` y
       `openspec/changes/establish-e2e-test-foundation/tasks.md` con prosa concisa, enlaces y
       referencias consistentes, tablas legibles y formato compatible con el Prettier y
       `markdownlint-cli2` del repositorio. <!-- sdd-owner: implementation -->

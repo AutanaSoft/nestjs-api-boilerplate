@@ -1,182 +1,98 @@
 # Pruebas E2E
 
-Status: Target
+Status: Implemented
 
-Este documento define las convenciones específicas de E2E Testing.
+Este documento define la convención E2E implementada para verificar la API NestJS a través de HTTP.
+Las convenciones generales de testing, determinismo y datos pertenecen a [testing.md](testing.md).
 
-El baseline HTTP E2E ya forma parte del proyecto. Las reglas de infraestructura, persistencia y
-autenticación aplican a medida que esas capacidades formen parte de la aplicación.
+## Ejecución actual
 
-Las convenciones generales de testing se definen en `testing.md`.
+Ejecute la suite E2E con:
 
-## Límite de la aplicación
-
-Los E2E Tests deben ejecutar la aplicación desde la misma application root y reutilizar el bootstrap
-compartido con producción.
-
-Los componentes internos relevantes para el comportamiento probado deben permanecer reales.
-
-La configuración específica de E2E puede aislar infraestructura o external Providers, pero no debe
-sustituir el flujo interno que el escenario pretende verificar.
-
-## Lifecycle Ownership
-
-Un entorno E2E compartido debe tener un único lifecycle owner.
-
-Ese owner es responsable, según corresponda, de:
-
-- crear la aplicación;
-- preparar el test environment;
-- preparar infraestructura aislada;
-- ejecutar migrations;
-- registrar las suites;
-- cerrar la aplicación;
-- liberar infraestructura;
-- restaurar el entorno modificado.
-
-El Test Runner debe descubrir únicamente los entry points responsables del lifecycle.
-
-Las suites importadas no deben ejecutarse adicionalmente como entry points independientes.
-
-## Estructura
-
-La suite puede crecer de forma incremental:
-
-```text
-test/
-├── main.e2e-spec.ts
-├── support/
-├── fixtures/
-└── modules/
+```bash
+pnpm run test:e2e
 ```
 
-Los directorios se introducen únicamente cuando exista contenido que lo justifique.
+Vitest descubre exclusivamente `test/main.e2e-spec.ts` mediante `vitest.config.e2e.ts`. La
+separación de ese descubrimiento respecto de `vitest.config.ts` queda diferida y no se modifica en
+esta base.
 
-## Independencia
+## Propietario y registro de suites
 
-Los escenarios independientes deben preparar sus propios prerequisites y permanecer seguros al
-reordenarse.
-
-Un ordered business flow puede compartir estado cuando la secuencia sea parte explícita del
-comportamiento probado.
-
-Ese estado debe pertenecer a un contexto tipado de la suite y no a variables globales implícitas.
-
-Las reglas generales de determinismo y Test Data se definen en `testing.md`.
-
-## Infraestructura real
-
-Cuando una capacidad dependa de infraestructura persistente, los E2E Tests deben utilizar una
-instancia real y aislada de la misma tecnología utilizada por la aplicación.
-
-La arquitectura de persistencia se define en `../architecture/data-access.md`.
-
-Cuando PostgreSQL y Prisma formen parte de la aplicación, el entorno E2E debe utilizar una base de
-datos PostgreSQL aislada y el production Prisma persistence path.
-
-El entorno debe aplicar las migrations versionadas y eliminar los recursos temporales al finalizar.
-
-Las bases de datos de desarrollo y producción no deben reutilizarse como E2E databases.
-
-## Componentes internos
-
-No sustituya componentes internos relevantes para el comportamiento E2E, como:
-
-- Controllers;
-- Guards;
-- Pipes;
-- Interceptors;
-- Application Services;
-- Repositories;
-- persistence infrastructure.
-
-Un escenario que reemplaza la lógica interna que afirma verificar no representa cobertura E2E
-completa de esa responsabilidad.
-
-## Autenticación
-
-Cuando la aplicación sea responsable de emitir credentials, los escenarios autenticados deben
-obtenerlas mediante el public authentication flow.
-
-No utilice tokens pre-issued para omitir el flujo de autenticación que el escenario necesita
-verificar.
-
-## Prerequisites
-
-Cree application data mediante la API pública cuando exista una operación pública razonable para
-producir ese estado.
-
-Utilice direct persistence Seeds únicamente cuando el prerequisite:
-
-- no tenga una API pública apropiada;
-- sea desproporcionadamente costoso mediante HTTP;
-- requiera high-volume setup;
-- represente un estado técnico especial.
-
-Los Seeds deben ser mínimos y no deben omitir el comportamiento que el escenario pretende verificar.
-
-## Assertions
-
-Las E2E Assertions deben centrarse en comportamiento observable:
-
-- HTTP status;
-- Response contracts;
-- headers;
-- cookies;
-- authorization behavior;
-- persisted effects;
-- external effects;
-- ausencia de información no permitida.
-
-No verifique llamadas internas a métodos de Services, Repositories u ORM.
-
-Cuando sea práctico, verifique persisted effects mediante una operación pública posterior.
-
-## External Boundaries
-
-Las dependencias externas out-of-process pueden aislarse cuando utilizar el Provider real sea
-inseguro, no determinista, costoso o no esté disponible.
-
-Reemplace únicamente el adapter que cruza el process boundary.
+`test/main.e2e-spec.ts` es el único propietario del ciclo de vida E2E. Prepara el entorno, registra
+las suites en un orden explícito y libera sus recursos al terminar. Una suite de funcionalidad se
+ubica en:
 
 ```text
-Application flow
-      ↓
-External adapter
-      ↓
-Test replacement
+test/modules/<feature>/<feature>.e2e-suite.ts
 ```
 
-No sustituya el Application Service responsable del caso de uso.
+El sufijo `*.e2e-suite.ts` no coincide con el punto de entrada descubierto. La suite exporta su
+función de registro y no declara hooks globales ni administra aplicaciones, `process.env` o recursos
+compartidos. El propietario la importa y registra de forma directa y revisable:
 
-El replacement debe permitir verificar el outgoing contract sin ejecutar el side effect real.
+```typescript
+registerAppE2ESuite({ runScenario });
+```
 
-## Teardown
+Una suite nueva debe seguir el mismo patrón; no se deben añadir propietarios E2E adicionales ni
+arreglos dinámicos de registradores.
 
-El lifecycle owner debe liberar todos los recursos creados por el entorno E2E.
+## Escenarios y bootstrap
 
-Esto incluye, cuando corresponda:
+Cada escenario independiente recibe una aplicación NestJS nueva y la cierra de forma determinista.
+Por ello, los escenarios pueden reordenarse sin compartir estado. El escenario de límite de tasa
+conserva sus tres solicitudes en la misma aplicación porque ese estado forma parte de su propio
+contrato.
 
-- aplicación NestJS;
-- database clients y connections;
-- temporary databases;
-- external Provider replacements;
-- environment state modificado.
+El bootstrap E2E usa componentes reales de la aplicación:
 
-No dependa de forced process termination para ocultar recursos no liberados.
+1. Compila `AppModule`.
+2. Obtiene `ConfigType<typeof httpConfig>` mediante `httpConfig.KEY`.
+3. Aplica `setupApplication` e inicializa la aplicación.
+4. Usa Supertest sobre `app.getHttpServer()`.
 
-## Reglas
+No inicia un puerto con `listen` ni reproduce manualmente middleware de producción. Los componentes
+internos relevantes permanecen reales.
 
-1. Verifique E2E mediante el límite real de la aplicación.
-2. Reutilice application bootstrap behavior derivado de producción.
-3. Mantenga un único lifecycle owner por entorno compartido.
-4. Impida que suites importadas se ejecuten adicionalmente como entry points.
-5. Mantenga reales los componentes internos relevantes para el escenario.
-6. Utilice infraestructura real y aislada cuando la capacidad probada dependa de ella.
-7. Cree prerequisites mediante interfaces públicas cuando sea razonable.
-8. Utilice direct Seeds únicamente cuando estén justificados.
-9. Verifique comportamiento observable y no internal calls.
-10. Aísle únicamente external out-of-process boundaries cuando sea necesario.
-11. Libere todos los recursos creados por el test environment.
-12. Aplique las convenciones generales de determinismo, Test Data y aislamiento definidas en
-    `testing.md`.
+El entorno E2E solo captura, modifica y restaura `CORS_ORIGINS`, `THROTTLE_LIMIT` y
+`THROTTLE_TTL_SECONDS`. Conserva tanto la presencia como el valor previo de cada variable y los
+restaura tras el desmontaje normal o una preparación parcial fallida. No modifica otras claves del
+entorno.
+
+## Contratos HTTP cubiertos
+
+La suite de aplicación conserva estos cuatro contratos públicos:
+
+| Contrato       | Resultado esperado                                                                        |
+| -------------- | ----------------------------------------------------------------------------------------- |
+| `GET /`        | `200`, `Hello World!`, `x-content-type-options: nosniff` y `x-frame-options: SAMEORIGIN`. |
+| CORS           | El origen permitido recibe `access-control-allow-origin`; el no configurado no la recibe. |
+| Preflight      | `OPTIONS /` desde el origen permitido responde `204` y conserva la cabecera CORS.         |
+| Límite de tasa | Con límite dos, tres solicitudes `GET /` responden `200`, `200`, `429`.                   |
+
+## Extensiones futuras no implementadas
+
+La base entregada no implementa PostgreSQL, Prisma, migraciones, autenticación, fixtures, seeds,
+proveedores externos, dependencias nuevas ni abstracciones para esas capacidades.
+
+Cuando exista una necesidad real, las siguientes pautas aplicarán:
+
+- **PostgreSQL y Prisma:** usar una base temporal aislada, validar su configuración administrativa,
+  aplicar migraciones versionadas y eliminar los recursos al finalizar.
+- **Autenticación:** obtener credenciales mediante los flujos HTTP públicos de registro o inicio de
+  sesión; no usar tokens preemitidos para omitir el comportamiento verificado.
+- **Proveedores externos:** aislar únicamente el adaptador inyectado que cruza el límite fuera de
+  proceso; controladores, guards, servicios, repositorios y persistencia permanecen reales.
+- **Datos de prueba:** crear los prerrequisitos mediante HTTP cuando sea razonable. Un seed directo
+  solo podrá crear un prerrequisito mínimo y justificado que no deba producirse mediante la API.
+
+No se deben introducir interfaces vacías, adaptadores falsos, infraestructura simulada ni
+abstracciones prematuras antes de que una capacidad concreta las requiera.
+
+## Rollback
+
+El rollback de esta unidad revierte solo esta documentación y los metadatos E2E de
+`openspec/config.yaml`. La identificación de Vitest se conserva mientras siga siendo el ejecutor
+real; una regresión de la organización de pruebas no justifica declarar Playwright como framework
+E2E.
