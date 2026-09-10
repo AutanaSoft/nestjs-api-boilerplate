@@ -19,9 +19,9 @@ esta base.
 
 ## Propietario y registro de suites
 
-`test/main.e2e-spec.ts` es el único propietario del ciclo de vida E2E. Prepara el entorno, registra
-las suites en un orden explícito y libera sus recursos al terminar. Una suite de funcionalidad se
-ubica en:
+`test/main.e2e-spec.ts` es el único propietario del registro E2E. Registra las suites en un orden
+explícito y les proporciona el ejecutor que crea y cierra una aplicación por escenario. Una suite de
+funcionalidad se ubica en:
 
 ```text
 test/modules/<feature>/<feature>.e2e-suite.ts
@@ -55,10 +55,10 @@ El bootstrap E2E usa componentes reales de la aplicación:
 No inicia un puerto con `listen` ni reproduce manualmente middleware de producción. Los componentes
 internos relevantes permanecen reales.
 
-El entorno E2E solo captura, modifica y restaura `CORS_ORIGINS`, `THROTTLE_LIMIT` y
-`THROTTLE_TTL_SECONDS`. Conserva tanto la presencia como el valor previo de cada variable y los
-restaura tras el desmontaje normal o una preparación parcial fallida. No modifica otras claves del
-entorno.
+`vitest.config.e2e.ts` define, mediante `test.env`, los valores E2E de
+`CORS_ORIGINS=https://allowed.example`, `THROTTLE_LIMIT=2` y `THROTTLE_TTL_SECONDS=60`. El helper
+E2E no lee, modifica ni restaura `process.env`; Vitest aplica esos valores dentro de la
+configuración E2E, incluso cuando el proceso invocador aporta valores conflictivos.
 
 ## Contratos HTTP cubiertos
 

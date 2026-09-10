@@ -74,28 +74,18 @@ sin cambios por esta organización de pruebas.
   `setupApplication` y responde a través del servidor HTTP real sin sustituir componentes internos
   relevantes.
 
-### Requirement: Captura y restauración acotadas del entorno
+### Requirement: Configuración E2E acotada por Vitest
 
-El entorno E2E MUST capturar, antes de cualquier mutación, únicamente los valores de las variables
-que el propio entorno modifique, conservando la diferencia entre una variable ausente y una variable
-definida. El propietario del ciclo de vida MUST restaurar esos valores después de un desmontaje
-normal y después de un fallo parcial de configuración.
+`vitest.config.e2e.ts` MUST definir `CORS_ORIGINS=https://allowed.example`, `THROTTLE_LIMIT=2` y
+`THROTTLE_TTL_SECONDS=60` mediante `test.env`. El helper E2E MUST NOT leer, modificar ni restaurar
+`process.env`; Vitest aplica los valores al contexto de prueba E2E.
 
-#### Scenario: El desmontaje normal restaura el entorno original
+#### Scenario: La configuración E2E prevalece sobre valores externos
 
-- GIVEN que E2E modifica `CORS_ORIGINS`, `THROTTLE_LIMIT` y `THROTTLE_TTL_SECONDS`, y que alguna de
-  ellas puede no existir antes de la ejecución.
-- WHEN el entorno E2E termina correctamente.
-- THEN las variables modificadas recuperan exactamente sus valores originales, las variables
-  originalmente ausentes vuelven a estar ausentes y las variables no modificadas por E2E no se
-  alteran.
-
-#### Scenario: Un fallo parcial restaura el entorno y libera lo creado
-
-- GIVEN que la configuración E2E muta parte del entorno y crea algunos recursos antes de fallar.
-- WHEN ocurre el fallo parcial durante la preparación o el bootstrap.
-- THEN se cierran los recursos creados hasta ese punto, se restauran todos los valores capturados
-  del entorno y se conserva el error original, sin depender de la terminación forzada del proceso.
+- GIVEN que el proceso invocador proporciona valores conflictivos para las tres variables E2E.
+- WHEN se ejecuta `pnpm run test:e2e`.
+- THEN los contratos CORS y de límite de tasa se verifican con los valores definidos por
+  `vitest.config.e2e.ts`, sin mutación ni restauración por el helper.
 
 ### Requirement: Conservación de los cuatro escenarios HTTP públicos actuales
 
@@ -167,9 +157,9 @@ ejecutor real del repositorio.
 
 `docs/testing/e2e-testing.md` MUST describir la convención resultante de descubrimiento exclusivo,
 nomenclatura o rutas no descubribles, registro explícito, propiedad del ciclo de vida, aplicación
-nueva por escenario independiente, bootstrap mediante `AppModule` y `setupApplication`, restauración
-acotada del entorno, aislamiento de las cuatro comprobaciones actuales y puntos de extensión
-futuros. La actualización MUST mantener la alineación con `vitest.config.e2e.ts` y
+nueva por escenario independiente, bootstrap mediante `AppModule` y `setupApplication`,
+configuración E2E mediante `test.env`, aislamiento de las cuatro comprobaciones actuales y puntos de
+extensión futuros. La actualización MUST mantener la alineación con `vitest.config.e2e.ts` y
 `pnpm run test:e2e`.
 
 #### Scenario: Una persona puede registrar una nueva suite sin crear otro propietario

@@ -12,8 +12,8 @@ La suite actual valida correctamente el límite HTTP mediante `AppModule`, `setu
 y Supertest, pero su estructura no ofrece una convención segura para crecer. `vitest.config.e2e.ts`
 descubre todos los archivos `**/*.e2e-spec.ts`; por ello, una futura suite importada con el mismo
 sufijo podría ejecutarse también como punto de entrada independiente. Además, la suite existente
-concentra registro, bootstrap, mutación del entorno y desmontaje sin separar las responsabilidades
-reutilizables.
+concentra registro y bootstrap sin separar las responsabilidades reutilizables ni declarar los
+valores E2E en la configuración del runner.
 
 Esta situación aumenta el riesgo de ejecución duplicada, propietarios de ciclo de vida en conflicto
 y convenciones ad hoc cuando se incorporen funcionalidades que requieran persistencia, autenticación
@@ -45,8 +45,8 @@ anticipadas.
   - un contexto E2E tipado con la aplicación Nest inicializada;
   - un creador de aplicación basado en `AppModule`, la configuración tipada `http` y
     `setupApplication`;
-  - manejo acotado del estado de entorno modificado por E2E, con captura y restauración incluso ante
-    fallos parciales.
+  - un ejecutor de escenarios con limpieza determinista; los valores E2E pertenecen exclusivamente a
+    `test.env` de la configuración de Vitest.
 - Crear y cerrar una aplicación Nest nueva por cada escenario independiente.
 - Mantener las aserciones públicas existentes para respuesta raíz, cabeceras de Helmet, CORS,
   preflight y límite de tasa.
@@ -116,7 +116,7 @@ Estos puntos son directrices documentales y no entregables de infraestructura en
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
 | Filtración del estado del límite de tasa entre escenarios                | Mantener una aplicación nueva por escenario independiente.                                                                       |
 | Ejecución duplicada de suites importadas                                 | Descubrir únicamente `test/main.e2e-spec.ts` y reservar una nomenclatura no descubrible para las suites registradas.             |
-| Fuga de recursos o de valores de `process.env` ante errores              | Capturar antes de mutar, cerrar recursos parciales y restaurar el entorno en rutas normales y de fallo.                          |
+| Valores E2E inconsistentes o fuga de recursos ante errores               | Declarar los tres valores E2E en `test.env`; cerrar los recursos de cada escenario sin que el helper acceda a `process.env`.     |
 | Abstracciones prematuras para capacidades futuras                        | Limitar este cambio al soporte exigido por las pruebas actuales y documentar las extensiones sin implementarlas.                 |
 | Divergencia entre documentación y ejecución real                         | Alinear `openspec/config.yaml`, `docs/testing/e2e-testing.md`, `vitest.config.e2e.ts` y `pnpm run test:e2e`.                     |
 | El propietario único se interpreta como una aplicación global compartida | Documentar que la propiedad del ciclo de vida no impide crear una aplicación nueva por escenario cuando el aislamiento lo exige. |
@@ -141,8 +141,8 @@ no modifica persistencia ni contratos públicos.
   Supertest.
 - Una suite de funcionalidad importada demuestra el patrón de registro y no coincide con el patrón
   de descubrimiento de Vitest.
-- El estado de entorno modificado por E2E se restaura tanto después de una ejecución correcta como
-  ante un fallo parcial de configuración.
+- `vitest.config.e2e.ts` define los valores E2E y el helper no lee, modifica ni restaura
+  `process.env`.
 - `openspec/config.yaml` identifica Vitest y `pnpm run test:e2e` como ejecutor y comando E2E.
 - `docs/testing/e2e-testing.md` describe la convención concreta resultante y diferencia claramente
   las extensiones futuras de las capacidades implementadas.

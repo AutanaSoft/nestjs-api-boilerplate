@@ -22,5 +22,10 @@ export default defineConfig({
     globals: true,
     root: './',
     include: ['test/main.e2e-spec.ts'],
+    env: {
+      CORS_ORIGINS: 'https://allowed.example',
+      THROTTLE_LIMIT: '2',
+      THROTTLE_TTL_SECONDS: '60',
+    },
   },
 });

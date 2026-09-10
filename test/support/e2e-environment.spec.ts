@@ -3,118 +3,20 @@ import { describe, expect, it, vi } from 'vitest';
 import type { E2EContext } from './e2e-context.js';
 
 describe('createE2EEnvironment', () => {
-  it('applies only the E2E overrides and restores existing values on disposal', async () => {
-    const originalCorsOrigins = process.env.CORS_ORIGINS;
-    const originalThrottleLimit = process.env.THROTTLE_LIMIT;
-    const originalThrottleTtlSeconds = process.env.THROTTLE_TTL_SECONDS;
-    const originalUnrelated = process.env.UNRELATED_E2E_ENVIRONMENT_TEST;
+  it('does not mutate the controlled environment keys during construction or execution', async () => {
+    const originalEnvironment = captureEnvironment();
+    const application = createApplicationDouble();
+    const { createE2EEnvironment } = await loadEnvironmentFactory([application.context]);
 
-    try {
-      process.env.CORS_ORIGINS = 'https://before.example';
-      process.env.THROTTLE_LIMIT = '10';
-      process.env.THROTTLE_TTL_SECONDS = '30';
-      process.env.UNRELATED_E2E_ENVIRONMENT_TEST = 'preserve-me';
+    const environment = await createE2EEnvironment();
 
-      const { createE2EEnvironment } = await loadEnvironmentFactory();
-      const environment = await createE2EEnvironment();
+    expect(captureEnvironment()).toEqual(originalEnvironment);
 
-      expect(process.env.CORS_ORIGINS).toBe('https://allowed.example');
-      expect(process.env.THROTTLE_LIMIT).toBe('2');
-      expect(process.env.THROTTLE_TTL_SECONDS).toBe('60');
-      expect(process.env.UNRELATED_E2E_ENVIRONMENT_TEST).toBe('preserve-me');
+    await environment.runScenario(async () => undefined);
 
-      await environment.dispose();
-
-      expect(process.env.CORS_ORIGINS).toBe('https://before.example');
-      expect(process.env.THROTTLE_LIMIT).toBe('10');
-      expect(process.env.THROTTLE_TTL_SECONDS).toBe('30');
-      expect(process.env.UNRELATED_E2E_ENVIRONMENT_TEST).toBe('preserve-me');
-    } finally {
-      restoreEnvironmentValue('CORS_ORIGINS', originalCorsOrigins);
-      restoreEnvironmentValue('THROTTLE_LIMIT', originalThrottleLimit);
-      restoreEnvironmentValue('THROTTLE_TTL_SECONDS', originalThrottleTtlSeconds);
-      restoreEnvironmentValue('UNRELATED_E2E_ENVIRONMENT_TEST', originalUnrelated);
-    }
-  });
-
-  it('restores absent values and does not restore them a second time', async () => {
-    const originalCorsOrigins = process.env.CORS_ORIGINS;
-    const originalThrottleLimit = process.env.THROTTLE_LIMIT;
-    const originalThrottleTtlSeconds = process.env.THROTTLE_TTL_SECONDS;
-
-    try {
-      delete process.env.CORS_ORIGINS;
-      delete process.env.THROTTLE_LIMIT;
-      delete process.env.THROTTLE_TTL_SECONDS;
-
-      const { createE2EEnvironment } = await loadEnvironmentFactory();
-      const environment = await createE2EEnvironment();
-
-      await environment.dispose();
-      process.env.CORS_ORIGINS = 'changed-after-disposal';
-      await environment.dispose();
-
-      expect(Object.hasOwn(process.env, 'CORS_ORIGINS')).toBe(true);
-      expect(process.env.CORS_ORIGINS).toBe('changed-after-disposal');
-      expect(Object.hasOwn(process.env, 'THROTTLE_LIMIT')).toBe(false);
-      expect(Object.hasOwn(process.env, 'THROTTLE_TTL_SECONDS')).toBe(false);
-    } finally {
-      restoreEnvironmentValue('CORS_ORIGINS', originalCorsOrigins);
-      restoreEnvironmentValue('THROTTLE_LIMIT', originalThrottleLimit);
-      restoreEnvironmentValue('THROTTLE_TTL_SECONDS', originalThrottleTtlSeconds);
-    }
-  });
-
-  it('restores captured values when applying an override fails', async () => {
-    const originalEnvironment = process.env;
-    const overrideFailure = new Error('override failed');
-    const restorationFailure = new Error('restoration failed');
-    let throttleLimitWrites = 0;
-    const proxyEnvironment = new Proxy(originalEnvironment, {
-      set(target, property, value) {
-        if (property === 'THROTTLE_LIMIT') {
-          throttleLimitWrites += 1;
-          throw throttleLimitWrites === 1 ? overrideFailure : restorationFailure;
-        }
-
-        return Reflect.set(target, property, value);
-      },
-    });
-
-    const originalCorsOrigins = process.env.CORS_ORIGINS;
-    const originalThrottleLimit = process.env.THROTTLE_LIMIT;
-    const originalThrottleTtlSeconds = process.env.THROTTLE_TTL_SECONDS;
-
-    try {
-      process.env.CORS_ORIGINS = 'https://before.example';
-      process.env.THROTTLE_LIMIT = '10';
-      process.env.THROTTLE_TTL_SECONDS = '30';
-      Object.defineProperty(process, 'env', {
-        configurable: true,
-        value: proxyEnvironment,
-      });
-
-      const { createE2EEnvironment } = await loadEnvironmentFactory();
-
-      await expect(createE2EEnvironment()).rejects.toSatisfy(
-        (error: unknown) =>
-          typeof error === 'object' &&
-          error !== null &&
-          'errors' in error &&
-          Array.isArray(error.errors) &&
-          error.errors[0] === overrideFailure &&
-          error.errors[1] === restorationFailure,
-      );
-      expect(process.env.CORS_ORIGINS).toBe('https://before.example');
-    } finally {
-      Object.defineProperty(process, 'env', {
-        configurable: true,
-        value: originalEnvironment,
-      });
-      restoreEnvironmentValue('CORS_ORIGINS', originalCorsOrigins);
-      restoreEnvironmentValue('THROTTLE_LIMIT', originalThrottleLimit);
-      restoreEnvironmentValue('THROTTLE_TTL_SECONDS', originalThrottleTtlSeconds);
-    }
+    expect(captureEnvironment()).toEqual(originalEnvironment);
+    expect(environment).not.toHaveProperty('dispose');
+    expect(application.close).toHaveBeenCalledOnce();
   });
 
   it('creates and closes a fresh application for every successful scenario', async () => {
@@ -125,49 +27,33 @@ describe('createE2EEnvironment', () => {
       secondApplication.context,
     ]);
     const environment = await createE2EEnvironment();
+    const applications: INestApplication[] = [];
 
-    try {
-      const applications: INestApplication[] = [];
-      await environment.runScenario(async ({ app }) => {
-        applications.push(app);
-      });
-      await environment.runScenario(async ({ app }) => {
-        applications.push(app);
-      });
+    await environment.runScenario(async ({ app }) => {
+      applications.push(app);
+    });
+    await environment.runScenario(async ({ app }) => {
+      applications.push(app);
+    });
 
-      expect(createE2EApplication).toHaveBeenCalledTimes(2);
-      expect(applications).toEqual([firstApplication.app, secondApplication.app]);
-      expect(firstApplication.close).toHaveBeenCalledOnce();
-      expect(secondApplication.close).toHaveBeenCalledOnce();
-    } finally {
-      await environment.dispose();
-    }
+    expect(createE2EApplication).toHaveBeenCalledTimes(2);
+    expect(applications).toEqual([firstApplication.app, secondApplication.app]);
+    expect(firstApplication.close).toHaveBeenCalledOnce();
+    expect(secondApplication.close).toHaveBeenCalledOnce();
   });
 
   it('propagates the original scenario failure after successful application cleanup', async () => {
-    const originalCorsOrigins = process.env.CORS_ORIGINS;
-    const originalThrottleLimit = process.env.THROTTLE_LIMIT;
-    const originalThrottleTtlSeconds = process.env.THROTTLE_TTL_SECONDS;
     const scenarioFailure = new Error('scenario failed');
     const application = createApplicationDouble();
     const { createE2EEnvironment } = await loadEnvironmentFactory([application.context]);
+    const environment = await createE2EEnvironment();
 
-    try {
-      const environment = await createE2EEnvironment();
-
-      await expect(
-        environment.runScenario(async () => {
-          throw scenarioFailure;
-        }),
-      ).rejects.toBe(scenarioFailure);
-      expect(application.close).toHaveBeenCalledOnce();
-
-      await environment.dispose();
-    } finally {
-      restoreEnvironmentValue('CORS_ORIGINS', originalCorsOrigins);
-      restoreEnvironmentValue('THROTTLE_LIMIT', originalThrottleLimit);
-      restoreEnvironmentValue('THROTTLE_TTL_SECONDS', originalThrottleTtlSeconds);
-    }
+    await expect(
+      environment.runScenario(async () => {
+        throw scenarioFailure;
+      }),
+    ).rejects.toBe(scenarioFailure);
+    expect(application.close).toHaveBeenCalledOnce();
   });
 
   it('preserves a scenario failure before its cleanup failure', async () => {
@@ -177,21 +63,17 @@ describe('createE2EEnvironment', () => {
     const { createE2EEnvironment } = await loadEnvironmentFactory([application.context]);
     const environment = await createE2EEnvironment();
 
-    try {
-      await expect(
-        environment.runScenario(async () => {
-          throw scenarioFailure;
-        }),
-      ).rejects.toSatisfy(
-        (error: unknown) =>
-          error instanceof AggregateError &&
-          error.errors[0] === scenarioFailure &&
-          error.errors[1] === cleanupFailure,
-      );
-      expect(application.close).toHaveBeenCalledOnce();
-    } finally {
-      await environment.dispose();
-    }
+    await expect(
+      environment.runScenario(async () => {
+        throw scenarioFailure;
+      }),
+    ).rejects.toSatisfy(
+      (error: unknown) =>
+        error instanceof AggregateError &&
+        error.errors[0] === scenarioFailure &&
+        error.errors[1] === cleanupFailure,
+    );
+    expect(application.close).toHaveBeenCalledOnce();
   });
 });
 
@@ -232,11 +114,10 @@ async function loadEnvironmentFactory(contexts: E2EContext[] = []) {
   };
 }
 
-function restoreEnvironmentValue(key: string, value: string | undefined): void {
-  if (value === undefined) {
-    delete process.env[key];
-    return;
-  }
-
-  process.env[key] = value;
+function captureEnvironment(): Readonly<Record<string, string | undefined>> {
+  return {
+    CORS_ORIGINS: process.env.CORS_ORIGINS,
+    THROTTLE_LIMIT: process.env.THROTTLE_LIMIT,
+    THROTTLE_TTL_SECONDS: process.env.THROTTLE_TTL_SECONDS,
+  };
 }

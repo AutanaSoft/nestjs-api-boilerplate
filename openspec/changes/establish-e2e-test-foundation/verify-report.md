@@ -26,8 +26,9 @@ alineados con la especificación. No hay bloqueos ni hallazgos críticos.
   descubrible `*.e2e-suite.ts`, que no contiene hooks.
 - Cada escenario crea y cierra una aplicación nueva desde `AppModule`, `httpConfig.KEY`,
   `setupApplication` y `app.init()`; Supertest usa `app.getHttpServer()`.
-- El entorno captura y restaura exclusivamente `CORS_ORIGINS`, `THROTTLE_LIMIT` y
-  `THROTTLE_TTL_SECONDS`, incluida la ausencia previa y los fallos parciales.
+- `vitest.config.e2e.ts` define `CORS_ORIGINS=https://allowed.example`, `THROTTLE_LIMIT=2` y
+  `THROTTLE_TTL_SECONDS=60` mediante `test.env`; el helper no lee, modifica ni restaura
+  `process.env`.
 - Los cuatro contratos HTTP, la documentación de extensiones futuras sin abstracciones prematuras y
   la convención concreta del proyecto están verificados.
 - `openspec/config.yaml` declara `strict_tdd: true`, Vitest y `pnpm run test:e2e`; registra seis
@@ -47,7 +48,7 @@ alineados con la especificación. No hay bloqueos ni hallazgos críticos.
 | Comando             | Resultado                                                                                                       |
 | ------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `pnpm run lint`     | PASS (salida SHA-256: `05416bbee478242e5cdb188c949f0499e6088f929af45991db4c3de1c2e0d3b4`)                       |
-| `pnpm test`         | PASS: 5 archivos, 31 pruebas (salida SHA-256 indicada en el sobre)                                              |
+| `pnpm test`         | PASS: 5 archivos, 29 pruebas                                                                                    |
 | `pnpm run test:e2e` | PASS: 1 archivo, 4 pruebas (salida SHA-256: `309226c91bcce99328db58a42f50cfc7d782bf061a6a9b7333caf133b62cdb20`) |
 | `pnpm build`        | PASS: TypeScript sin incidencias; SWC compiló 6 archivos (salida SHA-256 indicada en el sobre)                  |
 | `git diff --check`  | PASS                                                                                                            |
@@ -57,10 +58,11 @@ tareas, progreso, documentación y configuración se ejecuta antes de persistir 
 
 ## TDD estricto y calidad de aserciones
 
-`apply-progress.md` contiene cinco tablas de evidencia de ciclo TDD. Las unidades 1, 2 y 3 registran
-RED fallido, GREEN ejecutado, TRIANGULATE y REFACTOR; la unidad 4 usa una auditoría declarativa sin
-lógica nueva, y la remediación adicional documenta explícitamente que no modificó producción. Los
-tres archivos de prueba declarados existen y las pruebas actuales permanecen GREEN.
+`apply-progress.md` conserva las tablas de evidencia de los ciclos TDD ejecutados. Las unidades 1, 2
+y 3 registran RED fallido, GREEN ejecutado, TRIANGULATE y REFACTOR; la unidad 4 usa una auditoría
+declarativa sin lógica nueva. La corrección posterior del entorno registra su propio RED y la
+verificación actual confirma el estado GREEN, incluida la precedencia de `test.env` ante valores
+externos conflictivos. Los tres archivos de prueba declarados existen.
 
 Distribución relacionada: 10 pruebas unitarias en 2 archivos de soporte y 4 pruebas E2E HTTP en 1
 archivo descubierto. No hay tautologías, bucles fantasma, aserciones CSS, pruebas de humo aisladas

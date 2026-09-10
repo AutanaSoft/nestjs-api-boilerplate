@@ -21,7 +21,7 @@ Se añadieron los nueve requisitos de la especificación delta:
 2. Registro explícito de suites no descubribles.
 3. Aplicación nueva para cada escenario independiente.
 4. Bootstrap E2E derivado del bootstrap de producción.
-5. Captura y restauración acotadas del entorno.
+5. Configuración E2E acotada por Vitest.
 6. Conservación de los cuatro escenarios HTTP públicos actuales.
 7. Puntos de extensión futuros documentados sin abstracciones prematuras.
 8. Corrección de los metadatos E2E de OpenSpec.

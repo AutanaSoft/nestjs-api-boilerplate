@@ -10,9 +10,9 @@ función `runScenario` del propietario; no crearán hooks globales ni administra
 
 Cada invocación de `runScenario` creará un `E2EContext` nuevo desde `AppModule`, aplicará
 `setupApplication` con la configuración tipada `http`, ejecutará el escenario contra el servidor
-HTTP y cerrará la aplicación en un bloque de limpieza. El entorno capturará y modificará solamente
-`CORS_ORIGINS`, `THROTTLE_LIMIT` y `THROTTLE_TTL_SECONDS`, y restaurará su presencia y valor
-originales al finalizar o ante preparación parcial fallida.
+HTTP y cerrará la aplicación en un bloque de limpieza. `vitest.config.e2e.ts` define, mediante
+`test.env`, `CORS_ORIGINS=https://allowed.example`, `THROTTLE_LIMIT=2` y `THROTTLE_TTL_SECONDS=60`;
+el helper no lee, modifica ni restaura `process.env`.
 
 La base no incorpora persistencia, autenticación, fixtures, seeds ni adapters externos. Esos
 recursos se añadirán al mismo propietario cuando exista una capacidad real que los requiera.
@@ -62,7 +62,7 @@ test/
 | `test/modules/app/app.e2e-suite.ts`      | Crear                     | Registrar los cuatro escenarios HTTP existentes mediante la API recibida; contener únicamente casos y aserciones públicas. |
 | `test/support/e2e-context.ts`            | Crear                     | Declarar `E2EContext` y los tipos de callback de registro/ejecución compartidos.                                           |
 | `test/support/create-e2e-application.ts` | Crear                     | Compilar `AppModule`, crear e inicializar Nest, obtener `http`, aplicar `setupApplication` y limpiar bootstrap parcial.    |
-| `test/support/e2e-environment.ts`        | Crear                     | Capturar/aplicar/restaurar las tres variables permitidas y ofrecer ejecución por escenario con limpieza determinista.      |
+| `test/support/e2e-environment.ts`        | Editar                    | Ofrecer ejecución por escenario con limpieza determinista sin acceder a `process.env`.                                     |
 | `test/app.e2e-spec.ts`                   | Eliminar después de mover | Evitar el owner anterior y la duplicación; sus cuatro escenarios pasan sin cambio de intención a `app.e2e-suite.ts`.       |
 | `docs/testing/e2e-testing.md`            | Editar                    | Documentar la convención concreta, el flujo vigente y las extensiones futuras claramente no implementadas.                 |
 | `openspec/config.yaml`                   | Editar                    | Sustituir Playwright por `Vitest` y conservar `pnpm run test:e2e` como comando E2E oficial.                                |
@@ -143,38 +143,25 @@ compilación falla antes de exponer un recurso cerrable, se propagará ese error
 
 ### Entorno acotado
 
-`createE2EEnvironment()` será específico de esta base, no un editor genérico de `process.env`.
-Internamente usará una tupla constante:
-
-```typescript
-const E2E_ENVIRONMENT_KEYS = ['CORS_ORIGINS', 'THROTTLE_LIMIT', 'THROTTLE_TTL_SECONDS'] as const;
-```
-
-La captura guardará por clave `{ existed: boolean; value: string | undefined }`, donde `existed` se
-obtiene por presencia propia y no por verdad del valor. Después aplicará exactamente:
+`vitest.config.e2e.ts` es el único propietario de los valores E2E y define mediante `test.env`:
 
 - `CORS_ORIGINS=https://allowed.example`;
 - `THROTTLE_LIMIT=2`;
 - `THROTTLE_TTL_SECONDS=60`.
 
-El handle resultante ofrecerá dos operaciones:
+`createE2EEnvironment()` no es un editor de `process.env` y no requiere `dispose`. Su única
+operación es:
 
 ```typescript
 export type E2EEnvironment = Readonly<{
   runScenario: RunE2EScenario;
-  dispose: () => Promise<void>;
 }>;
 ```
 
-`runScenario` crea un contexto nuevo, ejecuta el callback y cierra `context.app` en `finally`. Si el
-escenario y el cierre fallan, conserva ambos mediante `AggregateError`, con el fallo del escenario
-primero. `dispose` restaura una única vez cada clave: reasigna el valor capturado cuando `existed`
-era verdadero y usa `delete` cuando era falso. Las claves ajenas nunca se enumeran ni modifican.
-
-`createE2EEnvironment` captura antes de escribir. Si cualquier escritura o preparación posterior
-falla, restaura lo capturado antes de propagar; si también falla la restauración, conserva ambos
-errores con el original primero. `dispose` será idempotente para tolerar limpieza defensiva sin
-restauraciones dobles.
+`runScenario` crea un contexto nuevo, ejecuta el callback y cierra `context.app`. Si el escenario y
+el cierre fallan, conserva ambos mediante `AggregateError`, con el fallo del escenario primero.
+Vitest aplica los valores configurados al contexto E2E sin que el helper lea, modifique o restaure
+el environment del proceso.
 
 ## Propiedad del lifecycle
 
@@ -182,7 +169,8 @@ restauraciones dobles.
 el único archivo con hooks globales:
 
 - `beforeAll`: llama a `createE2EEnvironment()`;
-- `afterAll`: llama a `environment.dispose()` cuando la creación terminó;
+- no requiere `afterAll`: cada escenario cierra su propia aplicación y el helper no posee recursos
+  compartidos;
 - `runScenario`: comprueba que el entorno está inicializado y delega en
   `environment.runScenario(scenario)`.
 
@@ -199,8 +187,7 @@ sequenceDiagram
 
   V->>M: descubre un único entry point
   M->>S: registerAppE2ESuite({ runScenario })
-  V->>M: beforeAll
-  M->>E: captura y aplica entorno acotado
+  V->>M: aplica `test.env` de Vitest
   V->>S: ejecuta un it registrado
   S->>M: runScenario(callback)
   M->>E: runScenario(callback)
@@ -209,8 +196,6 @@ sequenceDiagram
   E->>S: callback(E2EContext)
   S->>A: Supertest sobre getHttpServer()
   E->>A: close() en finally
-  V->>M: afterAll
-  M->>E: dispose() y restauración exacta
 ```
 
 Para cada uno de los cuatro `it`, el tramo `createE2EApplication`/`close` se repite. Ningún
@@ -229,13 +214,13 @@ compile AppModule
       └─ setup/init falla -> intentar close -> propagar original (+ cleanup si falla)
 ```
 
-### Preparación parcial del entorno
+### Configuración del entorno
 
 ```text
-capturar tres claves -> aplicar overrides -> devolver handle
-                              │
-                              └─ falla -> restaurar snapshot -> propagar original
+vitest.config.e2e.ts -> test.env -> contexto E2E -> AppModule
 ```
+
+Vitest aplica los valores configurados; el helper no lee, modifica ni restaura `process.env`.
 
 ### Precedencia de errores
 
@@ -247,12 +232,12 @@ fallo que inició la ruta. No se usa terminación forzada.
 
 ### Forma de la API de registro
 
-| Alternativa                             | Ventaja                                                                                             | Costo o riesgo                                                                | Decisión      |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ------------- |
-| `registerFeatureSuite({ runScenario })` | Capacidad mínima explícita; dificulta apropiarse del lifecycle; fácil de extender de forma aditiva. | La indirección añade una función por caso.                                    | Seleccionada. |
-| Pasar `E2EEnvironment` completo         | Menos wiring.                                                                                       | Expone `dispose` y permite a una suite cerrar o alterar recursos compartidos. | Rechazada.    |
-| Pasar `getContext()`                    | Cómodo para assertions.                                                                             | Oculta quién crea/cierra la app y facilita fugas o contexto compartido.       | Rechazada.    |
-| Importar módulos solo por side effect   | Muy breve.                                                                                          | El orden y las dependencias quedan implícitos; dificulta revisión.            | Rechazada.    |
+| Alternativa                             | Ventaja                                                                                             | Costo o riesgo                                                          | Decisión      |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------- |
+| `registerFeatureSuite({ runScenario })` | Capacidad mínima explícita; dificulta apropiarse del lifecycle; fácil de extender de forma aditiva. | La indirección añade una función por caso.                              | Seleccionada. |
+| Pasar `E2EEnvironment` completo         | Menos wiring.                                                                                       | Expone capacidades de lifecycle innecesarias a una suite.               | Rechazada.    |
+| Pasar `getContext()`                    | Cómodo para assertions.                                                                             | Oculta quién crea/cierra la app y facilita fugas o contexto compartido. | Rechazada.    |
+| Importar módulos solo por side effect   | Muy breve.                                                                                          | El orden y las dependencias quedan implícitos; dificulta revisión.      | Rechazada.    |
 
 ### Aplicación por escenario frente a aplicación compartida
 
@@ -265,14 +250,14 @@ fallo que inició la ruta. No se usa terminación forzada.
 Si el costo futuro resulta material, solo podrá compartirse la aplicación después de diseñar y
 probar resets deterministas para todas las capacidades afectadas; no se optimiza por anticipado.
 
-### Diseño del helper de entorno
+### Diseño del ejecutor de escenarios
 
-| Alternativa                              | Ventaja                                                        | Costo o riesgo                                                        | Decisión      |
-| ---------------------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------- | ------------- |
-| Helper específico sin argumentos         | Superficie acotada y auditable; no altera claves accidentales. | Una nueva clave exige editar el owner.                                | Seleccionada. |
-| Helper genérico `Record<string, string>` | Reutilizable.                                                  | Convierte cualquier suite en mutadora potencial y amplía el boundary. | Rechazada.    |
-| Asignar y luego borrar siempre           | Implementación breve.                                          | Pierde valores previos y confunde ausencia con definición.            | Rechazada.    |
-| `vi.stubEnv` desde suites                | Integración con Vitest.                                        | Distribuye ownership y no cubre por sí solo recursos parciales.       | Rechazada.    |
+| Alternativa                              | Ventaja                                                          | Costo o riesgo                                                   | Decisión      |
+| ---------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------- | ------------- |
+| Ejecutor específico sin argumentos       | Superficie acotada y auditable; solo crea y cierra aplicaciones. | Una nueva capacidad exige editar el owner.                       | Seleccionada. |
+| Helper genérico `Record<string, string>` | Reutilizable.                                                    | Convertiría suites en mutadoras potenciales de configuración.    | Rechazada.    |
+| Mutar y restaurar `process.env`          | Parece independiente del runner.                                 | Introduce estado global y contradice el ownership de `test.env`. | Rechazada.    |
+| `vi.stubEnv` desde suites                | Integración con Vitest.                                          | Distribuye el ownership de configuración entre suites.           | Rechazada.    |
 
 ### Nomenclatura y descubrimiento
 
@@ -325,7 +310,7 @@ No comparte estado con otro `it`.
 | Registro explícito de suites no descubribles             | `registerAppE2ESuite({ runScenario })`; llamadas explícitas; sufijo `*.e2e-suite.ts`; suites sin hooks.         | Inspección/configuración y ejecución única de los casos.                  |
 | Aplicación nueva por escenario independiente             | `runScenario` crea y cierra un contexto en cada `it`; no hay contexto mutable global de feature.                | Spy/fallo inicial de prueba del harness y caso de throttling reordenable. |
 | Bootstrap E2E derivado de producción                     | `AppModule`, `ConfigType<typeof httpConfig>`, `httpConfig.KEY`, `setupApplication`, `app.init`, Supertest.      | Los cuatro contratos HTTP pasan sobre `getHttpServer()`.                  |
-| Captura y restauración acotadas del entorno              | Tupla de tres claves, snapshot de presencia/valor, restore idempotente y cleanup de fallos parciales.           | Pruebas enfocadas con claves presentes/ausentes y fallos inyectados.      |
+| Configuración E2E acotada por Vitest                     | `test.env` con tres valores explícitos; helper sin acceso a `process.env`.                                      | Prueba enfocada sin mutación y E2E con valores externos conflictivos.     |
 | Conservación de cuatro escenarios HTTP                   | Traslado de las assertions actuales a `app.e2e-suite.ts`.                                                       | Cuatro casos verdes con los mismos status, body y headers.                |
 | Puntos de extensión futuros sin abstracciones prematuras | Actualización documental y ausencia de helpers/interfaces de DB, auth o adapters.                               | Revisión de archivos y dependencias; documentación separa actual/futuro.  |
 | Corrección de metadatos OpenSpec                         | `openspec/config.yaml` declara `Vitest` y `pnpm run test:e2e`.                                                  | Inspección de configuración y comando real de paquete.                    |
@@ -349,11 +334,10 @@ Orden recomendado para una fase posterior, sin constituir tasks de este cambio:
    refactorizar solo después.
 
 Las pruebas de helpers podrían ubicarse como `test/support/*.spec.ts` para ser descubiertas por
-`vitest.config.ts`, pero debe verificarse que no muten el entorno real de manera concurrente: cada
-caso debe restaurar en `finally`, y los casos que compartan `process.env` no deben usar APIs
-concurrentes. Los errores de bootstrap pueden probarse con factories internas inyectables solo si
-esa seam es necesaria para producir el fallo; no debe convertirse en una interfaz pública ni
-reemplazar componentes de la aplicación en las pruebas E2E.
+`vitest.config.ts`; deben comprobar que la construcción y ejecución no cambien las tres claves
+controladas, sin mutar directamente `process.env`. Los errores de bootstrap pueden probarse con
+factories internas inyectables solo si esa seam es necesaria para producir el fallo; no debe
+convertirse en una interfaz pública ni reemplazar componentes de la aplicación en las pruebas E2E.
 
 ## Estrategia de verificación posterior
 
@@ -373,7 +357,7 @@ Además de resultados verdes, la revisión debe comprobar:
 - un único archivo reportado por la ejecución E2E y exactamente cuatro escenarios baseline;
 - ausencia de hooks en `*.e2e-suite.ts`;
 - una instancia distinta de aplicación por `it` y cierre también cuando el callback falla;
-- restauración exacta con valores previos y claves ausentes;
+- valores de `test.env` que prevalecen sobre valores externos conflictivos;
 - ausencia de handles abiertos y de terminación forzada;
 - ausencia de nuevas dependencias o abstracciones de capacidades futuras;
 - alineación entre `package.json`, `vitest.config.e2e.ts`, `openspec/config.yaml` y documentación.
@@ -412,6 +396,6 @@ decisión verifican en cualquier partición futura.
 | El bootstrap por escenario aumenta el tiempo E2E.                      | Medir antes de optimizar; preservar aislamiento hasta disponer de resets demostrables.                |
 | Una suite usa hooks pese a la convención.                              | API mínima, sufijo explícito, documentación y revisión estática; no se añade linter custom prematuro. |
 | Cleanup secundario oculta un fallo primario.                           | Agregar errores manteniendo el original en primera posición.                                          |
-| Una nueva variable E2E queda sin restaurar.                            | Lista constante cerrada y cambio revisable en el owner.                                               |
+| Una nueva variable E2E queda sin configuración explícita.              | `test.env` revisable en la configuración E2E.                                                         |
 | `pnpm test` también descubre `main.e2e-spec.ts` por su glob existente. | Riesgo preexistente documentado; decidir por separado si se excluye E2E de la configuración unitaria. |
 | Futuras DB o integraciones fuerzan un rediseño.                        | Extender el owner desde recursos concretos y extraer interfaces solo tras repetición real.            |

@@ -21,9 +21,10 @@ del ciclo de vida cuando lleguen capacidades de base de datos, autenticación y 
 
 Se recomienda un único propietario principal descubierto por Vitest, `test/main.e2e-spec.ts`, con
 registros de funcionalidades importados y no descubribles. Mantener pequeña la superficie de soporte
-inicial: un contexto de aplicación tipado y un auxiliar de aplicación/entorno derivado de
-producción. No agregar abstracciones de base de datos, autenticación, fixtures, seeds ni adaptadores
-externos hasta que exista la capacidad de producción correspondiente.
+inicial: un contexto de aplicación tipado y un auxiliar de aplicación derivado de producción; los
+valores E2E se declararán mediante `test.env` en lugar de un auxiliar de entorno. No agregar
+abstracciones de base de datos, autenticación, fixtures, seeds ni adaptadores externos hasta que
+exista la capacidad de producción correspondiente.
 
 ## Evidencia
 
@@ -68,9 +69,9 @@ Cada `*.e2e-spec.ts` compilaría y cerraría su propia aplicación.
 ### B. Un propietario principal descubierto con registros de funcionalidades importados — recomendado
 
 Configurar Vitest para descubrir exactamente `test/main.e2e-spec.ts`. El propietario principal
-registra funciones de funcionalidad en un orden explícito y posee toda la configuración, los cambios
-de entorno, la liberación de recursos y la restauración. Los archivos importados usan un sufijo/ruta
-excluido como `*.e2e-suite.ts` o `modules/**`, nunca `*.e2e-spec.ts`.
+registra funciones de funcionalidad en un orden explícito y posee la liberación de recursos por
+escenario; `vitest.config.e2e.ts` posee los valores E2E mediante `test.env`. Los archivos importados
+usan un sufijo/ruta excluido como `*.e2e-suite.ts` o `modules/**`, nunca `*.e2e-spec.ts`.
 
 - Beneficio: hace revisables el ciclo de vida y el registro, evita el descubrimiento doble y tiene
   una ubicación natural para futuras sustituciones temporales de PostgreSQL, migraciones,
@@ -102,9 +103,8 @@ propia aplicación e infraestructura sin importar ni ser importadas por el propi
      aserciones lo necesitan, su servidor HTTP);
    - un creador de aplicación derivado de producción que compile `AppModule`, obtenga la
      configuración tipada de `http`, llame a `setupApplication` e inicialice la aplicación;
-   - un auxiliar de estado del entorno que capture solo los valores modificados por E2E, aplique
-     sustituciones explícitas y restaure durante el desmontaje normal y ante un fallo de
-     configuración parcial.
+   - un ejecutor de escenarios que cierre deterministamente cada aplicación; `vitest.config.e2e.ts`
+     definirá los tres valores E2E mediante `test.env`.
 4. Mantener `main.e2e-spec.ts` como el único propietario del ciclo de vida. Debe crear y cerrar un
    contexto de aplicación nuevo por escenario de línea base independiente, preservando el
    aislamiento del limitador; los archivos de funcionalidad importados registran casos, pero no usan
@@ -140,8 +140,8 @@ de depender del orden de prueba.
 - Los registros de funcionalidades importados no son puntos de entrada descubribles por el ejecutor.
 - El bootstrap E2E usa `AppModule` y `setupApplication`, preservando el comportamiento HTTP de
   producción sin modificar el bootstrap de producción.
-- La mutación del entorno es una responsabilidad del entorno de prueba con propiedad exacta de
-  captura/restauración, no una responsabilidad de la suite de funcionalidad.
+- Los valores E2E son responsabilidad de `test.env` en la configuración de Vitest; el helper no lee,
+  modifica ni restaura `process.env`.
 - Los escenarios de endpoint independientes deben permanecer reordenables. El contexto mutable
   tipado se limita a un flujo ordenado explícito propiedad de una funcionalidad.
 
@@ -169,9 +169,8 @@ de depender del orden de prueba.
   optimización no examinada.
 - **Una futura suite importada se ejecuta dos veces.** Restringir el descubrimiento de Vitest a
   `main.e2e-spec.ts` y reservar un sufijo/ruta excluido para las importaciones.
-- **La restauración del entorno falla ante errores de configuración.** Capturar antes de aplicar
-  sustituciones; limpiar recursos parciales de la aplicación y restaurar tanto en una ruta de fallo
-  como en el desmontaje final.
+- **Valores E2E externos alteran los contratos.** `test.env` declara los tres valores y la ejecución
+  E2E con valores externos conflictivos debe probar que la configuración de Vitest prevalece.
 - **Los futuros propietarios concurrentes mutan `process.env`.** No introducir propietarios
   descubiertos independientemente que compartan esas variables; los propietarios aislados explícitos
   deben usar un alcance de configuración independiente o un modelo de serialización acordado.

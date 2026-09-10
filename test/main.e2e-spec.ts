@@ -18,7 +18,3 @@ const runScenario: RunE2EScenario = async (scenario) => {
 };
 
 registerAppE2ESuite({ runScenario });
-
-afterAll(async () => {
-  await environment?.dispose();
-});

@@ -61,21 +61,19 @@ files were modified. No deviations.
 
 ### Remaining implementation tasks
 
-- [ ] RED — Crear primero `test/support/e2e-environment.spec.ts` con casos para valores presentes y
-      ausentes de `CORS_ORIGINS`, `THROTTLE_LIMIT` y `THROTTLE_TTL_SECONDS`, preservación de claves
-      ajenas, restauración normal, restauración tras preparación parcial, `dispose` idempotente,
-      aplicación nueva por cada `runScenario`, cierre en éxito y fallo, y `AggregateError` con
-      precedencia del error primario.
-- [ ] GREEN — Crear `test/support/e2e-environment.ts` con `E2EEnvironment` y
-      `createE2EEnvironment()`, limitando la lista a `CORS_ORIGINS`, `THROTTLE_LIMIT` y
-      `THROTTLE_TTL_SECONDS` y conectando `runScenario` con `createE2EApplication()`.
+- [ ] RED — Texto histórico sustituido por la unidad correctiva: probar que el helper no muta
+      `process.env` ni expone `dispose`, además de aplicación nueva, cierre y precedencia de
+      `AggregateError`.
+- [ ] GREEN — Configurar `vitest.config.e2e.ts` con `CORS_ORIGINS`, `THROTTLE_LIMIT` y
+      `THROTTLE_TTL_SECONDS` en `test.env`, y conectar `runScenario` de `createE2EEnvironment()` con
+      `createE2EApplication()`.
 - [ ] TRIANGULATE — Contrastar `test/support/e2e-environment.ts`,
       `test/support/e2e-environment.spec.ts` y `test/support/e2e-context.ts` para demostrar que el
       entorno no es un editor genérico de `process.env` ni incorpora persistencia, autenticación,
       fixtures, seeds o adaptadores externos.
 - [ ] REFACTOR — Refinar `test/support/e2e-environment.ts` y `test/support/e2e-environment.spec.ts`
-      para conservar la tupla cerrada, tipos reutilizables, ausencia frente a valor definido, manejo
-      de `unknown` y una sola responsabilidad por helper.
+      para mantener una sola responsabilidad, tipos reutilizables, ausencia de acceso a
+      `process.env` y manejo de `unknown`.
 - [ ] RED — Usar `vitest.config.e2e.ts`, `test/main.e2e-spec.ts`,
       `test/modules/app/app.e2e-suite.ts` y `test/app.e2e-spec.ts` para evidenciar primero que el
       patrón global permite propietarios accidentales o que falta el registro explícito; conservar
@@ -130,21 +128,19 @@ were not started.
 
 ### Completed tasks
 
-- [x] RED — Crear primero `test/support/e2e-environment.spec.ts` con casos para valores presentes y
-      ausentes de `CORS_ORIGINS`, `THROTTLE_LIMIT` y `THROTTLE_TTL_SECONDS`, preservación de claves
-      ajenas, restauración normal, restauración tras preparación parcial, `dispose` idempotente,
-      aplicación nueva por cada `runScenario`, cierre en éxito y fallo, y `AggregateError` con
-      precedencia del error primario.
-- [x] GREEN — Crear `test/support/e2e-environment.ts` con `E2EEnvironment` y
-      `createE2EEnvironment()`, limitando la lista a `CORS_ORIGINS`, `THROTTLE_LIMIT` y
-      `THROTTLE_TTL_SECONDS` y conectando `runScenario` con `createE2EApplication()`.
+- [x] RED — Esta unidad fue corregida: las pruebas ahora demuestran que el helper no muta
+      `process.env` ni expone `dispose`, y mantienen aplicación nueva, cierre y precedencia de
+      `AggregateError`.
+- [x] GREEN — Configurar `vitest.config.e2e.ts` con `CORS_ORIGINS`, `THROTTLE_LIMIT` y
+      `THROTTLE_TTL_SECONDS` en `test.env`, y conectar `runScenario` de `createE2EEnvironment()` con
+      `createE2EApplication()`.
 - [x] TRIANGULATE — Contrastar `test/support/e2e-environment.ts`,
       `test/support/e2e-environment.spec.ts` y `test/support/e2e-context.ts` para demostrar que el
       entorno no es un editor genérico de `process.env` ni incorpora persistencia, autenticación,
       fixtures, seeds o adaptadores externos.
 - [x] REFACTOR — Refinar `test/support/e2e-environment.ts` y `test/support/e2e-environment.spec.ts`
-      para conservar la tupla cerrada, tipos reutilizables, ausencia frente a valor definido, manejo
-      de `unknown` y una sola responsabilidad por helper.
+      para mantener una sola responsabilidad, tipos reutilizables, ausencia de acceso a
+      `process.env` y manejo de `unknown`.
 
 The four Unit 2 checkboxes are visibly marked `[x]` in `tasks.md`.
 
@@ -157,30 +153,30 @@ The four Unit 2 checkboxes are visibly marked `[x]` in `tasks.md`.
 
 ### TDD Cycle Evidence
 
-| Task   | Test file                              | Layer                                                | Safety net      | RED                                                                                                                                            | GREEN                                                                        | TRIANGULATE                                                                                                                                           | REFACTOR                                             |
-| ------ | -------------------------------------- | ---------------------------------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| Unit 2 | `test/support/e2e-environment.spec.ts` | Unit with a scoped application-factory module double | N/A (new files) | `pnpm exec vitest run test/support/e2e-environment.spec.ts --config ./vitest.config.ts` failed: 5 tests could not import `e2e-environment.js`. | Same focused command: 5 passed after the minimal environment implementation. | The partial-setup test uses distinct override and restoration errors, proving `AggregateError` preserves their precedence; focused command: 5 passed. | Ran Prettier and repeated focused command: 5 passed. |
+| Task                     | Test file                              | Layer                                                | Safety net       | RED                                                                             | GREEN                                                          | TRIANGULATE                                                           | REFACTOR                                 |
+| ------------------------ | -------------------------------------- | ---------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------- | ---------------------------------------- |
+| Unit 2 corrective update | `test/support/e2e-environment.spec.ts` | Unit with a scoped application-factory module double | Focused baseline | Focused command failed because the helper changed the three environment values. | Same focused command: 4 passed after removing helper mutation. | E2E passed with conflicting external values, proving `test.env` wins. | Prettier and the focused command passed. |
 
 ### Verification
 
-- `pnpm exec vitest run test/support/e2e-environment.spec.ts --config ./vitest.config.ts`: passed, 5
+Current corrective-candidate verification:
+
+- `pnpm exec vitest run test/support/e2e-environment.spec.ts --config ./vitest.config.ts`: passed, 4
   tests (RED initially failed as recorded above).
-- `pnpm test`: passed, 30 tests in 5 files.
+- `pnpm test`: passed, 29 tests in 5 files.
+- `pnpm run test:e2e`: passed, 4 tests in 1 file.
+- The E2E command also passed with conflicting external values for the three controlled keys,
+  confirming that `test.env` takes precedence.
 - `pnpm build`: passed; TypeScript found 0 issues and SWC compiled 6 files.
 - `pnpm run lint`: passed.
-- `pnpm exec prettier --write test/support/e2e-environment.ts test/support/e2e-environment.spec.ts`:
-  completed.
-
-The full E2E harness is N/A for this unit because `test/main.e2e-spec.ts` is a Unit 3 deliverable.
+- Prettier and markdownlint passed for the corrective surfaces.
 
 ### Design conformance and deviations
 
-`createE2EEnvironment()` captures only the closed three-key tuple before applying exact overrides.
-`runScenario` creates a new E2E context for each call, closes its application, and aggregates
-scenario and cleanup failures with the scenario error first. `dispose` restores only captured values
-once, including absent values via `delete`. Partial preparation restores captured state and
-aggregates primary and restoration errors. No production, runner, lifecycle-owner, configuration,
-documentation, dependency, or Unit 3–4 files were changed. No deviations.
+Esta descripción histórica fue corregida: `vitest.config.e2e.ts` define los tres valores E2E
+mediante `test.env`; `createE2EEnvironment()` no lee, modifica ni restaura `process.env` y no expone
+`dispose`. `runScenario` sigue creando un contexto nuevo por llamada, cerrando su aplicación y
+agregando los fallos de escenario y limpieza con el fallo de escenario primero.
 
 ### Remaining implementation tasks
 
@@ -319,10 +315,11 @@ The four Unit 3 checkboxes are visibly marked `[x]` in `tasks.md`.
 
 `vitest.config.e2e.ts` retains its existing plugins, SWC configuration, aliases, `globals`, and
 `root`, while discovering exactly `test/main.e2e-spec.ts`. The main owner alone declares lifecycle
-hooks, creates `E2EEnvironment`, guards `runScenario`, conditionally disposes it, and directly calls
-`registerAppE2ESuite({ runScenario })`. The imported suite contains only `describe` and `it`; every
-case uses `runScenario`, and the rate-limit requests remain in one scenario application. The former
-owner was deleted only after the new owner passed. No deviations.
+hooks, creates `E2EEnvironment`, guards `runScenario`, and directly calls
+`registerAppE2ESuite({ runScenario })`; no requiere disposición compartida. The imported suite
+contains only `describe` and `it`; every case uses `runScenario`, and the rate-limit requests remain
+in one scenario application. The former owner was deleted only after the new owner passed. No
+deviations.
 
 ### Remaining implementation tasks
 

@@ -49,7 +49,7 @@ entregas encadenadas mediante `feature-branch-chain`; no se acepta `size:excepti
 | Unidad | Entrega                                                           | Dependencia                   | Superficies principales                                                                                                |
 | ------ | ----------------------------------------------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | 1      | Contratos tipados y creación de aplicación derivada de producción | Estado actual del repositorio | `test/support/e2e-context.ts`, `test/support/create-e2e-application.ts`, `test/support/create-e2e-application.spec.ts` |
-| 2      | Entorno acotado, restauración y ejecución por escenario           | Unidad 1                      | `test/support/e2e-environment.ts`, `test/support/e2e-environment.spec.ts`                                              |
+| 2      | Configuración Vitest y ejecución por escenario                    | Unidad 1                      | `vitest.config.e2e.ts`, `test/support/e2e-environment.ts`, `test/support/e2e-environment.spec.ts`                      |
 | 3      | Propietario único, registro y traslado de la línea base HTTP      | Unidades 1 y 2                | `vitest.config.e2e.ts`, `test/main.e2e-spec.ts`, `test/modules/app/app.e2e-suite.ts`, `test/app.e2e-spec.ts`           |
 | 4      | Alineación documental y metadatos de OpenSpec                     | Unidad 3                      | `docs/testing/e2e-testing.md`, `openspec/config.yaml`, `openspec/changes/establish-e2e-test-foundation/tasks.md`       |
 
@@ -136,27 +136,26 @@ formato se completará con `pnpm exec prettier --check` durante la unidad 4.
 
 ## Unidad 2 — Entorno acotado y aislamiento por escenario
 
-**Inicio:** la unidad 1 entrega `createE2EApplication()` y los contratos de contexto; el entorno
-sigue mutándose y restaurándose directamente en `test/app.e2e-spec.ts`.
+**Inicio:** la unidad 1 entrega `createE2EApplication()` y los contratos de contexto; aún falta
+trasladar los valores E2E al alcance de configuración de Vitest.
 
-**Fin:** `createE2EEnvironment()` captura únicamente las tres claves permitidas, aplica los valores
-E2E, ofrece `runScenario` y `dispose`, restaura presencia y valor exactos, y cierra cada aplicación
-creada por escenario incluso ante fallos.
+**Fin:** `vitest.config.e2e.ts` define las tres claves E2E mediante `test.env`.
+`createE2EEnvironment()` ofrece únicamente `runScenario`, no lee ni modifica `process.env` y cierra
+cada aplicación creada por escenario incluso ante fallos.
 
 **Rollback:** eliminar `test/support/e2e-environment.ts` y `test/support/e2e-environment.spec.ts`;
 conservar la organización anterior hasta que la unidad 3 haga el traslado atómico.
 
 ### RED
 
-- [x] RED — Crear primero `test/support/e2e-environment.spec.ts` con casos para valores presentes y
-      ausentes de `CORS_ORIGINS`, `THROTTLE_LIMIT` y `THROTTLE_TTL_SECONDS`, preservación de claves
-      ajenas, restauración normal, restauración tras preparación parcial, `dispose` idempotente,
-      aplicación nueva por cada `runScenario`, cierre en éxito y fallo, y `AggregateError` con
-      precedencia del error primario. <!-- sdd-owner: implementation -->
+- [x] RED — Crear primero `test/support/e2e-environment.spec.ts` con casos que demuestran que el
+      helper no muta el entorno ni expone `dispose`, aplicación nueva por cada `runScenario`, cierre
+      en éxito y fallo, y `AggregateError` con precedencia del error primario.
+      <!-- sdd-owner: implementation -->
 
 **Evidencia RED:** ejecutar la prueba antes del auxiliar y conservar la salida de fallos. Los casos
-que toquen `process.env` deben ejecutarse de forma serial y restaurar su propio estado en `finally`;
-no se permite usar APIs concurrentes para compartir ese estado.
+verifican la construcción y ejecución contra las tres claves controladas sin mutar directamente
+`process.env`.
 
 ```bash
 pnpm exec vitest run test/support/e2e-environment.spec.ts --config ./vitest.config.ts
@@ -168,24 +167,19 @@ un punto de prueba privado estrictamente necesario para la prueba. No se debe cr
 
 ### GREEN
 
-- [x] GREEN — Crear `test/support/e2e-environment.ts` con `E2EEnvironment` y
-      `createE2EEnvironment()`, limitando la lista a `CORS_ORIGINS`, `THROTTLE_LIMIT` y
-      `THROTTLE_TTL_SECONDS` y conectando `runScenario` con `createE2EApplication()`.
-      <!-- sdd-owner: implementation -->
+- [x] GREEN — Configurar `vitest.config.e2e.ts` con `CORS_ORIGINS`, `THROTTLE_LIMIT` y
+      `THROTTLE_TTL_SECONDS` en `test.env`, y conectar `runScenario` de `createE2EEnvironment()` con
+      `createE2EApplication()`. <!-- sdd-owner: implementation -->
 
-La lista debe ser la tupla constante exacta
-`['CORS_ORIGINS', 'THROTTLE_LIMIT', 'THROTTLE_TTL_SECONDS'] as const`. Antes de cualquier escritura
-se captura `{ existed, value }` por clave usando presencia propia, no la verdad del valor. Se
-aplican exactamente `https://allowed.example`, `2` y `60`.
+`vitest.config.e2e.ts` define exactamente `CORS_ORIGINS=https://allowed.example`, `THROTTLE_LIMIT=2`
+y `THROTTLE_TTL_SECONDS=60` en `test.env`.
 
 `runScenario` crea un contexto nuevo para cada invocación, ejecuta el callback y cierra
 `context.app` en `finally`. Si el callback y el cierre fallan, conserva ambos en `AggregateError`
-con el fallo del callback primero. `createE2EEnvironment()` restaura una preparación parcial y
-`dispose()` restaura una sola vez: reasigna valores de claves existentes, usa `delete` para claves
-ausentes y no enumera ni altera otras claves.
+con el fallo del callback primero. El helper no lee, modifica ni restaura `process.env`.
 
-**Evidencia GREEN:** el comando RED pasa y demuestra aislamiento de aplicación, restauración exacta,
-idempotencia y limpieza sin terminación forzada.
+**Evidencia GREEN:** el comando RED pasa y demuestra que el helper no muta el entorno, aislamiento
+de aplicación y limpieza sin terminación forzada.
 
 ### TRIANGULATE
 
@@ -197,15 +191,14 @@ idempotencia y limpieza sin terminación forzada.
 Ejecutar la prueba enfocada, `pnpm test` y `pnpm build`. El arnés de ejecución E2E es `N/A` antes de
 la unidad 3 porque aún no hay un propietario descubierto que registre `runScenario`.
 
-La inspección debe confirmar que un fallo de escritura, preparación o bootstrap intenta restaurar lo
-capturado, que un fallo de restauración no reemplaza el error original y que una llamada defensiva
-repetida a `dispose()` no produce una segunda restauración.
+La inspección debe confirmar que el helper no escribe ni restaura `process.env` y que conserva la
+precedencia del error de escenario cuando también falla el cierre.
 
 ### REFACTOR
 
 - [x] REFACTOR — Refinar `test/support/e2e-environment.ts` y `test/support/e2e-environment.spec.ts`
-      para conservar la tupla cerrada, tipos reutilizables, ausencia frente a valor definido, manejo
-      de `unknown` y una sola responsabilidad por helper. <!-- sdd-owner: implementation -->
+      para mantener una sola responsabilidad, tipos reutilizables, manejo de `unknown` y la ausencia
+      de acceso a `process.env` por el helper. <!-- sdd-owner: implementation -->
 
 No se debe extraer una abstracción para futuros recursos. Repetir el comando RED después del
 refactor y mantener el rollback limitado a los dos archivos de esta unidad y sus contratos de
@@ -233,6 +226,9 @@ si Vitest continúa siendo el ejecutor real.
       la salida fallida de `pnpm run test:e2e` frente al contrato de punto de entrada único.
       <!-- sdd-owner: implementation -->
 
+La descripción histórica de valores ausentes, restauración y `dispose` de esta unidad fue sustituida
+por la corrección configurada con `test.env`; no describe el helper actual.
+
 La fase RED puede establecer el `include` objetivo antes de completar el propietario, o construir
 primero los casos que esperan `registerAppE2ESuite`; no debe dejarse como estado final una
 configuración sin propietario registrado. La evidencia RED debe mostrar que la nueva organización
@@ -251,9 +247,9 @@ pnpm run test:e2e
 
 Se deben conservar plugins, SWC, aliases, `globals` y `root` de `vitest.config.e2e.ts`.
 `test/main.e2e-spec.ts` es el único archivo con hooks globales: `beforeAll` crea `E2EEnvironment`,
-`afterAll` llama a `dispose()` cuando la creación terminó y `runScenario` comprueba que el entorno
-está inicializado antes de delegar. Las llamadas de registro deben ser directas y visibles, sin un
-arreglo dinámico de registradores.
+`runScenario` comprueba que el entorno está inicializado antes de delegar; no se requiere `afterAll`
+porque el helper no posee recursos compartidos. Las llamadas de registro deben ser directas y
+visibles, sin un arreglo dinámico de registradores.
 
 `test/modules/app/app.e2e-suite.ts` debe exportar
 `registerAppE2ESuite(registration: E2ESuiteRegistration): void`, registrar `describe` e `it` sin
@@ -342,7 +338,8 @@ En `docs/testing/e2e-testing.md` se debe documentar, como mínimo:
 - la creación y cierre de una aplicación por escenario independiente;
 - `AppModule`, `httpConfig.KEY`, `ConfigType<typeof httpConfig>`, `setupApplication` y Supertest
   sobre `app.getHttpServer()`;
-- la captura y restauración acotadas de `CORS_ORIGINS`, `THROTTLE_LIMIT` y `THROTTLE_TTL_SECONDS`;
+- los valores E2E de `CORS_ORIGINS`, `THROTTLE_LIMIT` y `THROTTLE_TTL_SECONDS` definidos por
+  `test.env`;
 - la conservación de los cuatro contratos HTTP actuales;
 - las pautas futuras para PostgreSQL y Prisma con base aislada y migrations versionadas,
   autenticación mediante flujos HTTP públicos, aislamiento exclusivo del adaptador DI que cruza el
@@ -395,8 +392,8 @@ La implementación estará lista para revisión cuando exista evidencia de todos
   solicitudes en una sola aplicación y ningún escenario consume estado de otro.
 - El bootstrap usa `AppModule`, `httpConfig.KEY`, `setupApplication`, `app.init()` y Supertest sobre
   el servidor HTTP real, sin modificar `src/main.ts` ni `src/app.setup.ts`.
-- La restauración distingue una clave ausente de una clave definida, limita las mutaciones a las
-  tres claves permitidas y conserva el error original ante una limpieza fallida.
+- `test.env` define las tres claves E2E y el helper no muta ni restaura `process.env`; los errores
+  de escenario conservan su precedencia ante un fallo de limpieza.
 - No hay hooks en `*.e2e-suite.ts`, terminación forzada, propietarios duplicados ni dependencias
   nuevas.
 - `openspec/config.yaml`, `package.json`, `vitest.config.e2e.ts` y `docs/testing/e2e-testing.md`
