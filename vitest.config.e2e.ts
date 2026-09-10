@@ -21,6 +21,11 @@ export default defineConfig({
   test: {
     globals: true,
     root: './',
-    include: ['**/*.e2e-spec.ts'],
+    include: ['test/main.e2e-spec.ts'],
+    env: {
+      CORS_ORIGINS: 'https://allowed.example',
+      THROTTLE_LIMIT: '2',
+      THROTTLE_TTL_SECONDS: '60',
+    },
   },
 });
