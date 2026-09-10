@@ -72,7 +72,7 @@ parciales sin ocultar el error original.
 
 ### RED
 
-- [ ] RED — Crear primero `test/support/create-e2e-application.spec.ts` con pruebas para el contexto
+- [x] RED — Crear primero `test/support/create-e2e-application.spec.ts` con pruebas para el contexto
       devuelto, el ensamblado mediante `AppModule`, la lectura de `httpConfig.KEY`, la llamada a
       `setupApplication`, la inicialización completa, el cierre ante fallo de `setupApplication` o
       `app.init()`, y la precedencia del error original en `AggregateError`.
@@ -92,7 +92,7 @@ la prueba; no se debe exportar una interface de producción ni sustituir compone
 
 ### GREEN
 
-- [ ] GREEN — Crear `test/support/e2e-context.ts` y `test/support/create-e2e-application.ts` con
+- [x] GREEN — Crear `test/support/e2e-context.ts` y `test/support/create-e2e-application.ts` con
       `E2EContext`, `E2EScenario`, `RunE2EScenario`, `E2ESuiteRegistration` y
       `createE2EApplication()` conforme a `design.md`, usando `import type` para los tipos y sin
       `any`. <!-- sdd-owner: implementation -->
@@ -113,7 +113,7 @@ la inicialización completa.
 
 ### TRIANGULATE
 
-- [ ] TRIANGULATE — Verificar `test/support/create-e2e-application.ts`,
+- [x] TRIANGULATE — Verificar `test/support/create-e2e-application.ts`,
       `test/support/create-e2e-application.spec.ts`, `src/app.module.ts` y `src/app.setup.ts` contra
       el ensamblado real, confirmando que no se modificaron los componentes de producción.
       <!-- sdd-owner: implementation -->
@@ -125,7 +125,7 @@ completa queda para la unidad 3; en esta unidad el arnés de ejecución es `N/A`
 
 ### REFACTOR
 
-- [ ] REFACTOR — Refinar `test/support/e2e-context.ts`, `test/support/create-e2e-application.ts` y
+- [x] REFACTOR — Refinar `test/support/e2e-context.ts`, `test/support/create-e2e-application.ts` y
       `test/support/create-e2e-application.spec.ts` para mantener una superficie mínima,
       importaciones de tipos explícitas, manejo de `unknown` en errores y limpieza determinista sin
       duplicar el bootstrap de producción. <!-- sdd-owner: implementation -->
