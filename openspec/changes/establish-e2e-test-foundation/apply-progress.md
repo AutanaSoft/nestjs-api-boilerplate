@@ -272,3 +272,89 @@ work, commit, branch, push, or PR was created.
 - `actionContext.mode`: `repo-local`
 - `allowedEditRoots`: repository root
 - Warnings: none
+
+## Unit 3 — E2E runner
+
+**Status:** complete. Only Unit 3 was applied on `feature/e2e-foundation-03-runner`; Unit 4 was not
+started.
+
+### Completed tasks
+
+- [x] RED — Restricted discovery before the new owner existed; `pnpm run test:e2e` failed as
+      expected.
+- [x] GREEN — Created the main owner and registered app suite, then passed the E2E suite.
+- [x] TRIANGULATE — Deleted the old owner after E2E passed and verified E2E, unit tests, and build.
+- [x] REFACTOR — Retained the minimal direct registration and lifecycle boundaries, then reran E2E
+      and unit tests.
+
+The four Unit 3 checkboxes are visibly marked `[x]` in `tasks.md`.
+
+### Files changed
+
+- `vitest.config.e2e.ts`
+- `test/main.e2e-spec.ts`
+- `test/modules/app/app.e2e-suite.ts`
+- `test/app.e2e-spec.ts` (deleted after the new owner passed)
+- `openspec/changes/establish-e2e-test-foundation/tasks.md`
+- `openspec/changes/establish-e2e-test-foundation/apply-progress.md`
+
+### TDD Cycle Evidence
+
+| Task   | Test file               | Layer              | RED                                                                                                                                   | GREEN                                                                                           | TRIANGULATE                                                                                                                                     | REFACTOR                                                                                                                                         |
+| ------ | ----------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Unit 3 | `test/main.e2e-spec.ts` | Real Nest HTTP E2E | `pnpm run test:e2e` failed with exit code 1: `No test files found` after discovery was restricted to the new owner before it existed. | The same command passed: 1 test file and 4 tests after creating the owner and registered suite. | After deleting the old owner, `pnpm run test:e2e` passed with 1 file and 4 tests; `pnpm test` passed 5 files and 31 tests; `pnpm build` passed. | The visible direct registration, guarded runner, and conditional disposal needed no further code changes; repeated E2E and unit commands passed. |
+
+### Verification
+
+- `pnpm run test:e2e`: RED failed as recorded above; GREEN, triangulation, and refactor reruns
+  passed with 1 test file and 4 tests.
+- `pnpm test`: passed, 5 files and 31 tests.
+- `pnpm build`: passed; TypeScript found 0 issues and SWC compiled 6 files.
+- `pnpm run lint`: passed.
+- `pnpm exec prettier --check vitest.config.e2e.ts test/main.e2e-spec.ts test/modules/app/app.e2e-suite.ts`:
+  passed.
+- `git diff --check`: passed.
+
+### Design conformance and deviations
+
+`vitest.config.e2e.ts` retains its existing plugins, SWC configuration, aliases, `globals`, and
+`root`, while discovering exactly `test/main.e2e-spec.ts`. The main owner alone declares lifecycle
+hooks, creates `E2EEnvironment`, guards `runScenario`, conditionally disposes it, and directly calls
+`registerAppE2ESuite({ runScenario })`. The imported suite contains only `describe` and `it`; every
+case uses `runScenario`, and the rate-limit requests remain in one scenario application. The former
+owner was deleted only after the new owner passed. No deviations.
+
+### Remaining implementation tasks
+
+- [ ] RED — Auditar `openspec/config.yaml`, `docs/testing/e2e-testing.md`, `vitest.config.e2e.ts` y
+      `package.json` antes de editar, registrando como discrepancias verificables la referencia E2E
+      a Playwright y la ausencia de instrucciones concretas para `test/main.e2e-spec.ts`,
+      `*.e2e-suite.ts` y `pnpm run test:e2e`.
+- [ ] GREEN — Editar `openspec/config.yaml` y `docs/testing/e2e-testing.md` para declarar `Vitest` y
+      `pnpm run test:e2e`, describir el flujo implementado y separar explícitamente las extensiones
+      futuras no implementadas.
+- [ ] TRIANGULATE — Contrastar `openspec/config.yaml`, `docs/testing/e2e-testing.md`,
+      `vitest.config.e2e.ts`, `package.json`, `test/main.e2e-spec.ts` y
+      `test/modules/app/app.e2e-suite.ts` para demostrar alineación entre metadatos, ejecución,
+      estructura y documentación.
+- [ ] REFACTOR — Refinar `docs/testing/e2e-testing.md`, `openspec/config.yaml` y
+      `openspec/changes/establish-e2e-test-foundation/tasks.md` con prosa concisa, enlaces y
+      referencias consistentes, tablas legibles y formato compatible con el Prettier y
+      `markdownlint-cli2` del repositorio.
+
+### Workload and PR boundary
+
+The resolved delivery path is `feature-branch-chain`. This is the Unit 3 slice only: the discovered
+E2E lifecycle owner, explicit app-suite registration, and baseline HTTP scenario transfer. Rollback
+boundary: restore `test/app.e2e-spec.ts` and the prior E2E include pattern, then remove
+`test/main.e2e-spec.ts` and `test/modules/app/app.e2e-suite.ts`. No Unit 4 work, commit, branch,
+push, or PR was created.
+
+### Consumed structured status
+
+- `changeName`: `establish-e2e-test-foundation`
+- `applyState`: `ready`
+- `artifactStore`: `openspec`
+- `actionContext.mode`: `repo-local`
+- `allowedEditRoots`: repository root
+- Warnings: none

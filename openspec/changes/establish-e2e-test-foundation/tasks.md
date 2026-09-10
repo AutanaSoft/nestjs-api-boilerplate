@@ -227,7 +227,7 @@ si Vitest continúa siendo el ejecutor real.
 
 ### RED
 
-- [ ] RED — Usar `vitest.config.e2e.ts`, `test/main.e2e-spec.ts`,
+- [x] RED — Usar `vitest.config.e2e.ts`, `test/main.e2e-spec.ts`,
       `test/modules/app/app.e2e-suite.ts` y `test/app.e2e-spec.ts` para evidenciar primero que el
       patrón global permite propietarios accidentales o que falta el registro explícito; conservar
       la salida fallida de `pnpm run test:e2e` frente al contrato de punto de entrada único.
@@ -244,7 +244,7 @@ pnpm run test:e2e
 
 ### GREEN
 
-- [ ] GREEN — Editar `vitest.config.e2e.ts` para usar exactamente
+- [x] GREEN — Editar `vitest.config.e2e.ts` para usar exactamente
       `include: ['test/main.e2e-spec.ts']` y crear `test/main.e2e-spec.ts` y
       `test/modules/app/app.e2e-suite.ts` con el registro explícito y los cuatro escenarios
       trasladados. <!-- sdd-owner: implementation -->
@@ -270,7 +270,7 @@ verdes, cada uno con una aplicación nueva y cierre determinista.
 
 ### TRIANGULATE
 
-- [ ] TRIANGULATE — Verificar `vitest.config.e2e.ts`, `test/main.e2e-spec.ts`,
+- [x] TRIANGULATE — Verificar `vitest.config.e2e.ts`, `test/main.e2e-spec.ts`,
       `test/modules/app/app.e2e-suite.ts` y `test/app.e2e-spec.ts` mediante la ejecución E2E y la
       inspección de la propiedad de hooks, registro y eliminación del propietario anterior.
       <!-- sdd-owner: implementation -->
@@ -291,7 +291,7 @@ handles abiertos ni dependencia del orden entre `it` independientes.
 
 ### REFACTOR
 
-- [ ] REFACTOR — Refinar `vitest.config.e2e.ts`, `test/main.e2e-spec.ts` y
+- [x] REFACTOR — Refinar `vitest.config.e2e.ts`, `test/main.e2e-spec.ts` y
       `test/modules/app/app.e2e-suite.ts` para hacer legibles el orden de registro, la guarda de
       inicialización, el cierre condicional y el límite entre propietario y suite, sin crear
       propietarios adicionales. <!-- sdd-owner: implementation -->
