@@ -148,7 +148,7 @@ conservar la organización anterior hasta que la unidad 3 haga el traslado atóm
 
 ### RED
 
-- [ ] RED — Crear primero `test/support/e2e-environment.spec.ts` con casos para valores presentes y
+- [x] RED — Crear primero `test/support/e2e-environment.spec.ts` con casos para valores presentes y
       ausentes de `CORS_ORIGINS`, `THROTTLE_LIMIT` y `THROTTLE_TTL_SECONDS`, preservación de claves
       ajenas, restauración normal, restauración tras preparación parcial, `dispose` idempotente,
       aplicación nueva por cada `runScenario`, cierre en éxito y fallo, y `AggregateError` con
@@ -168,7 +168,7 @@ un punto de prueba privado estrictamente necesario para la prueba. No se debe cr
 
 ### GREEN
 
-- [ ] GREEN — Crear `test/support/e2e-environment.ts` con `E2EEnvironment` y
+- [x] GREEN — Crear `test/support/e2e-environment.ts` con `E2EEnvironment` y
       `createE2EEnvironment()`, limitando la lista a `CORS_ORIGINS`, `THROTTLE_LIMIT` y
       `THROTTLE_TTL_SECONDS` y conectando `runScenario` con `createE2EApplication()`.
       <!-- sdd-owner: implementation -->
@@ -189,7 +189,7 @@ idempotencia y limpieza sin terminación forzada.
 
 ### TRIANGULATE
 
-- [ ] TRIANGULATE — Contrastar `test/support/e2e-environment.ts`,
+- [x] TRIANGULATE — Contrastar `test/support/e2e-environment.ts`,
       `test/support/e2e-environment.spec.ts` y `test/support/e2e-context.ts` para demostrar que el
       entorno no es un editor genérico de `process.env` ni incorpora persistencia, autenticación,
       fixtures, seeds o adaptadores externos. <!-- sdd-owner: implementation -->
@@ -203,7 +203,7 @@ repetida a `dispose()` no produce una segunda restauración.
 
 ### REFACTOR
 
-- [ ] REFACTOR — Refinar `test/support/e2e-environment.ts` y `test/support/e2e-environment.spec.ts`
+- [x] REFACTOR — Refinar `test/support/e2e-environment.ts` y `test/support/e2e-environment.spec.ts`
       para conservar la tupla cerrada, tipos reutilizables, ausencia frente a valor definido, manejo
       de `unknown` y una sola responsabilidad por helper. <!-- sdd-owner: implementation -->
 
