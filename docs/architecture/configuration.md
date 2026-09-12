@@ -31,6 +31,7 @@ La aplicación registra estos namespaces cohesivos desde `src/config/`:
 
 ```text
 app       Environment and public application identity
+api       Public URI prefix and HTTP API version bootstrap configuration
 http      Server port and trusted proxy hops
 cors      Complete browser cross-origin policy
 rateLimit Global in-memory NestJS Throttler limits
@@ -38,7 +39,9 @@ rateLimit Global in-memory NestJS Throttler limits
 
 Cada namespace posee sus external inputs, defaults, normalization, derived values, validation y
 final read-only configuration type. `app` es propietario de `NODE_ENV` y los metadatos públicos;
-`cors` usa el entorno únicamente para aplicar su requisito de allowlist explícita en producción.
+`api` es propietario de `API_GLOBAL_PREFIX`, mientras que la versión HTTP inicial es una constante
+del código; `cors` usa el entorno únicamente para aplicar su requisito de allowlist explícita en
+producción.
 
 Los nombres deben ser semánticos, cortos y estables. La configuración específica de un Feature o
 infraestructura debe permanecer junto a su owner cuando exista uno más claro. No centralice
@@ -88,9 +91,11 @@ correspondiente.
 
 ## Configuración HTTP
 
-Los valores concretos, defaults y restricciones operativas de los namespaces `http`, `cors` y
-`rateLimit` se documentan en `../configuration/http-security.md`. Ese documento no sustituye esta
-estrategia arquitectónica; mantiene la referencia de configuración runtime concreta.
+Los valores concretos, defaults y restricciones operativas de los namespaces `api`, `http`, `cors` y
+`rateLimit` se documentan en `../configuration/http-security.md`. Las reglas del contrato URI
+pertenecen exclusivamente a `../api/versioning.md`. Esos documentos no sustituyen esta estrategia
+arquitectónica; mantienen la referencia de configuración runtime y el contrato público,
+respectivamente.
 
 ## Reglas
 

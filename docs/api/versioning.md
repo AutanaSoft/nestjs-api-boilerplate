@@ -1,6 +1,6 @@
 # Versionado de API
 
-Status: Target
+Status: Implemented
 
 Este documento define la estrategia de versionado del contrato HTTP público.
 
@@ -8,18 +8,26 @@ La estrategia estándar es **URI Versioning**.
 
 ## Convención
 
-Las versiones forman parte de la URI:
+Las versiones forman parte de la URI. El prefijo global predeterminado es `api`:
 
 ```text
 /api/v1
 /api/v2
 ```
 
-La versión inicial es:
+`API_GLOBAL_PREFIX` puede establecerse en un path relativo normalizado, por ejemplo `platform/api`.
+Un valor vacío explícito omite el prefijo y publica `v1` como `/v1`. Esta variable no determina
+dominios, hosts ni autorización; el proxy o ingress conserva o reescribe el path antes de entregarlo
+a NestJS.
+
+La versión inicial es `1`, expuesta en la URI como:
 
 ```text
 v1
 ```
+
+Cada controlador público declara esta versión explícitamente. `APP_VERSION` identifica el software y
+no modifica las rutas HTTP. No existe una variable `API_VERSION` de entorno.
 
 Las versiones utilizan números enteros.
 
@@ -79,16 +87,17 @@ La deprecation debe:
 - identificar la alternativa;
 - indicar la fecha de retiro cuando sea conocida.
 
-La especificación OpenAPI debe reflejar la deprecation correspondiente.
+La especificación OpenAPI debe reflejar la deprecation correspondiente cuando se implemente su
+integración; OpenAPI permanece fuera del alcance de este cambio.
 
 ## Reglas
 
 1. Utilice URI Versioning.
-2. Utilice `/api/v1`, `/api/v2`, etc.
-3. Utilice `v1` como versión inicial.
+2. Publique cada versión como `/<prefijo-configurado>/vN` o `/vN` cuando el prefijo esté vacío.
+3. Utilice `1` como identificador de la versión inicial, expuesto como `v1` en la URI.
 4. Utilice números enteros para versiones públicas.
 5. Cree una nueva versión únicamente para breaking changes.
 6. Mantenga cambios compatibles dentro de la versión existente.
 7. Permita coexistencia temporal cuando sea necesaria para migración.
 8. Documente deprecation antes de retirar contratos públicos en uso.
-9. Mantenga OpenAPI consistente con las versiones publicadas.
+9. Mantenga OpenAPI consistente con las versiones publicadas cuando se implemente su integración.

@@ -18,9 +18,12 @@ pnpm start:dev
 
 The API listens on `http://localhost:3000` by default and exposes unauthenticated health probes:
 
-- `GET /health/live` confirms that the HTTP process is responding.
-- `GET /health/ready` confirms that the application has started and can receive traffic. It does not
-  yet check dependencies.
+- `GET /api/v1/health/live` confirms that the HTTP process is responding.
+- `GET /api/v1/health/ready` confirms that the application has started and can receive traffic. It
+  does not yet check dependencies.
+
+Set `API_GLOBAL_PREFIX` to an explicit empty value to publish the same probes under `/v1/health/*`.
+See [API versioning](docs/api/versioning.md) for the public URI contract.
 
 ## Prerequisites
 

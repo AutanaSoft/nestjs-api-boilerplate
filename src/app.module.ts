@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import type { ConfigType } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import apiConfig from './config/api.config.js';
 import appConfig from './config/app.config.js';
 import corsConfig from './config/cors.config.js';
 import httpConfig from './config/http.config.js';
@@ -13,7 +14,7 @@ import { HealthModule } from './modules/health/health.module.js';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, httpConfig, corsConfig, rateLimitConfig],
+      load: [appConfig, apiConfig, httpConfig, corsConfig, rateLimitConfig],
     }),
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
