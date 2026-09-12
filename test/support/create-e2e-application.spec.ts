@@ -37,6 +37,17 @@ describe('createE2EApplication', () => {
     expect(app.close).toHaveBeenCalledOnce();
   });
 
+  it('closes the application when binding the loopback listener fails', async () => {
+    const listenerFailure = new Error('listener failed');
+    const { app, createE2EApplication: createFailingApplication } = await loadApplicationFactory({
+      listenerFailure,
+    });
+
+    await expect(createFailingApplication()).rejects.toBe(listenerFailure);
+    expect(app.listen).toHaveBeenCalledWith(0, '127.0.0.1');
+    expect(app.close).toHaveBeenCalledOnce();
+  });
+
   it('preserves the initialization failure before the cleanup failure', async () => {
     const initializationFailure = new Error('initialization failed');
     const cleanupFailure = new Error('cleanup failed');
@@ -60,12 +71,14 @@ type BootstrapFailures = Readonly<{
   compilationFailure?: Error;
   setupFailure?: Error;
   initializationFailure?: Error;
+  listenerFailure?: Error;
   cleanupFailure?: Error;
 }>;
 
 type ApplicationDouble = Readonly<{
   get: ReturnType<typeof vi.fn>;
   init: ReturnType<typeof vi.fn>;
+  listen: ReturnType<typeof vi.fn>;
   close: ReturnType<typeof vi.fn>;
 }>;
 
@@ -80,6 +93,11 @@ async function loadApplicationFactory(failures: BootstrapFailures): Promise<{
     init: vi.fn(async () => {
       if (failures.initializationFailure !== undefined) {
         throw failures.initializationFailure;
+      }
+    }),
+    listen: vi.fn(async () => {
+      if (failures.listenerFailure !== undefined) {
+        throw failures.listenerFailure;
       }
     }),
     close: vi.fn(async () => {

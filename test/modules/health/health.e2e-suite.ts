@@ -1,4 +1,6 @@
 import request from 'supertest';
+import { vi } from 'vitest';
+import { StructuredLoggerService } from '../../../src/common/observability/logging/logger.service.js';
 import { buildApiConfig } from '../../../src/config/api.config.js';
 import { createE2EApplication } from '../../support/create-e2e-application.js';
 import { runE2EScenario } from '../../support/e2e-context.js';
@@ -52,7 +54,7 @@ export function registerHealthE2ESuite(registration: E2ESuiteRegistration): void
           .options('/api/v1/health/live')
           .set('Origin', 'https://allowed.example')
           .set('Access-Control-Request-Method', 'GET')
-          .set('Access-Control-Request-Headers', 'Authorization, Content-Type')
+          .set('Access-Control-Request-Headers', 'Authorization, Content-Type, X-Request-Id')
           .expect(204);
 
         expect(response.headers['access-control-allow-origin']).toBe('https://allowed.example');
@@ -60,9 +62,117 @@ export function registerHealthE2ESuite(registration: E2ESuiteRegistration): void
           'GET,HEAD,POST,PUT,PATCH,DELETE,OPTIONS,QUERY',
         );
         expect(response.headers['access-control-allow-headers']).toBe(
-          'Accept,Authorization,Content-Type',
+          'Accept,Authorization,Content-Type,X-Request-Id',
         );
         expect(response.headers['access-control-max-age']).toBe('600');
+        expect(response.headers['access-control-expose-headers']).toBe('X-Request-Id');
+      });
+    });
+
+    it('adopts only canonical UUIDv4 request IDs and generates replacements', async () => {
+      await registration.runScenario(async ({ app }) => {
+        const adoptedRequestId = '123e4567-e89b-42d3-a456-426614174000';
+        const adopted = await request(app.getHttpServer())
+          .get('/api/v1/health/live')
+          .set('X-Request-Id', adoptedRequestId)
+          .expect(200);
+        const generated = await request(app.getHttpServer()).get('/api/v1/health/live').expect(200);
+        const replaced = await request(app.getHttpServer())
+          .get('/api/v1/health/live')
+          .set('X-Request-Id', 'not-a-canonical-uuid')
+          .expect(200);
+
+        expect(adopted.headers['x-request-id']).toBe(adoptedRequestId);
+        expect(generated.headers['x-request-id']).toMatch(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+        );
+        expect(replaced.headers['x-request-id']).toMatch(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+        );
+        expect(replaced.headers['x-request-id']).not.toBe('not-a-canonical-uuid');
+        expect(generated.headers['x-request-id']).not.toBe(replaced.headers['x-request-id']);
+      });
+    });
+
+    it('isolates concurrent correlation IDs', async () => {
+      await registration.runScenario(async ({ app }) => {
+        const requestIds = [
+          '123e4567-e89b-42d3-a456-426614174000',
+          '223e4567-e89b-42d3-a456-426614174000',
+        ];
+        const client = request.agent(app.getHttpServer());
+        const responses = await Promise.all(
+          requestIds.map(async (requestId) =>
+            client.get('/api/v1/health/live').set('X-Request-Id', requestId).expect(200),
+          ),
+        );
+
+        expect(responses.map((response) => response.headers['x-request-id'])).toEqual(requestIds);
+      });
+    });
+
+    it('returns correlation IDs and logs one safe terminal event for HTTP outcomes', async () => {
+      await registration.runScenario(async ({ app }) => {
+        const logger = app.get(StructuredLoggerService);
+        const logCompleted = vi.spyOn(logger, 'logHttpRequestCompleted');
+        const requestId = '123e4567-e89b-42d3-a456-426614174000';
+
+        const success = await request(app.getHttpServer())
+          .get('/api/v1/health/live?accessToken=secret')
+          .set('X-Request-Id', requestId)
+          .expect(200);
+        const missing = await request(app.getHttpServer())
+          .get('/not-found?accessToken=secret')
+          .expect(404);
+        await request(app.getHttpServer()).get('/api/v1/__test/rate-limit').expect(200);
+        await request(app.getHttpServer()).get('/api/v1/__test/rate-limit').expect(200);
+        const limited = await request(app.getHttpServer())
+          .get('/api/v1/__test/rate-limit')
+          .expect(429);
+        const preflight = await request(app.getHttpServer())
+          .options('/api/v1/health/live')
+          .set('Origin', 'https://allowed.example')
+          .set('Access-Control-Request-Method', 'GET')
+          .set('Access-Control-Request-Headers', 'X-Request-Id')
+          .expect(204);
+
+        for (const response of [success, missing, limited, preflight]) {
+          expect(response.headers['x-request-id']).toMatch(
+            /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+          );
+        }
+        expect(success.headers['x-request-id']).toBe(requestId);
+        expect(preflight.headers['access-control-allow-headers']).toBe(
+          'Accept,Authorization,Content-Type,X-Request-Id',
+        );
+        expect(preflight.headers['access-control-expose-headers']).toBe('X-Request-Id');
+        expect(logCompleted).toHaveBeenCalledTimes(6);
+        expect(logCompleted).toHaveBeenCalledWith(
+          expect.objectContaining({
+            method: 'GET',
+            route: '/api/v1/health/live',
+            statusCode: 200,
+            durationMs: expect.any(Number),
+          }),
+        );
+        expect(logCompleted).toHaveBeenCalledWith(
+          expect.objectContaining({ method: 'GET', route: 'unmatched', statusCode: 404 }),
+        );
+        expect(logCompleted).toHaveBeenCalledWith(
+          expect.objectContaining({
+            method: 'GET',
+            route: '/api/v1/__test/rate-limit',
+            statusCode: 429,
+          }),
+        );
+        expect(logCompleted).toHaveBeenCalledWith(
+          expect.objectContaining({ method: 'OPTIONS', route: 'unmatched', statusCode: 204 }),
+        );
+        for (const event of logCompleted.mock.calls.map(([event]) => event)) {
+          expect(event).not.toHaveProperty('query');
+          expect(event).not.toHaveProperty('headers');
+          expect(event).not.toHaveProperty('body');
+        }
       });
     });
 

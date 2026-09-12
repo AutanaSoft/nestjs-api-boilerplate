@@ -25,7 +25,14 @@ No registre:
 - payloads sensibles completos.
 
 Los errores inesperados deben registrar contexto diagnóstico suficiente sin exponer información
-sensible.
+sensible. La implementación base usa `ConsoleLogger` de NestJS con `json: true` y `colors: true`
+detrás de `ApplicationLogger` y el token `APP_LOGGER`. Los colores ANSI hacen que la representación
+obtenida mediante `inspect()` no sea JSON estricto directamente parseable.
+
+Los eventos HTTP terminales usan el mensaje estable `http.request.completed`. Sus únicos campos
+variables permitidos son `requestId`, `method`, `route`, `statusCode` y `durationMs`; no incluyen
+bodies, query strings, cookies ni headers. Las rutas sin handler, incluido preflight CORS, usan la
+etiqueta estable `unmatched` en vez de una URL recibida.
 
 ## Request Correlation
 
@@ -36,7 +43,10 @@ requestId
 ```
 
 El mismo `requestId` debe propagarse durante el lifecycle de la Request y utilizarse en los eventos
-relacionados.
+relacionados. Se recibe y devuelve como `X-Request-Id`: solo se adopta un UUIDv4 canónico en
+minúsculas de 36 caracteres; cualquier otro valor se reemplaza mediante `crypto.randomUUID()`.
+`RequestContextService` encapsula `AsyncLocalStorage`, incluido el enlace de callbacks de
+finalización, para no exponer objetos Express a consumidores.
 
 Cuando `requestId` forme parte de una Response pública, su contrato se define en
 `../api/http-contracts.md`.

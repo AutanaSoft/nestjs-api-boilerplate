@@ -50,13 +50,15 @@ El bootstrap E2E usa componentes reales de la aplicación:
 1. Compila `AppModule`.
 2. Obtiene `ConfigType<typeof apiConfig>`, `ConfigType<typeof httpConfig>` y
    `ConfigType<typeof corsConfig>` mediante sus tokens.
-3. Aplica `setupApplication` con los tres namespaces e inicializa la aplicación.
+3. Aplica `setupApplication` con los tres namespaces, inicializa la aplicación y la enlaza en
+   `127.0.0.1` con un puerto efímero.
 4. Usa Supertest sobre `app.getHttpServer()`.
 
-No inicia un puerto con `listen` ni reproduce manualmente middleware de producción. Los componentes
-internos relevantes permanecen reales. El módulo de pruebas añade `E2ERateLimitController`
-únicamente para verificar el throttling global; ese controlador no forma parte de la aplicación de
-producción.
+El listener efímero de loopback permite solicitudes HTTP concurrentes sin exposición externa y
+`app.close()` lo cierra tanto después de escenarios exitosos como después de fallos de bootstrap. El
+helper no reproduce manualmente middleware de producción. Los componentes internos relevantes
+permanecen reales. El módulo de pruebas añade `E2ERateLimitController` únicamente para verificar el
+throttling global; ese controlador no forma parte de la aplicación de producción.
 
 `vitest.config.e2e.ts` define, mediante `test.env`, los valores E2E de
 `CORS_ORIGINS=https://allowed.example`, `CORS_MAX_AGE_SECONDS=600`, `THROTTLE_LIMIT=2` y
@@ -68,18 +70,19 @@ conflictivos.
 
 La suite de health conserva estos contratos públicos y transversales:
 
-| Contrato                   | Resultado esperado                                                                                              |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `GET /api/v1/health/live`  | `200` y respuesta básica de Terminus con `status: ok`; `info`, `error` y `details` vacíos.                      |
-| `GET /api/v1/health/ready` | `200` con la misma respuesta inicial; readiness todavía no comprueba dependencias.                              |
-| Prefijo vacío              | Con `API_GLOBAL_PREFIX` vacío, `GET /v1/health/live` y `/v1/health/ready` responden `200`.                      |
-| Rutas no publicadas        | `/health/*`, `/api/v2/health/live` y las rutas con el prefijo predeterminado en modo vacío responden `404`.     |
-| Helmet                     | Ambos probes incluyen `x-content-type-options: nosniff` y `x-frame-options: SAMEORIGIN`.                        |
-| CORS                       | El origen permitido recibe `access-control-allow-origin`; el no configurado no la recibe.                       |
-| Preflight                  | `OPTIONS /api/v1/health/live` desde el origen permitido responde `204` y declara métodos, headers y max age.    |
-| Throttling de health       | Las solicitudes repetidas a ambos probes continúan respondiendo `200` porque están excluidos del límite global. |
-| Throttling global          | La ruta exclusiva E2E versionada responde `200`, `200`, `429` con el límite configurado de dos solicitudes.     |
-| Ruta raíz eliminada        | `GET /` responde `404`.                                                                                         |
+| Contrato                   | Resultado esperado                                                                                                                                                         |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/v1/health/live`  | `200` y respuesta básica de Terminus con `status: ok`; `info`, `error` y `details` vacíos.                                                                                 |
+| `GET /api/v1/health/ready` | `200` con la misma respuesta inicial; readiness todavía no comprueba dependencias.                                                                                         |
+| Prefijo vacío              | Con `API_GLOBAL_PREFIX` vacío, `GET /v1/health/live` y `/v1/health/ready` responden `200`.                                                                                 |
+| Rutas no publicadas        | `/health/*`, `/api/v2/health/live` y las rutas con el prefijo predeterminado en modo vacío responden `404`.                                                                |
+| Helmet                     | Ambos probes incluyen `x-content-type-options: nosniff` y `x-frame-options: SAMEORIGIN`.                                                                                   |
+| CORS                       | El origen permitido recibe `access-control-allow-origin`; el no configurado no la recibe.                                                                                  |
+| Preflight                  | `OPTIONS /api/v1/health/live` desde el origen permitido responde `204`, declara métodos, headers, max age y `X-Request-Id`.                                                |
+| Correlación                | Todas las respuestas, incluidos `200`, `404`, `429` y preflight, devuelven `X-Request-Id`; UUIDv4 canónicos se adoptan y las solicitudes concurrentes permanecen aisladas. |
+| Throttling de health       | Las solicitudes repetidas a ambos probes continúan respondiendo `200` porque están excluidos del límite global.                                                            |
+| Throttling global          | La ruta exclusiva E2E versionada responde `200`, `200`, `429` con el límite configurado de dos solicitudes.                                                                |
+| Ruta raíz eliminada        | `GET /` responde `404`.                                                                                                                                                    |
 
 ## Extensiones futuras no implementadas
 

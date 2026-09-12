@@ -72,6 +72,14 @@ Los contratos compartidos pueden componerse cuando:
 
 No reutilice automáticamente estructuras internas únicamente para reducir duplicación.
 
+## Request correlation header
+
+Every response includes `X-Request-Id`. Clients may send that header to correlate a request; the
+server adopts only a canonical lowercase UUIDv4 textual value (36 characters) and replaces absent or
+invalid values with a newly generated UUIDv4. Browser clients may send and read this header because
+the CORS policy allows and exposes it. This header is independent of the future JSON error body
+defined below.
+
 ## Error Response
 
 Las Responses JSON de error compartidas utilizan:

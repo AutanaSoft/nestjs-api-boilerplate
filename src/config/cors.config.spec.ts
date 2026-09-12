@@ -6,8 +6,8 @@ describe('buildCorsConfig', () => {
     expect(buildCorsConfig({})).toEqual({
       origins: ['http://localhost:3000'],
       methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'QUERY'],
-      allowedHeaders: ['Accept', 'Authorization', 'Content-Type'],
-      exposedHeaders: [],
+      allowedHeaders: ['Accept', 'Authorization', 'Content-Type', 'X-Request-Id'],
+      exposedHeaders: ['X-Request-Id'],
       credentials: false,
       maxAge: 600,
       preflightContinue: false,

@@ -38,6 +38,7 @@ export async function createE2EApplication(
 
     setupApplication(app, http, cors, api);
     await app.init();
+    await app.listen(0, '127.0.0.1');
 
     return { app };
   } catch (error: unknown) {

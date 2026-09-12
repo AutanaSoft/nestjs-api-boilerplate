@@ -35,16 +35,16 @@ La misma configuración deberá utilizarse en producción y en las pruebas E2E.
 
 La implementación debe respetar los siguientes documentos:
 
-- [Observabilidad](../architecture/observability.md): correlación, mensajes estables, estructura y
-  protección de datos sensibles.
-- [Contratos HTTP](../api/http-contracts.md): uso público de `requestId`, especialmente en el futuro
-  contrato de error.
-- [Manejo de errores](../architecture/error-handling.md): integración posterior de OB-10 con el
+- [Observabilidad](../../architecture/observability.md): correlación, mensajes estables, estructura
+  y protección de datos sensibles.
+- [Contratos HTTP](../../api/http-contracts.md): uso público de `requestId`, especialmente en el
+  futuro contrato de error.
+- [Manejo de errores](../../architecture/error-handling.md): integración posterior de OB-10 con el
   contexto de correlación.
-- [Seguridad HTTP](../configuration/http-security.md): política CORS cuando el identificador se
+- [Seguridad HTTP](../../configuration/http-security.md): política CORS cuando el identificador se
   exponga como header.
-- [Pruebas](../testing/testing.md) y [pruebas E2E](../testing/e2e-testing.md): niveles y estrategia
-  de verificación.
+- [Pruebas](../../testing/testing.md) y [pruebas E2E](../../testing/e2e-testing.md): niveles y
+  estrategia de verificación.
 
 ## Decisiones requeridas antes de implementar
 
@@ -69,17 +69,20 @@ Los nombres de archivos, carpetas, símbolos y eventos se mantienen en inglés.
 
 ```text
 src/common/observability/
-├── application-logger.ts
-├── observability.constants.ts
+├── constants.ts
 ├── observability.module.ts
-├── request-context.service.ts
-├── request-context.service.spec.ts
-├── request-correlation.middleware.ts
-├── request-correlation.middleware.spec.ts
-├── http-request-logging.interceptor.ts
-├── http-request-logging.interceptor.spec.ts
-├── structured-logger.service.ts
-└── structured-logger.service.spec.ts
+├── context/
+│   ├── request-context.service.ts
+│   └── request-context.service.spec.ts
+├── logging/
+│   ├── application-logger.ts
+│   ├── logger.service.ts
+│   └── logger.service.spec.ts
+└── middleware/
+    ├── correlation.middleware.ts
+    ├── correlation.middleware.spec.ts
+    ├── request-logging.middleware.ts
+    └── request-logging.middleware.spec.ts
 ```
 
 Archivos existentes que previsiblemente deberán modificarse:
@@ -120,7 +123,7 @@ justificarse antes de ampliar el cambio.
 #### `ApplicationLogger` y `APP_LOGGER`
 
 - Definir un contrato propio y mínimo para niveles y metadatos estructurados.
-- Proveer un token de inyección estable `APP_LOGGER` desde `observability.constants.ts`.
+- Proveer un token de inyección estable `APP_LOGGER` desde `constants.ts`.
 - Impedir que los consumidores dependan directamente de `ConsoleLogger` o de una integración futura
   con Pino.
 - Mantener reutilizables las pruebas de contrato para cualquier implementación del logger.
@@ -135,7 +138,7 @@ justificarse antes de ampliar el cambio.
 - Mantener una lista explícita de campos permitidos para eventos HTTP.
 - No interpolar payloads arbitrarios ni información sensible en el mensaje.
 
-#### `HttpRequestLoggingInterceptor`
+#### `HttpRequestLoggingMiddleware`
 
 - Medir la duración monotónica de la solicitud.
 - Emitir exactamente un evento `http.request.completed` al terminar la respuesta.
@@ -146,7 +149,8 @@ justificarse antes de ampliar el cambio.
 #### `ObservabilityModule`
 
 - Registrar y exportar únicamente los providers transversales necesarios.
-- Aplicar el interceptor global mediante el mecanismo de NestJS definido durante la implementación.
+- Registrar los middlewares de correlación y logging terminal antes de CORS en el bootstrap
+  compartido.
 - Mantener la infraestructura de observabilidad separada de los módulos de negocio.
 
 ## Secuencia de implementación
@@ -192,7 +196,7 @@ anteriores en verde.
    `requestId`.
 2. Implementar `StructuredLoggerService` sobre `ConsoleLogger` con `json: true` y `colors: true`.
 3. Escribir pruebas fallidas para el evento terminal HTTP, incluyendo éxito y fallo.
-4. Implementar y registrar `HttpRequestLoggingInterceptor`.
+4. Implementar y registrar `HttpRequestLoggingMiddleware` antes de CORS.
 5. Verificar que el evento no incluya query strings, bodies, cookies, authorization headers ni stack
    traces.
 
@@ -261,7 +265,7 @@ las reglas del repositorio.
 | Confiar en contenido arbitrario enviado como `requestId` | Validar y limitar el valor; reemplazarlo cuando no cumpla el contrato.                                                                   |
 | Filtrar secretos o datos personales en logs              | Usar campos permitidos y prohibir bodies, query strings y headers sensibles.                                                             |
 | Perder contexto en operaciones asíncronas                | Probar concurrencia y encapsular correctamente el ciclo de `AsyncLocalStorage`.                                                          |
-| Emitir más de un evento terminal                         | Centralizarlo en un único interceptor y probar éxito y fallo.                                                                            |
+| Emitir más de un evento terminal                         | Centralizarlo en un único middleware terminal y probar éxito y fallo.                                                                    |
 | Romper CORS                                              | Actualizar pruebas unitarias y E2E de preflight junto con la configuración.                                                              |
 | Acoplar OB-11 con OB-10                                  | Limitar OB-11 al contexto, header y logs; dejar el contrato JSON de errores para OB-10.                                                  |
 | Esperar JSON estricto con colores ANSI                   | Documentar y probar que esta configuración produce una representación estructurada mediante `inspect()`, no JSON directamente parseable. |

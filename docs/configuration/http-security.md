@@ -34,8 +34,8 @@ Los origins se recortan y normalizan. Se rechazan las entradas vacías, duplicad
 credentials en URLs, protocolos no HTTP(S), paths distintos de `/`, query strings y fragments.
 
 La política CORS fija los métodos `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS` y
-`QUERY`; permite los headers `Accept`, `Authorization` y `Content-Type`; no expone headers
-adicionales; mantiene credentials deshabilitadas; responde preflight con `204`; y no continúa el
+`QUERY`; permite los headers `Accept`, `Authorization`, `Content-Type` y `X-Request-Id`; expone solo
+`X-Request-Id`; mantiene credentials deshabilitadas; responde preflight con `204`; y no continúa el
 preflight hacia la aplicación.
 
 ## Ejemplos
