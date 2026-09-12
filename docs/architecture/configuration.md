@@ -27,45 +27,26 @@ configuration providers.
 
 ## Namespaces
 
-La configuración debe organizarse mediante namespaces cohesivos, por ejemplo:
+La aplicación registra estos namespaces cohesivos desde `src/config/`:
 
 ```text
-http
-database
-auth
+app       Environment and public application identity
+http      Server port and trusted proxy hops
+cors      Complete browser cross-origin policy
+rateLimit Global in-memory NestJS Throttler limits
 ```
 
-Cada namespace posee:
+Cada namespace posee sus external inputs, defaults, normalization, derived values, validation y
+final read-only configuration type. `app` es propietario de `NODE_ENV` y los metadatos públicos;
+`cors` usa el entorno únicamente para aplicar su requisito de allowlist explícita en producción.
 
-- external inputs;
-- defaults;
-- normalization;
-- derived values;
-- validation;
-- final configuration type.
-
-Los nombres deben ser semánticos, cortos y estables.
-
-## Ownership
-
-Cada configuración pertenece al boundary que configura.
-
-La configuración global puede residir en:
-
-```text
-src/config/
-```
-
-La configuración específica de un Feature o infraestructura debe permanecer junto a su owner cuando
-exista uno más claro.
-
-No centralice configuración únicamente por conveniencia técnica.
+Los nombres deben ser semánticos, cortos y estables. La configuración específica de un Feature o
+infraestructura debe permanecer junto a su owner cuando exista uno más claro. No centralice
+configuración únicamente por conveniencia técnica.
 
 ## Configuration Factories
 
-Cada namespace debe construir su configuración completa antes de exponerla.
-
-La secuencia es:
+Cada namespace debe construir su configuración completa antes de exponerla. La secuencia es:
 
 ```text
 defaults
@@ -80,31 +61,18 @@ validation
 ```
 
 El namespace debe registrarse mediante `registerAs` y exponer únicamente configuración validada.
+Cada application context registra solamente los namespaces que requiere. Los consumers de un
+namespace conocido inyectan `config.KEY` con `ConfigType<typeof config>`; no usan string-based
+lookups ni `ConfigService`.
 
-## Validación
+## Validación e inmutabilidad
 
-La configuración inválida requerida por la aplicación debe provocar un fallo durante startup.
+La configuración inválida requerida por la aplicación debe provocar un fallo durante startup. Los
+consumidores no deben repetir validaciones que pertenecen al configuration namespace. Los external
+values deben tratarse como untrusted input y normalizarse antes de formar la configuración final.
 
-Los consumidores no deben repetir validaciones que pertenecen al configuration namespace.
-
-Los external values deben tratarse como untrusted input y normalizarse antes de formar la
-configuración final.
-
-## Typed Injection
-
-Los consumidores de un namespace conocido deben inyectar su typed configuration token.
-
-Evite dispersar string-based configuration lookups por la aplicación.
-
-`ConfigService` debe reservarse para casos que realmente requieran acceso dinámico o agregación
-entre namespaces.
-
-## Inmutabilidad
-
-La startup configuration debe tratarse como read-only.
-
-Los mutable runtime settings pertenecen a una responsabilidad distinta y no deben modelarse como
-startup configuration.
+La startup configuration debe tratarse como read-only. Los mutable runtime settings pertenecen a una
+responsabilidad distinta y no deben modelarse como startup configuration.
 
 ## Secrets
 
@@ -120,11 +88,9 @@ correspondiente.
 
 ## Configuración HTTP
 
-Los valores concretos, defaults y restricciones operativas del namespace HTTP se documentan en
-`../configuration/http-security.md`.
-
-Ese documento no sustituye esta estrategia arquitectónica; mantiene la referencia de configuración
-runtime concreta.
+Los valores concretos, defaults y restricciones operativas de los namespaces `http`, `cors` y
+`rateLimit` se documentan en `../configuration/http-security.md`. Ese documento no sustituye esta
+estrategia arquitectónica; mantiene la referencia de configuración runtime concreta.
 
 ## Reglas
 

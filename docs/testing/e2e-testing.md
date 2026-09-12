@@ -48,28 +48,29 @@ contrato.
 El bootstrap E2E usa componentes reales de la aplicación:
 
 1. Compila `AppModule`.
-2. Obtiene `ConfigType<typeof httpConfig>` mediante `httpConfig.KEY`.
-3. Aplica `setupApplication` e inicializa la aplicación.
+2. Obtiene `ConfigType<typeof httpConfig>` y `ConfigType<typeof corsConfig>` mediante sus tokens.
+3. Aplica `setupApplication` con ambos namespaces e inicializa la aplicación.
 4. Usa Supertest sobre `app.getHttpServer()`.
 
 No inicia un puerto con `listen` ni reproduce manualmente middleware de producción. Los componentes
 internos relevantes permanecen reales.
 
 `vitest.config.e2e.ts` define, mediante `test.env`, los valores E2E de
-`CORS_ORIGINS=https://allowed.example`, `THROTTLE_LIMIT=2` y `THROTTLE_TTL_SECONDS=60`. El helper
-E2E no lee, modifica ni restaura `process.env`; Vitest aplica esos valores dentro de la
-configuración E2E, incluso cuando el proceso invocador aporta valores conflictivos.
+`CORS_ORIGINS=https://allowed.example`, `CORS_MAX_AGE_SECONDS=600`, `THROTTLE_LIMIT=2` y
+`THROTTLE_TTL_SECONDS=60`. El helper E2E no lee, modifica ni restaura `process.env`; Vitest aplica
+esos valores dentro de la configuración E2E, incluso cuando el proceso invocador aporta valores
+conflictivos.
 
 ## Contratos HTTP cubiertos
 
 La suite de aplicación conserva estos cuatro contratos públicos:
 
-| Contrato       | Resultado esperado                                                                        |
-| -------------- | ----------------------------------------------------------------------------------------- |
-| `GET /`        | `200`, `Hello World!`, `x-content-type-options: nosniff` y `x-frame-options: SAMEORIGIN`. |
-| CORS           | El origen permitido recibe `access-control-allow-origin`; el no configurado no la recibe. |
-| Preflight      | `OPTIONS /` desde el origen permitido responde `204` y conserva la cabecera CORS.         |
-| Límite de tasa | Con límite dos, tres solicitudes `GET /` responden `200`, `200`, `429`.                   |
+| Contrato       | Resultado esperado                                                                                                  |
+| -------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `GET /`        | `200`, `Hello World!`, `x-content-type-options: nosniff` y `x-frame-options: SAMEORIGIN`.                           |
+| CORS           | El origen permitido recibe `access-control-allow-origin`; el no configurado no la recibe.                           |
+| Preflight      | `OPTIONS /` desde el origen permitido responde `204`, conserva CORS y declara métodos, headers y max age acordados. |
+| Límite de tasa | Con límite dos, tres solicitudes `GET /` responden `200`, `200`, `429`.                                             |
 
 ## Extensiones futuras no implementadas
 

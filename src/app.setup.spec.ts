@@ -1,10 +1,11 @@
 import type { INestApplication } from '@nestjs/common';
 import { describe, expect, it, vi } from 'vitest';
 import { setupApplication } from './app.setup.js';
+import { buildCorsConfig } from './config/cors.config.js';
 import { buildHttpConfig } from './config/http.config.js';
 
 describe('setupApplication', () => {
-  it('applies trust proxy before Helmet and the configured CORS allowlist', () => {
+  it('applies trust proxy before Helmet and the configured CORS policy', () => {
     const set = vi.fn();
     const use = vi.fn();
     const enableCors = vi.fn();
@@ -13,18 +14,22 @@ describe('setupApplication', () => {
       use,
       enableCors,
     } as unknown as INestApplication;
-    const config = buildHttpConfig({
-      CORS_ORIGINS: 'https://api.example.com',
-      TRUST_PROXY_HOPS: '1',
-    });
+    const httpConfig = buildHttpConfig({ TRUST_PROXY_HOPS: '1' });
+    const corsConfig = buildCorsConfig({ CORS_ORIGINS: 'https://api.example.com' });
 
-    setupApplication(app, config);
+    setupApplication(app, httpConfig, corsConfig);
 
     expect(set).toHaveBeenCalledWith('trust proxy', 1);
     expect(use).toHaveBeenCalledOnce();
     expect(enableCors).toHaveBeenCalledWith({
       origin: ['https://api.example.com'],
+      methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'QUERY'],
+      allowedHeaders: ['Accept', 'Authorization', 'Content-Type'],
+      exposedHeaders: [],
       credentials: false,
+      maxAge: 600,
+      preflightContinue: false,
+      optionsSuccessStatus: 204,
     });
   });
 
@@ -36,7 +41,7 @@ describe('setupApplication', () => {
       enableCors: vi.fn(),
     } as unknown as INestApplication;
 
-    setupApplication(app, buildHttpConfig({}));
+    setupApplication(app, buildHttpConfig({}), buildCorsConfig({}));
 
     expect(set).not.toHaveBeenCalled();
   });

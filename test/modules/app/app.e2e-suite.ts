@@ -30,15 +30,23 @@ export function registerAppE2ESuite(registration: E2ESuiteRegistration): void {
       });
     });
 
-    it('accepts a preflight request from an allowed origin', async () => {
+    it('accepts a preflight request from an allowed origin with the configured policy', async () => {
       await registration.runScenario(async ({ app }) => {
         const response = await request(app.getHttpServer())
           .options('/')
           .set('Origin', 'https://allowed.example')
           .set('Access-Control-Request-Method', 'GET')
+          .set('Access-Control-Request-Headers', 'Authorization, Content-Type')
           .expect(204);
 
         expect(response.headers['access-control-allow-origin']).toBe('https://allowed.example');
+        expect(response.headers['access-control-allow-methods']).toBe(
+          'GET,HEAD,POST,PUT,PATCH,DELETE,OPTIONS,QUERY',
+        );
+        expect(response.headers['access-control-allow-headers']).toBe(
+          'Accept,Authorization,Content-Type',
+        );
+        expect(response.headers['access-control-max-age']).toBe('600');
       });
     });
 

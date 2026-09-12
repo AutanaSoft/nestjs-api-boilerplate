@@ -2,9 +2,9 @@
 
 Status: Implemented
 
-La API aplica Helmet, una lista explícita de orígenes CORS permitidos y global Rate Limiting en
-memoria desde el configuration namespace `http`. Establezca las environment variables indicadas a
-continuación y luego reinicie el proceso para que los cambios surtan efecto.
+La API aplica Helmet, una política CORS explícita y global Rate Limiting en memoria. Los namespaces
+`http`, `cors` y `rateLimit` son propietarios de esta configuración. Establezca las environment
+variables indicadas a continuación y reinicie el proceso para que los cambios surtan efecto.
 
 ## Ruta rápida
 
@@ -12,20 +12,24 @@ continuación y luego reinicie el proceso para que los cambios surtan efecto.
 2. Establezca `TRUST_PROXY_HOPS` únicamente cuando se conozca la deployment proxy topology.
 3. Ajuste la throttling window y el limit para el deployment, y luego reinicie la API.
 
-## Environment Variables
+## Namespaces y variables
 
-| Variable               | Predeterminado                              | Reglas                                                                      |
-| ---------------------- | ------------------------------------------- | --------------------------------------------------------------------------- |
-| `NODE_ENV`             | `development`                               | Nombre de entorno no vacío.                                                 |
-| `PORT`                 | `3000`                                      | Entero de 1 a 65535.                                                        |
-| `CORS_ORIGINS`         | `http://localhost:3000` fuera de producción | Orígenes HTTP(S) separados por comas. Obligatorio y no vacío en producción. |
-| `THROTTLE_TTL_SECONDS` | `60`                                        | Request window en segundos con entero positivo.                             |
-| `THROTTLE_LIMIT`       | `100`                                       | Requests permitidos por window con entero positivo.                         |
-| `TRUST_PROXY_HOPS`     | `0`                                         | Entero de 0 a 255.                                                          |
+| Namespace   | Variable               | Predeterminado                              | Reglas                                                                      |
+| ----------- | ---------------------- | ------------------------------------------- | --------------------------------------------------------------------------- |
+| `http`      | `PORT`                 | `3000`                                      | Entero de 1 a 65535.                                                        |
+| `http`      | `TRUST_PROXY_HOPS`     | `0`                                         | Entero de 0 a 255.                                                          |
+| `cors`      | `CORS_ORIGINS`         | `http://localhost:3000` fuera de producción | Orígenes HTTP(S) separados por comas. Obligatorio y no vacío en producción. |
+| `cors`      | `CORS_MAX_AGE_SECONDS` | `600`                                       | Entero de 0 a 86400. `0` desactiva el caché de preflight.                   |
+| `rateLimit` | `THROTTLE_TTL_SECONDS` | `60`                                        | Request window en segundos con entero positivo.                             |
+| `rateLimit` | `THROTTLE_LIMIT`       | `100`                                       | Requests permitidos por window con entero positivo.                         |
 
 Los origins se recortan y normalizan. Se rechazan las entradas vacías, duplicados, wildcards,
-credentials en URLs, protocolos no HTTP(S), paths distintos de `/`, query strings y fragments. Las
-CORS credentials siempre están deshabilitadas.
+credentials en URLs, protocolos no HTTP(S), paths distintos de `/`, query strings y fragments.
+
+La política CORS fija los métodos `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS` y
+`QUERY`; permite los headers `Accept`, `Authorization` y `Content-Type`; no expone headers
+adicionales; mantiene credentials deshabilitadas; responde preflight con `204`; y no continúa el
+preflight hacia la aplicación.
 
 ## Ejemplos
 
@@ -40,6 +44,7 @@ Producción con dos browser clients y un reverse proxy:
 ```sh
 NODE_ENV=production \
 CORS_ORIGINS=https://app.example.com,https://admin.example.com \
+CORS_MAX_AGE_SECONDS=600 \
 TRUST_PROXY_HOPS=1 \
 THROTTLE_TTL_SECONDS=60 \
 THROTTLE_LIMIT=100 \

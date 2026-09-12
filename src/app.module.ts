@@ -1,25 +1,28 @@
 import { Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import type { ConfigType } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
+import appConfig from './config/app.config.js';
+import corsConfig from './config/cors.config.js';
 import httpConfig from './config/http.config.js';
+import rateLimitConfig from './config/rate-limit.config.js';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [httpConfig],
+      load: [appConfig, httpConfig, corsConfig, rateLimitConfig],
     }),
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
-      inject: [httpConfig.KEY],
-      useFactory: (config: ConfigType<typeof httpConfig>) => [
+      inject: [rateLimitConfig.KEY],
+      useFactory: (config: ConfigType<typeof rateLimitConfig>) => [
         {
-          ttl: config.throttle.ttlMs,
-          limit: config.throttle.limit,
+          ttl: config.global.ttlMs,
+          limit: config.global.limit,
         },
       ],
     }),

@@ -1,9 +1,9 @@
-import type { ConfigType } from '@nestjs/config';
 import type { INestApplication } from '@nestjs/common';
+import type { ConfigType } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
-import type { TestingModule } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module.js';
 import { setupApplication } from '../../src/app.setup.js';
+import corsConfig from '../../src/config/cors.config.js';
 import httpConfig from '../../src/config/http.config.js';
 import type { E2EContext } from './e2e-context.js';
 
@@ -11,14 +11,15 @@ export async function createE2EApplication(): Promise<E2EContext> {
   let app: INestApplication | undefined;
 
   try {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
+    const moduleFixture = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    const config = app.get<ConfigType<typeof httpConfig>>(httpConfig.KEY);
+    const http = app.get<ConfigType<typeof httpConfig>>(httpConfig.KEY);
+    const cors = app.get<ConfigType<typeof corsConfig>>(corsConfig.KEY);
 
-    setupApplication(app, config);
+    setupApplication(app, http, cors);
     await app.init();
 
     return { app };
