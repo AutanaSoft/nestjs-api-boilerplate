@@ -1,4 +1,4 @@
-import { registerAppE2ESuite } from './modules/app/app.e2e-suite.js';
+import { registerHealthE2ESuite } from './modules/health/health.e2e-suite.js';
 import { createE2EEnvironment } from './support/e2e-environment.js';
 import type { E2EEnvironment } from './support/e2e-environment.js';
 import type { RunE2EScenario } from './support/e2e-context.js';
@@ -17,4 +17,4 @@ const runScenario: RunE2EScenario = async (scenario) => {
   await environment.runScenario(scenario);
 };
 
-registerAppE2ESuite({ runScenario });
+registerHealthE2ESuite({ runScenario });

@@ -6,6 +6,7 @@ import { setupApplication } from '../../src/app.setup.js';
 import corsConfig from '../../src/config/cors.config.js';
 import httpConfig from '../../src/config/http.config.js';
 import type { E2EContext } from './e2e-context.js';
+import { E2ERateLimitController } from './e2e-rate-limit.controller.js';
 
 export async function createE2EApplication(): Promise<E2EContext> {
   let app: INestApplication | undefined;
@@ -13,6 +14,7 @@ export async function createE2EApplication(): Promise<E2EContext> {
   try {
     const moduleFixture = await Test.createTestingModule({
       imports: [AppModule],
+      controllers: [E2ERateLimitController],
     }).compile();
 
     app = moduleFixture.createNestApplication();

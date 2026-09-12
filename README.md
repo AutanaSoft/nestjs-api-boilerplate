@@ -16,7 +16,11 @@ cp .env.example .env
 pnpm start:dev
 ```
 
-The API listens on `http://localhost:3000` by default. `GET /` returns `Hello World!`.
+The API listens on `http://localhost:3000` by default and exposes unauthenticated health probes:
+
+- `GET /health/live` confirms that the HTTP process is responding.
+- `GET /health/ready` confirms that the application has started and can receive traffic. It does not
+  yet check dependencies.
 
 ## Prerequisites
 

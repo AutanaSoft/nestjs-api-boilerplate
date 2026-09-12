@@ -32,7 +32,7 @@ función de registro y no declara hooks globales ni administra aplicaciones, `pr
 compartidos. El propietario la importa y registra de forma directa y revisable:
 
 ```typescript
-registerAppE2ESuite({ runScenario });
+registerHealthE2ESuite({ runScenario });
 ```
 
 Una suite nueva debe seguir el mismo patrón; no se deben añadir propietarios E2E adicionales ni
@@ -41,8 +41,8 @@ arreglos dinámicos de registradores.
 ## Escenarios y bootstrap
 
 Cada escenario independiente recibe una aplicación NestJS nueva y la cierra de forma determinista.
-Por ello, los escenarios pueden reordenarse sin compartir estado. El escenario de límite de tasa
-conserva sus tres solicitudes en la misma aplicación porque ese estado forma parte de su propio
+Por ello, los escenarios pueden reordenarse sin compartir estado. Los escenarios de límite de tasa
+conservan sus solicitudes en la misma aplicación porque ese estado forma parte de su propio
 contrato.
 
 El bootstrap E2E usa componentes reales de la aplicación:
@@ -53,7 +53,9 @@ El bootstrap E2E usa componentes reales de la aplicación:
 4. Usa Supertest sobre `app.getHttpServer()`.
 
 No inicia un puerto con `listen` ni reproduce manualmente middleware de producción. Los componentes
-internos relevantes permanecen reales.
+internos relevantes permanecen reales. El módulo de pruebas añade `E2ERateLimitController`
+únicamente para verificar el throttling global; ese controlador no forma parte de la aplicación de
+producción.
 
 `vitest.config.e2e.ts` define, mediante `test.env`, los valores E2E de
 `CORS_ORIGINS=https://allowed.example`, `CORS_MAX_AGE_SECONDS=600`, `THROTTLE_LIMIT=2` y
@@ -63,19 +65,23 @@ conflictivos.
 
 ## Contratos HTTP cubiertos
 
-La suite de aplicación conserva estos cuatro contratos públicos:
+La suite de health conserva estos contratos públicos y transversales:
 
-| Contrato       | Resultado esperado                                                                                                  |
-| -------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `GET /`        | `200`, `Hello World!`, `x-content-type-options: nosniff` y `x-frame-options: SAMEORIGIN`.                           |
-| CORS           | El origen permitido recibe `access-control-allow-origin`; el no configurado no la recibe.                           |
-| Preflight      | `OPTIONS /` desde el origen permitido responde `204`, conserva CORS y declara métodos, headers y max age acordados. |
-| Límite de tasa | Con límite dos, tres solicitudes `GET /` responden `200`, `200`, `429`.                                             |
+| Contrato             | Resultado esperado                                                                                              |
+| -------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `GET /health/live`   | `200` y respuesta básica de Terminus con `status: ok`; `info`, `error` y `details` vacíos.                      |
+| `GET /health/ready`  | `200` con la misma respuesta inicial; readiness todavía no comprueba dependencias.                              |
+| Helmet               | Ambos probes incluyen `x-content-type-options: nosniff` y `x-frame-options: SAMEORIGIN`.                        |
+| CORS                 | El origen permitido recibe `access-control-allow-origin`; el no configurado no la recibe.                       |
+| Preflight            | `OPTIONS /health/live` desde el origen permitido responde `204` y declara métodos, headers y max age acordados. |
+| Throttling de health | Las solicitudes repetidas a ambos probes continúan respondiendo `200` porque están excluidos del límite global. |
+| Throttling global    | La ruta exclusiva E2E responde `200`, `200`, `429` con el límite configurado de dos solicitudes.                |
+| Ruta raíz eliminada  | `GET /` responde `404`.                                                                                         |
 
 ## Extensiones futuras no implementadas
 
 La base entregada no implementa PostgreSQL, Prisma, migraciones, autenticación, fixtures, seeds,
-proveedores externos, dependencias nuevas ni abstracciones para esas capacidades.
+proveedores externos, indicadores de salud para dependencias ni abstracciones para esas capacidades.
 
 Cuando exista una necesidad real, las siguientes pautas aplicarán:
 

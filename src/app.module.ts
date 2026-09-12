@@ -3,12 +3,11 @@ import { ConfigModule } from '@nestjs/config';
 import type { ConfigType } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { AppController } from './app.controller.js';
-import { AppService } from './app.service.js';
 import appConfig from './config/app.config.js';
 import corsConfig from './config/cors.config.js';
 import httpConfig from './config/http.config.js';
 import rateLimitConfig from './config/rate-limit.config.js';
+import { HealthModule } from './modules/health/health.module.js';
 
 @Module({
   imports: [
@@ -26,10 +25,9 @@ import rateLimitConfig from './config/rate-limit.config.js';
         },
       ],
     }),
+    HealthModule,
   ],
-  controllers: [AppController],
   providers: [
-    AppService,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
