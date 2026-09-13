@@ -1,3 +1,4 @@
+import { HttpException, HttpStatus } from '@nestjs/common';
 import { ApplicationError } from './application-error.js';
 import type { ApplicationErrorCode } from './application-error.js';
 import type { ErrorResponse } from './error-response.js';
@@ -27,11 +28,73 @@ const unknownErrorHttpDescriptor: HttpErrorDescriptor = Object.freeze({
   message: 'An unexpected error occurred.',
 });
 
+const httpExceptionHttpDescriptors: Readonly<Record<number, HttpErrorDescriptor>> = Object.freeze({
+  [HttpStatus.BAD_REQUEST]: Object.freeze({
+    statusCode: 400,
+    code: 'BAD_REQUEST',
+    message: 'The request is invalid.',
+  }),
+  [HttpStatus.UNAUTHORIZED]: Object.freeze({
+    statusCode: 401,
+    code: 'UNAUTHORIZED',
+    message: 'Authentication is required.',
+  }),
+  [HttpStatus.FORBIDDEN]: Object.freeze({
+    statusCode: 403,
+    code: 'FORBIDDEN',
+    message: 'You are not allowed to perform this action.',
+  }),
+  [HttpStatus.NOT_FOUND]: Object.freeze({
+    statusCode: 404,
+    code: 'ROUTE_NOT_FOUND',
+    message: 'The requested route was not found.',
+  }),
+  [HttpStatus.CONFLICT]: Object.freeze({
+    statusCode: 409,
+    code: 'CONFLICT',
+    message: 'The request conflicts with the current resource state.',
+  }),
+  [HttpStatus.TOO_MANY_REQUESTS]: Object.freeze({
+    statusCode: 429,
+    code: 'RATE_LIMIT_EXCEEDED',
+    message: 'Too many requests.',
+  }),
+});
+
+function hasOwnProperty<ObjectType extends object>(
+  object: ObjectType,
+  property: PropertyKey,
+): property is keyof ObjectType {
+  return Object.hasOwn(object, property);
+}
+
+function getApplicationErrorHttpDescriptor(error: ApplicationError): HttpErrorDescriptor {
+  const code: PropertyKey = error.code;
+
+  return hasOwnProperty(applicationErrorHttpDescriptors, code)
+    ? applicationErrorHttpDescriptors[code]
+    : unknownErrorHttpDescriptor;
+}
+
+function getHttpExceptionHttpDescriptor(error: HttpException): HttpErrorDescriptor {
+  try {
+    const statusCode: PropertyKey = error.getStatus();
+
+    return hasOwnProperty(httpExceptionHttpDescriptors, statusCode)
+      ? httpExceptionHttpDescriptors[statusCode]
+      : unknownErrorHttpDescriptor;
+  } catch {
+    return unknownErrorHttpDescriptor;
+  }
+}
+
 export function mapErrorToResponse(error: unknown, requestId: string): ErrorResponse<never> {
   const descriptor =
     error instanceof ApplicationError
-      ? applicationErrorHttpDescriptors[error.code]
-      : unknownErrorHttpDescriptor;
+      ? getApplicationErrorHttpDescriptor(error)
+      : error instanceof HttpException
+        ? getHttpExceptionHttpDescriptor(error)
+        : unknownErrorHttpDescriptor;
 
   return {
     statusCode: descriptor.statusCode,
