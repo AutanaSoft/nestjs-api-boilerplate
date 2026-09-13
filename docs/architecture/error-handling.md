@@ -24,6 +24,13 @@ Application / Infrastructure Error
 
 Los Controllers no deben repetir mappings de errores que puedan resolverse en el Error Boundary.
 
+## Rutas sin coincidencia
+
+`NotFoundController` usa el catch-all versionado de Nest `@All('{*path}')` para rutas sin
+coincidencia. Las rutas específicas conservan prioridad; el controlador lanza `NotFoundException`
+para que el Error Boundary central emita `ROUTE_NOT_FOUND`. Para observabilidad, este patrón técnico
+se normaliza como `unmatched` en los logs.
+
 ## Application Errors
 
 Las condiciones esperadas del comportamiento de aplicación deben representarse mediante una clase
@@ -141,3 +148,5 @@ Logging, request correlation y telemetry se definen en `observability.md`.
 11. Registre el filtro global una única vez mediante `ErrorHandlingModule` y `APP_FILTER`.
 12. Delegue HTTP Status Codes y Error Responses a sus documentos API owners.
 13. Mantenga logging y telemetry bajo las convenciones de observabilidad.
+14. Para rutas sin coincidencia, mantenga el catch-all versionado, preserve la prioridad de rutas
+    específicas y delegue su respuesta pública al Error Boundary.
