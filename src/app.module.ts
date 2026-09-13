@@ -8,6 +8,7 @@ import appConfig from './config/app.config.js';
 import corsConfig from './config/cors.config.js';
 import httpConfig from './config/http.config.js';
 import rateLimitConfig from './config/rate-limit.config.js';
+import { ErrorHandlingModule } from './common/error-handling/error-handling.module.js';
 import { ObservabilityModule } from './common/observability/observability.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 
@@ -29,6 +30,7 @@ import { HealthModule } from './modules/health/health.module.js';
     }),
     HealthModule,
     ObservabilityModule,
+    ErrorHandlingModule,
   ],
   providers: [
     {
