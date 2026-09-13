@@ -2,6 +2,7 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 import { ApplicationError } from './application-error.js';
 import type { ApplicationErrorCode } from './application-error.js';
 import type { ErrorResponse } from './error-response.js';
+import { ResponseContractViolation } from '../serialization/response-contract-violation.js';
 
 export type HttpErrorDescriptor = Readonly<{
   statusCode: number;
@@ -91,11 +92,13 @@ function getHttpExceptionHttpDescriptor(error: HttpException): HttpErrorDescript
 
 export function mapErrorToResponse(error: unknown, requestId: string): ErrorResponse<never> {
   const descriptor =
-    error instanceof ApplicationError
-      ? getApplicationErrorHttpDescriptor(error)
-      : error instanceof HttpException
-        ? getHttpExceptionHttpDescriptor(error)
-        : unknownErrorHttpDescriptor;
+    error instanceof ResponseContractViolation
+      ? unknownErrorHttpDescriptor
+      : error instanceof ApplicationError
+        ? getApplicationErrorHttpDescriptor(error)
+        : error instanceof HttpException
+          ? getHttpExceptionHttpDescriptor(error)
+          : unknownErrorHttpDescriptor;
 
   return {
     statusCode: descriptor.statusCode,

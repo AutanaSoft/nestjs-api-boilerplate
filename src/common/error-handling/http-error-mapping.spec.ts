@@ -2,6 +2,7 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 import { describe, expect, it } from 'vitest';
 import { ApplicationError } from './application-error.js';
 import { applicationErrorHttpDescriptors, mapErrorToResponse } from './http-error-mapping.js';
+import { ResponseContractViolation } from '../serialization/response-contract-violation.js';
 
 type ResourceNotFoundContext = Readonly<{
   resourceId: string;
@@ -71,6 +72,23 @@ describe('mapErrorToResponse', () => {
         requestId,
       },
     );
+  });
+
+  it('maps ResponseContractViolation to the safe internal fallback without details', () => {
+    const error = new ResponseContractViolation({
+      cause: new Error('native serialization message'),
+    });
+
+    const response = mapErrorToResponse(error, requestId);
+
+    expect(response).toEqual({
+      statusCode: 500,
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'An unexpected error occurred.',
+      requestId,
+    });
+    expect(response).not.toHaveProperty('details');
+    expect(JSON.stringify(response)).not.toContain('native serialization message');
   });
 
   it.each([new Error('database password leaked'), 'untrusted input', { stack: 'private stack' }])(

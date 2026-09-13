@@ -5,6 +5,7 @@ import { RequestContextService } from '../observability/context/request-context.
 import type { ApplicationLogger } from '../observability/logging/application-logger.js';
 import { ApplicationError } from './application-error.js';
 import { HttpExceptionFilter } from './http-exception.filter.js';
+import { ResponseContractViolation } from '../serialization/response-contract-violation.js';
 
 type FilterRequest = Readonly<{
   method: string;
@@ -85,6 +86,62 @@ describe('HttpExceptionFilter', () => {
       route: '/widgets',
       errorType: 'UNKNOWN_ERROR',
     });
+  });
+
+  it('maps and logs ResponseContractViolation once with a stable safe classification', () => {
+    const requestId = '123e4567-e89b-42d3-a456-426614174000';
+    const context = new RequestContextService();
+    const logger = createLogger();
+    const response = createResponse();
+    const filter = new HttpExceptionFilter(context, logger);
+    const exception = Object.assign(
+      new ResponseContractViolation({
+        cause: new Error('native serialization message'),
+      }),
+      {
+        issues: ['private validation issues'],
+        value: { token: 'private-value' },
+        rejectedValue: { token: 'secret-token' },
+        schema: 'private schema',
+        technologyName: 'Zod',
+      },
+    );
+
+    context.run(requestId, () => {
+      filter.catch(exception, createHost({ method: 'GET', route: { path: '/widgets' } }, response));
+    });
+
+    expect(response.setHeader).toHaveBeenCalledExactlyOnceWith(REQUEST_ID_HEADER, requestId);
+    expect(response.status).toHaveBeenCalledExactlyOnceWith(HttpStatus.INTERNAL_SERVER_ERROR);
+    expect(response.json).toHaveBeenCalledExactlyOnceWith({
+      statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'An unexpected error occurred.',
+      requestId,
+    });
+    expect(logger.logUnexpectedHttpError).toHaveBeenCalledExactlyOnceWith({
+      requestId,
+      requestIdFallback: false,
+      method: 'GET',
+      route: '/widgets',
+      errorType: 'RESPONSE_CONTRACT_VIOLATION',
+    });
+
+    const output = JSON.stringify({
+      body: response.json.mock.calls[0]?.[0],
+      metadata: logger.logUnexpectedHttpError.mock.calls[0]?.[0],
+    });
+    expect(output).not.toContain('native serialization message');
+    expect(output).not.toContain('private validation issues');
+    expect(output).not.toContain('private-value');
+    expect(output).not.toContain('secret-token');
+    expect(output).not.toContain('private schema');
+    expect(output).not.toContain('Zod');
+    expect(output).not.toContain('ResponseContractViolation');
+    expect(output).not.toContain('stack');
+    expect(output).not.toContain('cause');
+    expect(output).not.toContain('schema');
+    expect(output).not.toContain('issues');
   });
 
   it('does not log expected application errors', () => {

@@ -4,7 +4,9 @@ import { APP_LOGGER, REQUEST_ID_HEADER, UNMATCHED_ROUTE } from '../observability
 import { RequestContextService } from '../observability/context/request-context.service.js';
 import type { ApplicationLogger } from '../observability/logging/application-logger.js';
 import { mapErrorToResponse } from './http-error-mapping.js';
+import { ResponseContractViolation } from '../serialization/response-contract-violation.js';
 
+const RESPONSE_CONTRACT_VIOLATION = 'RESPONSE_CONTRACT_VIOLATION';
 const UNKNOWN_ERROR = 'UNKNOWN_ERROR';
 
 type HttpErrorRequest = Readonly<{
@@ -42,10 +44,16 @@ export class HttpExceptionFilter implements ExceptionFilter {
         requestIdFallback: contextRequestId === undefined,
         method: request.method,
         route: getRoute(request.route),
-        errorType: UNKNOWN_ERROR,
+        errorType: getUnexpectedErrorType(exception),
       });
     }
   }
+}
+
+function getUnexpectedErrorType(exception: unknown): string {
+  return exception instanceof ResponseContractViolation
+    ? RESPONSE_CONTRACT_VIOLATION
+    : UNKNOWN_ERROR;
 }
 
 function getRoute(route: unknown): string {
