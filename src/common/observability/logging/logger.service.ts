@@ -1,6 +1,10 @@
 import { ConsoleLogger, Injectable, Optional, type LoggerService } from '@nestjs/common';
-import type { ApplicationLogger, HttpRequestCompletedMetadata } from './application-logger.js';
-import { HTTP_REQUEST_COMPLETED_EVENT } from '../constants.js';
+import type {
+  ApplicationLogger,
+  HttpRequestCompletedMetadata,
+  UnexpectedHttpErrorMetadata,
+} from './application-logger.js';
+import { HTTP_REQUEST_COMPLETED_EVENT, HTTP_REQUEST_FAILED_EVENT } from '../constants.js';
 import { RequestContextService } from '../context/request-context.service.js';
 
 @Injectable()
@@ -21,6 +25,16 @@ export class StructuredLoggerService implements ApplicationLogger, LoggerService
       route: metadata.route,
       statusCode: metadata.statusCode,
       durationMs: metadata.durationMs,
+    });
+  }
+
+  logUnexpectedHttpError(metadata: UnexpectedHttpErrorMetadata): void {
+    this.consoleLogger.error(HTTP_REQUEST_FAILED_EVENT, {
+      requestId: metadata.requestId,
+      requestIdFallback: metadata.requestIdFallback,
+      method: metadata.method,
+      route: metadata.route,
+      errorType: metadata.errorType,
     });
   }
 

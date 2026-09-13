@@ -41,4 +41,71 @@ describe('StructuredLoggerService', () => {
       durationMs: 4.25,
     });
   });
+
+  it('emits a stable internal failure event with allowlisted metadata in a request context', () => {
+    const context = new RequestContextService();
+    const consoleLogger = {
+      log: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
+      debug: vi.fn(),
+      verbose: vi.fn(),
+      fatal: vi.fn(),
+    } satisfies ConsoleLoggerMethods;
+    const logger = new StructuredLoggerService(context, consoleLogger);
+    const metadataWithSensitiveFields = {
+      requestId: '123e4567-e89b-42d3-a456-426614174000',
+      requestIdFallback: false,
+      method: 'GET',
+      route: '/health/:probe',
+      errorType: 'UNKNOWN_ERROR',
+      message: 'database password is secret',
+      stack: 'sensitive stack trace',
+      cause: new Error('sensitive cause'),
+      body: { password: 'secret' },
+      query: 'token=secret',
+      headers: { authorization: 'Bearer secret' },
+    };
+
+    context.run('123e4567-e89b-42d3-a456-426614174000', () => {
+      logger.logUnexpectedHttpError(metadataWithSensitiveFields);
+    });
+
+    expect(consoleLogger.error).toHaveBeenCalledWith('http.request.failed', {
+      requestId: '123e4567-e89b-42d3-a456-426614174000',
+      requestIdFallback: false,
+      method: 'GET',
+      route: '/health/:probe',
+      errorType: 'UNKNOWN_ERROR',
+    });
+  });
+
+  it('emits an explicit fallback request ID without a request context', () => {
+    const context = new RequestContextService();
+    const consoleLogger = {
+      log: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
+      debug: vi.fn(),
+      verbose: vi.fn(),
+      fatal: vi.fn(),
+    } satisfies ConsoleLoggerMethods;
+    const logger = new StructuredLoggerService(context, consoleLogger);
+
+    logger.logUnexpectedHttpError({
+      requestId: '123e4567-e89b-42d3-a456-426614174001',
+      requestIdFallback: true,
+      method: 'POST',
+      route: 'unmatched',
+      errorType: 'RESPONSE_CONTRACT_VIOLATION',
+    });
+
+    expect(consoleLogger.error).toHaveBeenCalledWith('http.request.failed', {
+      requestId: '123e4567-e89b-42d3-a456-426614174001',
+      requestIdFallback: true,
+      method: 'POST',
+      route: 'unmatched',
+      errorType: 'RESPONSE_CONTRACT_VIOLATION',
+    });
+  });
 });

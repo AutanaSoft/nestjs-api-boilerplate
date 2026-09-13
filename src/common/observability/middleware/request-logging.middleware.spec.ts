@@ -17,6 +17,7 @@ describe('HttpRequestLoggingMiddleware', () => {
       logHttpRequestCompleted: vi.fn(() => {
         expect(context.getRequestId()).toBe('123e4567-e89b-42d3-a456-426614174000');
       }),
+      logUnexpectedHttpError: vi.fn(),
     };
     const middleware = new HttpRequestLoggingMiddleware(context, logger, () => 20);
     const response = Object.assign(new EventEmitter(), { statusCode: 404 });
@@ -33,6 +34,7 @@ describe('HttpRequestLoggingMiddleware', () => {
     response.emit('finish');
 
     expect(logger.logHttpRequestCompleted).toHaveBeenCalledOnce();
+    expect(logger.logUnexpectedHttpError).not.toHaveBeenCalled();
     expect(logger.logHttpRequestCompleted).toHaveBeenCalledWith({
       method: 'GET',
       route: 'unmatched',
