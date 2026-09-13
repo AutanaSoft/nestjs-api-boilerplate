@@ -42,4 +42,31 @@ describe('HttpRequestLoggingMiddleware', () => {
       durationMs: 0,
     });
   });
+
+  it('normalizes an Express catch-all route without reading the request URL', () => {
+    const context = new RequestContextService();
+    const logger: ApplicationLogger = {
+      logHttpRequestCompleted: vi.fn(),
+      logUnexpectedHttpError: vi.fn(),
+    };
+    const middleware = new HttpRequestLoggingMiddleware(context, logger, () => 20);
+    const response = Object.assign(new EventEmitter(), { statusCode: 404 });
+
+    middleware.use(
+      {
+        method: 'POST',
+        route: { path: '/api/v1/{*path}' },
+      },
+      response,
+      vi.fn(),
+    );
+    response.emit('finish');
+
+    expect(logger.logHttpRequestCompleted).toHaveBeenCalledWith({
+      method: 'POST',
+      route: 'unmatched',
+      statusCode: 404,
+      durationMs: 0,
+    });
+  });
 });

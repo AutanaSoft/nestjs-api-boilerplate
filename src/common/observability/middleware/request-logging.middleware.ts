@@ -33,7 +33,7 @@ export class HttpRequestLoggingMiddleware implements NestMiddleware<
       this.requestContext.bind(() => {
         this.logger.logHttpRequestCompleted({
           method: request.method,
-          route: request.route?.path ?? UNMATCHED_ROUTE,
+          route: getRoute(request.route),
           statusCode: response.statusCode,
           durationMs: Math.max(0, this.now() - startedAt),
         });
@@ -41,4 +41,12 @@ export class HttpRequestLoggingMiddleware implements NestMiddleware<
     );
     next();
   }
+}
+
+function getRoute(route: RequestLoggingRequest['route']): string {
+  if (route?.path === undefined || route.path.endsWith('/{*path}')) {
+    return UNMATCHED_ROUTE;
+  }
+
+  return route.path;
 }

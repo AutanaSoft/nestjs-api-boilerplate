@@ -8,6 +8,7 @@ import type { ApiConfig } from '../../src/config/api.config.js';
 import corsConfig from '../../src/config/cors.config.js';
 import httpConfig from '../../src/config/http.config.js';
 import type { E2EContext } from './e2e-context.js';
+import { E2EErrorHandlingController } from './e2e-error-handling.controller.js';
 import { E2ERateLimitController } from './e2e-rate-limit.controller.js';
 
 export type CreateE2EApplicationOptions = Readonly<{
@@ -22,7 +23,7 @@ export async function createE2EApplication(
   try {
     const testingModule = Test.createTestingModule({
       imports: [AppModule],
-      controllers: [E2ERateLimitController],
+      controllers: [E2EErrorHandlingController, E2ERateLimitController],
     });
 
     if (options.apiConfig !== undefined) {
