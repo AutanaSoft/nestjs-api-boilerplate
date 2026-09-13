@@ -78,9 +78,10 @@ function getApplicationErrorHttpDescriptor(error: ApplicationError): HttpErrorDe
 
 function getHttpExceptionHttpDescriptor(error: HttpException): HttpErrorDescriptor {
   try {
-    const statusCode: PropertyKey = error.getStatus();
+    const statusCode: unknown = error.getStatus();
 
-    return hasOwnProperty(httpExceptionHttpDescriptors, statusCode)
+    return typeof statusCode === 'number' &&
+      hasOwnProperty(httpExceptionHttpDescriptors, statusCode)
       ? httpExceptionHttpDescriptors[statusCode]
       : unknownErrorHttpDescriptor;
   } catch {

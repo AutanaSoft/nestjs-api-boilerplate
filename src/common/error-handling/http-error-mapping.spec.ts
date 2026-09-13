@@ -256,6 +256,26 @@ describe('mapErrorToResponse HttpException allowlist', () => {
     });
   });
 
+  it('falls back safely when a real HttpException subclass returns a numeric string status at runtime', () => {
+    class NumericStringStatusHttpException extends HttpException {
+      override getStatus(): number {
+        return '400' as unknown as number;
+      }
+    }
+
+    expect(
+      mapErrorToResponse(
+        new NumericStringStatusHttpException('untrusted framework message', 400),
+        requestId,
+      ),
+    ).toEqual({
+      statusCode: 500,
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'An unexpected error occurred.',
+      requestId,
+    });
+  });
+
   it('does not trust an HttpException lookalike', () => {
     const error = {
       getResponse: () => ({ token: 'secret-token' }),
