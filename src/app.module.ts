@@ -10,6 +10,7 @@ import httpConfig from './config/http.config.js';
 import rateLimitConfig from './config/rate-limit.config.js';
 import { ErrorHandlingModule } from './common/error-handling/error-handling.module.js';
 import { ObservabilityModule } from './common/observability/observability.module.js';
+import { SerializationModule } from './common/serialization/serialization.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 
 @Module({
@@ -31,6 +32,7 @@ import { HealthModule } from './modules/health/health.module.js';
     HealthModule,
     ObservabilityModule,
     ErrorHandlingModule,
+    SerializationModule,
   ],
   providers: [
     {
