@@ -32,7 +32,19 @@ obtenida mediante `inspect()` no sea JSON estricto directamente parseable.
 Los eventos HTTP terminales usan el mensaje estable `http.request.completed`. Sus únicos campos
 variables permitidos son `requestId`, `method`, `route`, `statusCode` y `durationMs`; no incluyen
 bodies, query strings, cookies ni headers. Las rutas sin handler, incluido preflight CORS, usan la
-etiqueta estable `unmatched` en vez de una URL recibida.
+etiqueta estable `unmatched` en vez de una URL recibida. Existe un único evento terminal por
+Request, incluso cuando el HTTP Error Boundary construye una respuesta de error.
+
+Los fallos internos se registran mediante `logUnexpectedHttpError()` con el evento estable
+`http.request.failed`. Su metadata es cerrada: `requestId`, `requestIdFallback`, `method`, `route` y
+`errorType`. `method` y `route` se normalizan con la misma política del evento terminal, y
+`errorType` es una clasificación interna segura; no se registra el mensaje variable del error. El
+evento se emite solo para fallos internos, incluidos errores desconocidos y
+`ResponseContractViolation`; los errores esperados de aplicación no generan este diagnóstico.
+
+La metadata de `http.request.failed` no puede incluir stack, `cause`, body, query string, cookies,
+headers, credenciales, tokens, secretos, payloads de providers ni valores inválidos de contratos de
+salida.
 
 ## Request Correlation
 
@@ -47,6 +59,12 @@ relacionados. Se recibe y devuelve como `X-Request-Id`: solo se adopta un UUIDv4
 minúsculas de 36 caracteres; cualquier otro valor se reemplaza mediante `crypto.randomUUID()`.
 `RequestContextService` encapsula `AsyncLocalStorage`, incluido el enlace de callbacks de
 finalización, para no exponer objetos Express a consumidores.
+
+Si el HTTP Error Boundary no encuentra un contexto de Request, genera localmente un UUIDv4 mediante
+`node:crypto.randomUUID()`. El mismo valor se usa en el header, el body de error y el log
+relacionado. En ese caso, solo la metadata interna puede incluir `requestIdFallback: true`; el
+header y el body nunca exponen que se utilizó el fallback ni confían en un valor entrante sin
+validar.
 
 Cuando `requestId` forme parte de una Response pública, su contrato se define en
 `../api/http-contracts.md`.
@@ -95,9 +113,13 @@ visualizar telemetry.
 1. Utilice structured logging.
 2. Utilice mensajes estables y contexto estructurado.
 3. No registre secrets ni información sensible.
-4. Propague `requestId` durante el lifecycle de cada Request.
-5. Exponga Metrics suficientes para observar tráfico, latencia y errores.
-6. Evite labels de alta cardinalidad.
-7. Propague tracing context cuando exista interacción distribuida.
-8. Utilice OpenTelemetry para Metrics y Traces.
-9. Mantenga la instrumentación independiente del proveedor de observabilidad.
+4. Propague el mismo `requestId` durante el lifecycle de cada Request.
+5. Registre fallos internos con `http.request.failed` y metadata cerrada, sin datos sensibles.
+6. Mantenga un único evento terminal `http.request.completed` por Request.
+7. Use el fallback UUIDv4 solo cuando no exista contexto y marque `requestIdFallback` únicamente en
+   metadata interna.
+8. Exponga Metrics suficientes para observar tráfico, latencia y errores.
+9. Evite labels de alta cardinalidad.
+10. Propague tracing context cuando exista interacción distribuida.
+11. Utilice OpenTelemetry para Metrics y Traces.
+12. Mantenga la instrumentación independiente del proveedor de observabilidad.

@@ -26,14 +26,39 @@ Los Controllers no deben repetir mappings de errores que puedan resolverse en el
 
 ## Application Errors
 
-Las condiciones esperadas del comportamiento de aplicación deben representarse mediante errores
-independientes del transport.
+Las condiciones esperadas del comportamiento de aplicación deben representarse mediante una clase
+base abstracta `ApplicationError` que extienda `Error`.
 
-Los Services no deben necesitar conocer qué representación HTTP corresponderá posteriormente a esos
-errores.
+`ApplicationErrorCode` es una unión cerrada. Cada subclase tipada declara uno de esos códigos y solo
+el contexto interno mínimo necesario para la aplicación. No contiene status HTTP, mensajes públicos,
+objetos Request o Response ni clases de NestJS.
+
+La causa opcional (`cause`) se conserva exclusivamente para diagnóstico interno; nunca cruza el
+Error Boundary. Los Services no deben necesitar conocer qué representación HTTP corresponderá
+posteriormente a estos errores.
 
 No utilice `HttpException` como mecanismo general para representar condiciones de aplicación dentro
 de Services.
+
+## Catálogo y traducción HTTP
+
+El HTTP Error Boundary es el único responsable de convertir un `ApplicationError` al catálogo
+público propiedad de `../api/http-contracts.md`. El catálogo de implementación es tipado, inmutable
+y exhaustivo: debe satisfacer `Record<ApplicationErrorCode, HttpErrorDescriptor>` para que cada
+código interno tenga una traducción explícita.
+
+El descriptor público, incluidos status, código, mensaje y un proyector opcional de `details`,
+pertenece al boundary. `details` se omite salvo que ese descriptor disponga de un proyector
+explícito y tipado; el error original y valores `unknown` no son datos serializables.
+
+Las `HttpException` del framework se aceptan únicamente mediante una allowlist de casos con
+traducción pública aprobada. El boundary siempre reconstruye el Error Response y nunca propaga
+`exception.getResponse()` ni su body. Una excepción fuera de la allowlist se trata como fallo
+interno.
+
+`ErrorHandlingModule` es el módulo transversal que registra una única instancia de
+`HttpExceptionFilter` mediante `APP_FILTER`. `AppModule` lo importa una sola vez, de modo que NestJS
+resuelve las dependencias del filtro por DI tanto en producción como en E2E.
 
 ## Traducción entre boundaries
 
@@ -69,7 +94,8 @@ La representación HTTP pública se rige por `../api/conventions.md` y `../api/h
 ## Response Contract Errors
 
 Un fallo al validar o serializar una Response representa un incumplimiento interno del contrato de
-salida.
+salida. Se clasifica internamente como `ResponseContractViolation`, sin status, código ni mensaje
+HTTP.
 
 No debe atribuirse al cliente.
 
@@ -110,5 +136,8 @@ Logging, request correlation y telemetry se definen en `observability.md`.
 6. No propague detalles tecnológicos hacia contratos externos.
 7. Trate fallos de Response contracts como errores internos.
 8. Trate valores capturados en `catch` como `unknown` hasta realizar narrowing.
-9. Delegue HTTP Status Codes y Error Responses a sus documentos API owners.
-10. Mantenga logging y telemetry bajo las convenciones de observabilidad.
+9. Mantenga el catálogo de implementación exhaustivo, inmutable y confinado al HTTP Error Boundary.
+10. Reconstruya las respuestas de excepciones HTTP solo desde la allowlist aprobada.
+11. Registre el filtro global una única vez mediante `ErrorHandlingModule` y `APP_FILTER`.
+12. Delegue HTTP Status Codes y Error Responses a sus documentos API owners.
+13. Mantenga logging y telemetry bajo las convenciones de observabilidad.

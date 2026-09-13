@@ -98,7 +98,34 @@ type ErrorResponse = {
 
 Los clientes no deben depender de `message` para identificar programáticamente un error.
 
-`details` es opcional y debe contener únicamente información pública correspondiente al error.
+`details` se omite por defecto. Solo puede incluirse cuando un proyector explícito asociado al
+código produce una estructura definida por un contrato público tipado. No serialice el error
+original ni valores `unknown`; si el proyector falla, omita `details` sin alterar el resto de la
+respuesta.
+
+## Catálogo de Error Responses
+
+Los códigos son `UPPER_SNAKE_CASE`, estables y tienen un único significado. Este es el catálogo
+completo para los status compartidos:
+
+| Status | Código                  | Mensaje exacto                                           | Significado público                                               |
+| ------ | ----------------------- | -------------------------------------------------------- | ----------------------------------------------------------------- |
+| `400`  | `BAD_REQUEST`           | `The request is invalid.`                                | El Request no cumple el contrato público.                         |
+| `401`  | `UNAUTHORIZED`          | `Authentication is required.`                            | No se proporcionó una autenticación aceptable.                    |
+| `403`  | `FORBIDDEN`             | `You are not allowed to perform this action.`            | El principal autenticado no puede realizar la acción.             |
+| `404`  | `ROUTE_NOT_FOUND`       | `The requested route was not found.`                     | No existe un handler para la ruta solicitada.                     |
+| `404`  | `RESOURCE_NOT_FOUND`    | `The requested resource was not found.`                  | El recurso solicitado no está disponible.                         |
+| `409`  | `CONFLICT`              | `The request conflicts with the current resource state.` | La operación entra en conflicto con el estado actual del recurso. |
+| `429`  | `RATE_LIMIT_EXCEEDED`   | `Too many requests.`                                     | Se excedió el límite de solicitudes aplicable.                    |
+| `500`  | `INTERNAL_SERVER_ERROR` | `An unexpected error occurred.`                          | Ocurrió un fallo interno o no confiable.                          |
+
+`ROUTE_NOT_FOUND` y `RESOURCE_NOT_FOUND` no son intercambiables. Los errores esperados específicos
+de aplicación deben usar su código del catálogo; los fallbacks genéricos no los sustituyen.
+`UNAUTHORIZED` y `FORBIDDEN` son únicamente fallbacks públicos definidos por la semántica HTTP: este
+catálogo no define mecanismos ni reglas de autenticación o autorización de negocio.
+
+Los fallos de contrato de salida siempre usan `500`, `INTERNAL_SERVER_ERROR` y el mensaje exacto del
+catálogo, sin `details`.
 
 El Error Response no debe exponer:
 
@@ -130,6 +157,8 @@ La representación de estos contratos en OpenAPI se define en `openapi.md`.
 5. Componga contratos únicamente cuando se preserve ownership y semántica.
 6. No exponga detalles internos únicamente porque formen parte de una representación interna.
 7. Utilice `{ statusCode, code, message, requestId, details? }` como Error Response JSON compartido.
-8. Mantenga `code` estable y machine-readable.
-9. No exponga información tecnológica o sensible mediante Error Responses.
-10. Delegue validation, serialization y error translation a sus documentos arquitectónicos owners.
+8. Utilice únicamente los códigos y mensajes exactos del catálogo compartido.
+9. Omita `details` salvo proyección explícita desde un contrato público tipado.
+10. Responda fallos de salida con `INTERNAL_SERVER_ERROR` y sin `details`.
+11. No exponga información tecnológica o sensible mediante Error Responses.
+12. Delegue validation, serialization y error translation a sus documentos arquitectónicos owners.
