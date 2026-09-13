@@ -34,8 +34,23 @@ serialización debe producir.
 El proyecto utiliza `StandardSchemaSerializerInterceptor` como estrategia predeterminada de Response
 serialization.
 
-El Interceptor debe validar y serializar el valor retornado contra el Response Schema
-correspondiente.
+`SerializationModule` registra un único interceptor global mediante `APP_INTERCEPTOR`. `AppModule`
+importa ese módulo una sola vez; no se registran interceptores equivalentes en `main.ts`,
+`setupApplication()` ni en el bootstrap E2E.
+
+Cada handler o controller que publique una Response JSON estructurada declara explícitamente su
+schema con `@SerializeOptions({ schema })`. No existe un schema global permisivo: sin schema, el
+interceptor conserva el passthrough nativo. Los archivos, streams y otras Responses especiales
+siguen esa excepción explícita.
+
+El wrapper del proyecto delega en `StandardSchemaSerializerInterceptor` la resolución de metadata,
+el passthrough y la validación o transformación Standard Schema. Solo traduce el fallo de salida que
+emerge de ese mecanismo a `ResponseContractViolation`; no reimplementa el algoritmo de NestJS ni
+decide semántica HTTP.
+
+El schema proyecta en el nivel superior únicamente las propiedades públicas declaradas. Una
+propiedad interna adicional no alcanza la Response HTTP; los campos y su semántica pertenecen al
+contrato público.
 
 `ClassSerializerInterceptor` y `class-transformer` no deben introducirse como estrategia paralela
 por defecto.

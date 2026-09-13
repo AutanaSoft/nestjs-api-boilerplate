@@ -50,7 +50,18 @@ Request y Response son contratos diferentes aunque compartan información.
 Cada uno debe modelar únicamente los campos y la semántica que corresponden a su boundary.
 
 Los campos internos no forman parte de una Response pública únicamente porque estén disponibles en
-el modelo de aplicación o persistencia.
+el modelo de aplicación o persistencia. El schema canónico de una Response JSON estructurada declara
+sus propiedades públicas de nivel superior; la Response no incluye propiedades adicionales no
+declaradas.
+
+## Contrato inicial de health
+
+`GET /api/v1/health/live` y `GET /api/v1/health/ready` son las primeras Responses JSON estructuradas
+que deben declarar un contrato canónico explícito. Su forma de éxito contiene `status`, `info`,
+`error` y `details`.
+
+El contrato canónico debe preservar esa semántica pública y no convertir la representación interna
+de Terminus en un contrato implícito. Propiedades adicionales del resultado interno no se publican.
 
 ## Nullability y ausencia
 

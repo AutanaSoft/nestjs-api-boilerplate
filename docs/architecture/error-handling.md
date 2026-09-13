@@ -101,14 +101,22 @@ La representación HTTP pública se rige por `../api/conventions.md` y `../api/h
 ## Response Contract Errors
 
 Un fallo al validar o serializar una Response representa un incumplimiento interno del contrato de
-salida. Se clasifica internamente como `ResponseContractViolation`, sin status, código ni mensaje
-HTTP.
+salida. Se clasifica internamente como `ResponseContractViolation`, una representación reconocible
+por tipo o guard y no por el texto de un `Error`.
 
-No debe atribuirse al cliente.
+`ResponseContractViolation` no incorpora payload: no expone issues, valor rechazado o transformado,
+schema, causa, stack, status, código ni mensaje HTTP. Puede conservar una causa exclusivamente para
+diagnóstico interno, pero ningún boundary debe serializarla o registrarla. El incumplimiento no debe
+atribuirse al cliente.
+
+El wrapper de serialización crea esa clasificación; el Error Boundary es el único límite que la
+traduce al descriptor interno no confiable y, por tanto, al Error Response `500`,
+`INTERNAL_SERVER_ERROR` sin `details`. La clasificación estable puede usarse para diagnóstico, pero
+nunca debe incluir los datos descartados durante la serialización.
 
 La estrategia de Response serialization se define en `serialization.md`.
 
-La traducción hacia el contrato HTTP público pertenece al Error Boundary.
+La representación pública del Error Response pertenece a `../api/http-contracts.md`.
 
 ## Unknown Errors
 
