@@ -1,5 +1,6 @@
 import { registerErrorHandlingE2ESuite } from './modules/error-handling/error-handling.e2e-suite.js';
 import { registerHealthE2ESuite } from './modules/health/health.e2e-suite.js';
+import { registerOpenApiE2ESuite } from './modules/openapi/openapi.e2e-suite.js';
 import { registerSerializationE2ESuite } from './modules/serialization/serialization.e2e-suite.js';
 import { registerRequestValidationE2ESuite } from './modules/validation/request-validation.e2e-suite.js';
 import { createE2EEnvironment } from './support/e2e-environment.js';
@@ -21,6 +22,7 @@ const runScenario: RunE2EScenario = async (scenario) => {
 };
 
 registerHealthE2ESuite({ runScenario });
+registerOpenApiE2ESuite({ runScenario });
 registerSerializationE2ESuite({ runScenario });
 registerRequestValidationE2ESuite({ runScenario });
 registerErrorHandlingE2ESuite({ runScenario });

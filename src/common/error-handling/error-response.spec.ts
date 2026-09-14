@@ -1,4 +1,5 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
+import { errorResponseSchema } from './error-response.js';
 import type { ErrorResponse } from './error-response.js';
 
 type ValidationDetails = Readonly<{
@@ -6,6 +7,21 @@ type ValidationDetails = Readonly<{
 }>;
 
 describe('ErrorResponse', () => {
+  it('keeps the canonical schema and default type aligned without untyped details', () => {
+    const response = {
+      statusCode: 500,
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'An unexpected error occurred.',
+      requestId: 'f5eb2c44-618c-4ea4-90f5-4c32a6d306c4',
+    } satisfies ErrorResponse;
+
+    expect(errorResponseSchema.parse(response)).toEqual(response);
+    expect(errorResponseSchema.parse({ ...response, details: { internal: true } })).toEqual(
+      response,
+    );
+    expectTypeOf<ErrorResponse>().toMatchTypeOf<typeof response>();
+  });
+
   it('models the shared public error fields and permits omitted details', () => {
     const response: ErrorResponse = {
       statusCode: 404,

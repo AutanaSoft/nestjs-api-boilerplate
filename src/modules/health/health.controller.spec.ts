@@ -3,7 +3,10 @@ import { Reflector } from '@nestjs/core';
 import type { HealthCheckService } from '@nestjs/terminus';
 import { lastValueFrom, of } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
+import { errorResponseSchema } from '../../common/error-handling/error-response.js';
+import { toOpenApiSchema } from '../../common/openapi/openapi-schema.js';
 import { ResponseSchemaSerializerInterceptor } from '../../common/serialization/response-schema-serializer.interceptor.js';
+import { healthResponseSchema } from './contracts/health-response.schema.js';
 import { HealthController } from './health.controller.js';
 
 describe('HealthController', () => {
@@ -27,6 +30,20 @@ describe('HealthController', () => {
 
     await expect(controller.ready()).resolves.toBe(result);
     expect(healthCheckService.check).toHaveBeenCalledWith([]);
+  });
+
+  it.each([
+    ['live', 'healthLive'],
+    ['ready', 'healthReady'],
+  ] as const)('declares the stable OpenAPI responses for %s', (method, operationId) => {
+    const handler = HealthController.prototype[method];
+
+    expect(Reflect.getMetadata('swagger/apiOperation', handler)).toMatchObject({ operationId });
+    expect(Reflect.getMetadata('swagger/apiResponse', handler)).toMatchObject({
+      200: { schema: toOpenApiSchema(healthResponseSchema, 'output') },
+      500: { schema: toOpenApiSchema(errorResponseSchema, 'output') },
+      503: { schema: toOpenApiSchema(healthResponseSchema, 'output') },
+    });
   });
 
   it.each(['live', 'ready'] as const)(

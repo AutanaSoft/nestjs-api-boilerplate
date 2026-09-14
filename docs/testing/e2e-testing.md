@@ -27,9 +27,11 @@ funcionalidad se ubica en:
 test/modules/<feature>/<feature>.e2e-suite.ts
 ```
 
-El sufijo `*.e2e-suite.ts` no coincide con el punto de entrada descubierto. La suite exporta su
-función de registro y no declara hooks globales ni administra aplicaciones, `process.env` o recursos
-compartidos. El propietario la importa y registra de forma directa y revisable:
+El sufijo `*.e2e-suite.ts` no coincide con el punto de entrada descubierto. La suite OpenAPI sigue
+el mismo registro y verifica los modos deshabilitado/habilitado, rutas configuradas, metadata,
+exclusiones y headers observables. La suite exporta su función de registro y no declara hooks
+globales ni administra aplicaciones, `process.env` o recursos compartidos. El propietario la importa
+y registra de forma directa y revisable:
 
 ```typescript
 registerHealthE2ESuite({ runScenario });
@@ -49,10 +51,12 @@ El bootstrap E2E usa componentes reales de la aplicación:
 
 1. Compila `AppModule`.
 2. Obtiene `ConfigType<typeof apiConfig>`, `ConfigType<typeof httpConfig>` y
-   `ConfigType<typeof corsConfig>` mediante sus tokens.
+   `ConfigType<typeof corsConfig>`, `ConfigType<typeof appConfig>` y
+   `ConfigType<typeof openapiConfig>` mediante sus tokens.
 3. Aplica `setupApplication` con los tres namespaces, inicializa la aplicación y la enlaza en
    `127.0.0.1` con un puerto efímero.
-4. Usa Supertest sobre `app.getHttpServer()`.
+4. Aplica `setupOpenApi` después del bootstrap HTTP común y antes de inicializar la aplicación.
+5. Usa Supertest sobre `app.getHttpServer()`.
 
 El listener efímero de loopback permite solicitudes HTTP concurrentes sin exposición externa y
 `app.close()` lo cierra tanto después de escenarios exitosos como después de fallos de bootstrap. El
@@ -64,7 +68,9 @@ throttling global; ese controlador no forma parte de la aplicación de producci�
 `CORS_ORIGINS=https://allowed.example`, `CORS_MAX_AGE_SECONDS=600`, `THROTTLE_LIMIT=2` y
 `THROTTLE_TTL_SECONDS=60`. El helper E2E no lee, modifica ni restaura `process.env`; Vitest aplica
 esos valores dentro de la configuración E2E, incluso cuando el proceso invocador aporta valores
-conflictivos.
+conflictivos. Las suites que necesitan otra configuración construyen valores tipados con las
+factories y los inyectan mediante `overrideProvider(...KEY).useValue(...)` antes de compilar;
+OpenAPI usa overrides tipados de `appConfig` y `openapiConfig`.
 
 ## Contratos HTTP cubiertos
 
@@ -83,6 +89,9 @@ La suite de health conserva estos contratos públicos y transversales:
 | Throttling de health       | Las solicitudes repetidas a ambos probes continúan respondiendo `200` porque están excluidos del límite global.                                                            |
 | Throttling global          | La ruta exclusiva E2E versionada responde `200`, `200`, `429` con el límite configurado de dos solicitudes.                                                                |
 | Ruta raíz eliminada        | `GET /` responde `404`.                                                                                                                                                    |
+| OpenAPI deshabilitado      | `/docs`, `/openapi.json` y sus variantes con prefijo o versión responden `404`.                                                                                            |
+| OpenAPI habilitado         | Solo la UI y el JSON configurados responden `200`; el documento conserva rutas versionadas, metadata de `appConfig`, IDs estables y los schemas canónicos de health/error. |
+| Exclusión de OpenAPI       | El documento no incluye el catch-all ni controllers o fixtures exclusivos de E2E.                                                                                          |
 
 ## Extensiones futuras no implementadas
 

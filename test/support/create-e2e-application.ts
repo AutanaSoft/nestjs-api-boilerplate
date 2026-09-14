@@ -3,10 +3,15 @@ import type { ConfigType } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module.js';
 import { setupApplication } from '../../src/app.setup.js';
+import { setupOpenApi } from '../../src/common/openapi/openapi.setup.js';
+import appConfig from '../../src/config/app.config.js';
+import type { AppConfig } from '../../src/config/app.config.js';
 import apiConfig from '../../src/config/api.config.js';
 import type { ApiConfig } from '../../src/config/api.config.js';
 import corsConfig from '../../src/config/cors.config.js';
 import httpConfig from '../../src/config/http.config.js';
+import openapiConfig from '../../src/config/openapi.config.js';
+import type { OpenApiConfig } from '../../src/config/openapi.config.js';
 import type { E2EContext } from './e2e-context.js';
 import { E2EErrorHandlingController } from './e2e-error-handling.controller.js';
 import { E2ERateLimitController } from './e2e-rate-limit.controller.js';
@@ -15,6 +20,8 @@ import { E2ERequestValidationController } from './e2e-request-validation.control
 
 export type CreateE2EApplicationOptions = Readonly<{
   apiConfig?: ApiConfig;
+  appConfig?: AppConfig;
+  openapiConfig?: OpenApiConfig;
 }>;
 
 export async function createE2EApplication(
@@ -37,14 +44,25 @@ export async function createE2EApplication(
       testingModule.overrideProvider(apiConfig.KEY).useValue(options.apiConfig);
     }
 
+    if (options.appConfig !== undefined) {
+      testingModule.overrideProvider(appConfig.KEY).useValue(options.appConfig);
+    }
+
+    if (options.openapiConfig !== undefined) {
+      testingModule.overrideProvider(openapiConfig.KEY).useValue(options.openapiConfig);
+    }
+
     const moduleFixture = await testingModule.compile();
 
     app = moduleFixture.createNestApplication();
     const http = app.get<ConfigType<typeof httpConfig>>(httpConfig.KEY);
     const cors = app.get<ConfigType<typeof corsConfig>>(corsConfig.KEY);
     const api = app.get<ConfigType<typeof apiConfig>>(apiConfig.KEY);
+    const application = app.get<ConfigType<typeof appConfig>>(appConfig.KEY);
+    const openapi = app.get<ConfigType<typeof openapiConfig>>(openapiConfig.KEY);
 
     setupApplication(app, http, cors, api);
+    setupOpenApi(app, application, openapi);
     await app.init();
     await app.listen(0, '127.0.0.1');
 

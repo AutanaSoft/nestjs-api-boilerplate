@@ -1,7 +1,9 @@
 import type { INestApplication } from '@nestjs/common';
 import { describe, expect, it, vi } from 'vitest';
+import appConfig from '../../src/config/app.config.js';
 import corsConfig from '../../src/config/cors.config.js';
 import httpConfig from '../../src/config/http.config.js';
+import openapiConfig from '../../src/config/openapi.config.js';
 import { createE2EApplication } from './create-e2e-application.js';
 
 describe('createE2EApplication', () => {
@@ -34,6 +36,8 @@ describe('createE2EApplication', () => {
     await expect(createFailingApplication()).rejects.toBe(setupFailure);
     expect(app.get).toHaveBeenCalledWith(httpConfig.KEY);
     expect(app.get).toHaveBeenCalledWith(corsConfig.KEY);
+    expect(app.get).toHaveBeenCalledWith(appConfig.KEY);
+    expect(app.get).toHaveBeenCalledWith(openapiConfig.KEY);
     expect(app.close).toHaveBeenCalledOnce();
   });
 
