@@ -11,6 +11,7 @@ import rateLimitConfig from './config/rate-limit.config.js';
 import { ErrorHandlingModule } from './common/error-handling/error-handling.module.js';
 import { ObservabilityModule } from './common/observability/observability.module.js';
 import { SerializationModule } from './common/serialization/serialization.module.js';
+import { ValidationModule } from './common/validation/validation.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 
 @Module({
@@ -33,6 +34,7 @@ import { HealthModule } from './modules/health/health.module.js';
     ObservabilityModule,
     ErrorHandlingModule,
     SerializationModule,
+    ValidationModule,
   ],
   providers: [
     {

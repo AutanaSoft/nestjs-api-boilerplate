@@ -11,6 +11,7 @@ import type { E2EContext } from './e2e-context.js';
 import { E2EErrorHandlingController } from './e2e-error-handling.controller.js';
 import { E2ERateLimitController } from './e2e-rate-limit.controller.js';
 import { E2EResponseSerializationController } from './e2e-response-serialization.controller.js';
+import { E2ERequestValidationController } from './e2e-request-validation.controller.js';
 
 export type CreateE2EApplicationOptions = Readonly<{
   apiConfig?: ApiConfig;
@@ -28,6 +29,7 @@ export async function createE2EApplication(
         E2EErrorHandlingController,
         E2ERateLimitController,
         E2EResponseSerializationController,
+        E2ERequestValidationController,
       ],
     });
 
