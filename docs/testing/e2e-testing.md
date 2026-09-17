@@ -138,10 +138,3 @@ Cuando exista una necesidad real, las siguientes pautas aplicarán:
 
 No se deben introducir interfaces vacías, adaptadores falsos, infraestructura simulada ni
 abstracciones prematuras antes de que una capacidad concreta las requiera.
-
-## Rollback
-
-El rollback de esta unidad revierte solo esta documentación y los metadatos E2E de
-`openspec/config.yaml`. La identificación de Vitest se conserva mientras siga siendo el ejecutor
-real; una regresión de la organización de pruebas no justifica declarar Playwright como framework
-E2E.
