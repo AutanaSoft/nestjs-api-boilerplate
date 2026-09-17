@@ -28,11 +28,13 @@ See [API versioning](docs/api/versioning.md) for the public URI contract.
 ## Prerequisites
 
 - Node.js 26 (the version used by CI)
-- pnpm 11.25.0
+- pnpm 12.4.2 (declared by `packageManager` in `package.json`)
 
-Corepack can activate the package-manager version declared in `package.json`:
+Node.js 26 may not include Corepack. Install and enable it to activate the repository's canonical
+package-manager version declared in `package.json`:
 
 ```bash
+npm install --global corepack
 corepack enable
 pnpm install
 ```
