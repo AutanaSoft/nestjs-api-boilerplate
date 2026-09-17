@@ -46,6 +46,18 @@ La metadata de `http.request.failed` no puede incluir stack, `cause`, body, quer
 headers, credenciales, tokens, secretos, payloads de providers ni valores inválidos de contratos de
 salida.
 
+## Lifecycle de proceso
+
+El apagado emite `lifecycle.shutdown.started` y `lifecycle.shutdown.completed` mediante el logger
+estructurado. Sus campos cerrados son, respectivamente, `signal` y `timeoutMs`, y `signal` y
+`durationMs`. Los resultados terminales `lifecycle.shutdown.timed_out` y `shutdown.failed` se
+escriben una vez mediante un sink síncrono mínimo, con solo `signal` y `timeoutMs`, antes de la
+salida forzada.
+
+La configuración y el comportamiento operativo pertenecen a
+[process lifecycle](../configuration/process-lifecycle.md); este documento es owner únicamente del
+contrato de eventos y sus límites de datos.
+
 ## Request Correlation
 
 Cada Request debe disponer de un identificador de correlación:
@@ -123,3 +135,4 @@ visualizar telemetry.
 10. Propague tracing context cuando exista interacción distribuida.
 11. Utilice OpenTelemetry para Metrics y Traces.
 12. Mantenga la instrumentación independiente del proveedor de observabilidad.
+13. Mantenga los eventos de lifecycle con nombres estables y metadata cerrada.

@@ -36,6 +36,7 @@ http      Server port and trusted proxy hops
 cors      Complete browser cross-origin policy
 rateLimit Global in-memory NestJS Throttler limits
 openapi   Conditional OpenAPI exposure and operational routes
+shutdown  Process shutdown deadline
 ```
 
 Cada namespace posee sus external inputs, defaults, normalization, derived values, validation y
@@ -91,14 +92,16 @@ Los secrets no deben hardcodearse ni exponerse mediante:
 Deben ingresar mediante una external configuration source y atravesar el configuration boundary
 correspondiente.
 
-## Configuración HTTP
+## Owners operativos
 
-Los valores concretos, defaults y restricciones operativas de los namespaces `api`, `http`, `cors` y
-`rateLimit` y `openapi` se documentan en `../configuration/http-security.md`. `AppModule` registra
-`openapi`; el bootstrap obtiene su valor tipado y lo entrega a la infraestructura OpenAPI después
-del bootstrap HTTP común. Las reglas del contrato URI pertenecen exclusivamente a
-`../api/versioning.md`. Esos documentos no sustituyen esta estrategia arquitectónica; mantienen la
-referencia de configuración runtime y el contrato público, respectivamente.
+Los valores concretos, defaults y restricciones operativas de `api`, `http`, `cors`, `rateLimit` y
+`openapi` se documentan en `../configuration/http-security.md`. La configuración operativa del
+namespace transversal `shutdown` pertenece a `../configuration/process-lifecycle.md`.
+
+`AppModule` registra `openapi`; el bootstrap obtiene su valor tipado y lo entrega a la
+infraestructura OpenAPI después del bootstrap HTTP común. Las reglas del contrato URI pertenecen
+exclusivamente a `../api/versioning.md`. Estos documentos no sustituyen esta estrategia
+arquitectónica; mantienen la referencia runtime y el contrato público, respectivamente.
 
 ## Reglas
 

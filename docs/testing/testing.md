@@ -80,6 +80,17 @@ Priorice cobertura significativa de comportamiento, especialmente:
 
 No agregue pruebas de bajo valor únicamente para aumentar un porcentaje de cobertura.
 
+## Process lifecycle tests
+
+`pnpm run test:shutdown-process` construye la aplicación y ejecuta una suite POSIX aislada contra el
+proceso compilado real. Verifica `SIGTERM`, `SIGINT`, cierre del listener y el cierre correcto con
+una solicitud JSON incompleta real; no es parte del discovery unitario ni de la suite HTTP E2E.
+
+El watchdog, la completación tardía y el fallo de `app.close()` se prueban de forma determinista con
+fake timers en los unit tests del coordinador. Esta frontera de evidencia se seleccionó tras el
+comportamiento observado en Node 26, donde la solicitud incompleta real cerró sin producir una
+salida por timeout de proceso. Por tanto, no se afirma esa cobertura a nivel de proceso.
+
 ## E2E Testing
 
 Los E2E Tests tienen requisitos específicos de runtime, lifecycle, infraestructura y external
@@ -100,3 +111,5 @@ Esas convenciones se definen en `e2e-testing.md`.
 9. Priorice cobertura de comportamiento sobre porcentajes de cobertura.
 10. Utilice E2E Tests cuando el comportamiento deba verificarse mediante el límite real de la
     aplicación.
+11. Mantenga la evidencia de lifecycle de proceso en su suite compilada aislada y los resultados
+    deterministas del coordinador en unit tests.

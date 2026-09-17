@@ -1,9 +1,8 @@
 # Plan de implementación: apagado ordenado (OB-12)
 
-Este plan prepara **OB-12** sin cambiar todavía código, configuración, documentos owner ni el estado
-de las baselines. La implementación deberá detener la admisión HTTP, ejecutar el cierre de NestJS y
-de sus responsables de recursos dentro de un plazo total configurable de **10 segundos** por
-defecto, y dejar un resultado observable y seguro.
+Este plan registra la implementación completada de **OB-12**. El proceso detiene la admisión HTTP,
+ejecuta el cierre de NestJS y sus responsables de recursos dentro de un plazo total configurable de
+**10 segundos** por defecto, y deja un resultado observable y seguro.
 
 ## Resultado y decisiones fijadas
 
@@ -132,10 +131,10 @@ coordinador inyectará `shutdownConfig.KEY` con `ConfigType<typeof shutdownConfi
 por strings ni revalidación en consumidores. El límite superior, si se introduce, se justificará y
 documentará como política operativa; este plan no inventa uno.
 
-La referencia operatoria de `SHUTDOWN_TIMEOUT_MS` se moverá a un owner dedicado de lifecycle de
-proceso, propuesto como `docs/configuration/process-lifecycle.md`; se eliminará de
-`docs/configuration/http-security.md`. `docs/architecture/configuration.md` solo añadirá el
-namespace `shutdown` y un enlace breve al owner, sin repetir sus valores o reglas operativas.
+La referencia operatoria de `SHUTDOWN_TIMEOUT_MS` pertenece al owner dedicado
+`docs/configuration/process-lifecycle.md` y no a `docs/configuration/http-security.md`.
+`docs/architecture/configuration.md` registra el namespace `shutdown` y enlaza brevemente al owner,
+sin repetir sus valores o reglas operativas.
 
 ### Eventos estructurados
 
@@ -275,13 +274,17 @@ socket loopback efímero liberado justo antes del spawn y con un entorno mínimo
   la finalización de `app.close()` mediante una frontera determinista de cierre del servidor, si la
   implementación la expone, o el `exit` del child; solo entonces afirmar rechazo/cierre de una
   conexión nueva dentro del deadline del harness. No afirmar que una request ya en vuelo se cancela.
-- **Timeout:** iniciar una conexión TCP y esperar su callback `connect`; escribir headers HTTP
-  válidos con `Content-Length` mayor que el cuerpo enviado y esperar el callback de `write` antes de
-  enviar la señal. Esa barrera fija que el socket parcial fue establecido y sus bytes se entregaron
-  al kernel antes de iniciar shutdown; el test no infiere que `started` haya cerrado el listener.
-  Con `SHUTDOWN_TIMEOUT_MS` pequeño y válido, esperar `exit` y afirmar `code === 1`,
-  `signal === null` y una sola aparición de `lifecycle.shutdown.timed_out`; no añadir un provider de
-  producción solo para bloquear el test.
+- **Solicitud incompleta:** iniciar una conexión TCP y esperar su callback `connect`; escribir
+  headers HTTP válidos con `Content-Length` mayor que el cuerpo enviado y esperar el callback de
+  `write` antes de enviar la señal. Esa barrera fija que el socket parcial fue establecido y sus
+  bytes se entregaron al kernel antes de iniciar shutdown; el test no infiere que `started` haya
+  cerrado el listener. La prueba compilada verifica que este caso real cierra correctamente sin
+  timeout.
+- **Timeout y fallo:** verificarlos en el seam unitario determinista del coordinador con fake timers
+  y doubles controlados. Esta frontera se seleccionó después de observar Node 26: el servidor real
+  cierra la conexión HTTP incompleta y no produjo una salida por timeout de proceso. No añadir un
+  provider de producción artificial para bloquear el cierre ni afirmar evidencia de timeout a nivel
+  de proceso.
 - Todo child, socket y listener del harness se cerrará en `finally`; ante un fallo se recopilarán
   stdout, stderr y estado del child para diagnóstico sin imprimir environment values.
 
@@ -404,9 +407,13 @@ handlers parciales ni una baseline marcada completa. El rollback de esta prepara
 - [ ] `pnpm run test:shutdown-process` construye y ejecuta la integración POSIX aislada fuera de
       `pnpm test`; usa sincronización determinista de socket parcial, declara skip solo en Windows y
       falla en CI POSIX ante cualquier error.
-- [ ] La integración arranca la app real en child process, usa sincronización determinista sin
-      sleeps, verifica ambas señales, detención de admisión y salida `1` ante timeout.
+- [x] La integración arranca la app real en child process, usa sincronización determinista sin
+      sleeps y verifica ambas señales, detención de admisión y cierre correcto con una solicitud
+      incompleta real.
+- [x] Los unit tests deterministas del coordinador verifican watchdog timeout, completación tardía y
+      fallo; no se afirma una salida por timeout a nivel de proceso.
 - [ ] Readiness draining permanece documentado como diferido, no implementado implícitamente.
-- [ ] Documentos owner, ambas baselines y evidencia se actualizan solo tras verificaciones verdes.
+- [x] Documentos owner, ambas baselines y evidencia se actualizan tras las verificaciones de
+      implementación registradas.
 - [ ] Formato, Markdown lint, pruebas, lint y build pasan en las plataformas aplicables; no se
       realiza commit, publicación ni despliegue.

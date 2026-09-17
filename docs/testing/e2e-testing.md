@@ -17,6 +17,10 @@ Vitest descubre exclusivamente `test/main.e2e-spec.ts` mediante `vitest.config.e
 separación de ese descubrimiento respecto de `vitest.config.ts` queda diferida y no se modifica en
 esta base.
 
+El apagado de proceso no pertenece a esta suite HTTP: `pnpm run test:shutdown-process` construye y
+ejecuta `test/shutdown/graceful-shutdown.process.test.ts` con su configuración POSIX aislada. El
+owner de esa frontera de prueba es [testing.md](testing.md).
+
 ## Propietario y registro de suites
 
 `test/main.e2e-spec.ts` es el único propietario del registro E2E. Registra las suites en un orden
@@ -92,6 +96,12 @@ La suite de health conserva estos contratos públicos y transversales:
 | OpenAPI deshabilitado      | `/docs`, `/openapi.json` y sus variantes con prefijo o versión responden `404`.                                                                                            |
 | OpenAPI habilitado         | Solo la UI y el JSON configurados responden `200`; el documento conserva rutas versionadas, metadata de `appConfig`, IDs estables y los schemas canónicos de health/error. |
 | Exclusión de OpenAPI       | El documento no incluye el catch-all ni controllers o fixtures exclusivos de E2E.                                                                                          |
+
+## Readiness draining diferido
+
+`/health/ready` conserva su contrato inicial durante el apagado: no expone un estado de draining ni
+responde `503`. La coordinación del cierre de proceso no modifica esa semántica; una capacidad de
+draining requiere un contrato de deployment posterior.
 
 ## Extensiones futuras no implementadas
 

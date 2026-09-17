@@ -5,7 +5,8 @@ Status: Implemented
 La API aplica Helmet, una política CORS explícita y global Rate Limiting en memoria. Los namespaces
 `api`, `http`, `cors`, `rateLimit` y `openapi` son propietarios de esta configuración. Establezca
 las environment variables indicadas a continuación y reinicie el proceso para que los cambios surtan
-efecto.
+efecto. La configuración de apagado del proceso, incluido `SHUTDOWN_TIMEOUT_MS`, pertenece a
+[process lifecycle](process-lifecycle.md).
 
 ## Ruta rápida
 
