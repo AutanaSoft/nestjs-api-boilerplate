@@ -1,8 +1,8 @@
-import { registerErrorHandlingE2ESuite } from './modules/error-handling/error-handling.e2e-suite.js';
+import { registerErrorHandlingE2ESuite } from './common/error-handling/error-handling.e2e-suite.js';
+import { registerOpenApiE2ESuite } from './common/openapi/openapi.e2e-suite.js';
+import { registerSerializationE2ESuite } from './common/serialization/serialization.e2e-suite.js';
+import { registerRequestValidationE2ESuite } from './common/validation/request-validation.e2e-suite.js';
 import { registerHealthE2ESuite } from './modules/health/health.e2e-suite.js';
-import { registerOpenApiE2ESuite } from './modules/openapi/openapi.e2e-suite.js';
-import { registerSerializationE2ESuite } from './modules/serialization/serialization.e2e-suite.js';
-import { registerRequestValidationE2ESuite } from './modules/validation/request-validation.e2e-suite.js';
 import { createE2EEnvironment } from './support/e2e-environment.js';
 import type { E2EEnvironment } from './support/e2e-environment.js';
 import type { RunE2EScenario } from './support/e2e-context.js';

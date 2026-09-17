@@ -247,7 +247,7 @@ src/modules/health/health.controller.ts
 
 test/support/create-e2e-application.ts
 test/support/create-e2e-application.spec.ts
-test/modules/openapi/openapi.e2e-suite.ts
+test/common/openapi/openapi.e2e-suite.ts
 test/main.e2e-spec.ts
 
 docs/api/openapi.md

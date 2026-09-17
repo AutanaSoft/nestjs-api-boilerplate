@@ -24,18 +24,20 @@ owner de esa frontera de prueba es [testing.md](testing.md).
 ## Propietario y registro de suites
 
 `test/main.e2e-spec.ts` es el único propietario del registro E2E. Registra las suites en un orden
-explícito y les proporciona el ejecutor que crea y cierra una aplicación por escenario. Una suite de
-funcionalidad se ubica en:
+explícito y les proporciona el ejecutor que crea y cierra una aplicación por escenario. El ownership
+de producción determina la ubicación de cada suite:
 
 ```text
-test/modules/<feature>/<feature>.e2e-suite.ts
+src/modules/<feature> → test/modules/<feature>
+src/common/<responsibility> → test/common/<responsibility>
 ```
 
-El sufijo `*.e2e-suite.ts` no coincide con el punto de entrada descubierto. La suite OpenAPI sigue
-el mismo registro y verifica los modos deshabilitado/habilitado, rutas configuradas, metadata,
-exclusiones y headers observables. La suite exporta su función de registro y no declara hooks
-globales ni administra aplicaciones, `process.env` o recursos compartidos. El propietario la importa
-y registra de forma directa y revisable:
+`test/support` sigue siendo infraestructura compartida del harness E2E; no es un espejo de
+`src/common`. El sufijo `*.e2e-suite.ts` no coincide con el punto de entrada descubierto. La suite
+OpenAPI sigue el mismo registro y verifica los modos deshabilitado/habilitado, rutas configuradas,
+metadata, exclusiones y headers observables. La suite exporta su función de registro y no declara
+hooks globales ni administra aplicaciones, `process.env` o recursos compartidos. El propietario la
+importa y registra de forma directa y revisable:
 
 ```typescript
 registerHealthE2ESuite({ runScenario });

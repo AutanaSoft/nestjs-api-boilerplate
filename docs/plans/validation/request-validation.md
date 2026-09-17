@@ -82,7 +82,7 @@ src/common/validation/
 
 src/app.module.ts
 test/support/e2e-request-validation.controller.ts
-test/modules/validation/request-validation.e2e-suite.ts
+test/common/validation/request-validation.e2e-suite.ts
 test/main.e2e-spec.ts
 
 docs/architecture/validation.md
