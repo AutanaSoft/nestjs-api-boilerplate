@@ -2,9 +2,16 @@ import { ConsoleLogger, Injectable, Optional, type LoggerService } from '@nestjs
 import type {
   ApplicationLogger,
   HttpRequestCompletedMetadata,
+  ShutdownCompletedMetadata,
+  ShutdownStartedMetadata,
   UnexpectedHttpErrorMetadata,
 } from './application-logger.js';
-import { HTTP_REQUEST_COMPLETED_EVENT, HTTP_REQUEST_FAILED_EVENT } from '../constants.js';
+import {
+  HTTP_REQUEST_COMPLETED_EVENT,
+  HTTP_REQUEST_FAILED_EVENT,
+  SHUTDOWN_COMPLETED_EVENT,
+  SHUTDOWN_STARTED_EVENT,
+} from '../constants.js';
 import { RequestContextService } from '../context/request-context.service.js';
 
 @Injectable()
@@ -35,6 +42,20 @@ export class StructuredLoggerService implements ApplicationLogger, LoggerService
       method: metadata.method,
       route: metadata.route,
       errorType: metadata.errorType,
+    });
+  }
+
+  logShutdownStarted(metadata: ShutdownStartedMetadata): void {
+    this.consoleLogger.log(SHUTDOWN_STARTED_EVENT, {
+      signal: metadata.signal,
+      timeoutMs: metadata.timeoutMs,
+    });
+  }
+
+  logShutdownCompleted(metadata: ShutdownCompletedMetadata): void {
+    this.consoleLogger.log(SHUTDOWN_COMPLETED_EVENT, {
+      signal: metadata.signal,
+      durationMs: metadata.durationMs,
     });
   }
 

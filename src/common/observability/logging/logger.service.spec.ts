@@ -2,6 +2,7 @@ import type { ConsoleLogger } from '@nestjs/common';
 import { describe, expect, it, vi } from 'vitest';
 import { RequestContextService } from '../context/request-context.service.js';
 import { StructuredLoggerService } from './logger.service.js';
+import { EmergencyShutdownSink } from '../../shutdown/emergency-shutdown-sink.js';
 
 const consoleLoggerMethods = ['log', 'error', 'warn', 'debug', 'verbose', 'fatal'] as const;
 
@@ -107,5 +108,56 @@ describe('StructuredLoggerService', () => {
       route: 'unmatched',
       errorType: 'RESPONSE_CONTRACT_VIOLATION',
     });
+  });
+
+  it('emits allowlisted shutdown lifecycle metadata', () => {
+    const context = new RequestContextService();
+    const consoleLogger = {
+      log: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
+      debug: vi.fn(),
+      verbose: vi.fn(),
+      fatal: vi.fn(),
+    } satisfies ConsoleLoggerMethods;
+    const logger = new StructuredLoggerService(context, consoleLogger);
+
+    logger.logShutdownStarted({ signal: 'SIGTERM', timeoutMs: 10_000, token: 'secret' });
+    logger.logShutdownCompleted({ signal: 'SIGTERM', durationMs: 42, stack: 'sensitive' });
+
+    expect(consoleLogger.log).toHaveBeenNthCalledWith(1, 'lifecycle.shutdown.started', {
+      signal: 'SIGTERM',
+      timeoutMs: 10_000,
+    });
+    expect(consoleLogger.log).toHaveBeenNthCalledWith(2, 'lifecycle.shutdown.completed', {
+      signal: 'SIGTERM',
+      durationMs: 42,
+    });
+  });
+});
+
+describe('EmergencyShutdownSink', () => {
+  it('writes fixed terminal shutdown events synchronously and absorbs write failures', () => {
+    const writeSync = vi.fn();
+    const sink = new EmergencyShutdownSink(writeSync);
+
+    sink.writeTimedOut({ signal: 'SIGINT', timeoutMs: 250 });
+    sink.writeFailed({ signal: 'SIGTERM', timeoutMs: 500, error: new Error('secret') });
+
+    expect(writeSync).toHaveBeenNthCalledWith(
+      1,
+      2,
+      'lifecycle.shutdown.timed_out signal=SIGINT timeoutMs=250\n',
+    );
+    expect(writeSync).toHaveBeenNthCalledWith(
+      2,
+      2,
+      'shutdown.failed signal=SIGTERM timeoutMs=500\n',
+    );
+
+    const failingSink = new EmergencyShutdownSink(() => {
+      throw new Error('unavailable');
+    });
+    expect(() => failingSink.writeTimedOut({ signal: 'SIGTERM', timeoutMs: 1 })).not.toThrow();
   });
 });

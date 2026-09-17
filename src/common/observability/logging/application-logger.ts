@@ -13,8 +13,20 @@ export type UnexpectedHttpErrorMetadata = Readonly<{
   errorType: string;
 }>;
 
-/** Minimal application-owned contract for correlated HTTP events. */
+export type ShutdownStartedMetadata = Readonly<{
+  signal: 'SIGTERM' | 'SIGINT';
+  timeoutMs: number;
+}>;
+
+export type ShutdownCompletedMetadata = Readonly<{
+  signal: 'SIGTERM' | 'SIGINT';
+  durationMs: number;
+}>;
+
+/** Minimal application-owned contract for correlated HTTP and lifecycle events. */
 export interface ApplicationLogger {
   logHttpRequestCompleted(metadata: HttpRequestCompletedMetadata): void;
   logUnexpectedHttpError(metadata: UnexpectedHttpErrorMetadata): void;
+  logShutdownStarted(metadata: ShutdownStartedMetadata): void;
+  logShutdownCompleted(metadata: ShutdownCompletedMetadata): void;
 }
