@@ -69,12 +69,14 @@ permanecen reales. El módulo de pruebas añade `E2ERateLimitController` únicam
 throttling global; ese controlador no forma parte de la aplicación de producción.
 
 `vitest.config.e2e.ts` define, mediante `test.env`, los valores E2E de
-`CORS_ORIGINS=https://allowed.example`, `CORS_MAX_AGE_SECONDS=600`, `THROTTLE_LIMIT=2` y
-`THROTTLE_TTL_SECONDS=60`. El helper E2E no lee, modifica ni restaura `process.env`; Vitest aplica
-esos valores dentro de la configuración E2E, incluso cuando el proceso invocador aporta valores
-conflictivos. Las suites que necesitan otra configuración construyen valores tipados con las
-factories y los inyectan mediante `overrideProvider(...KEY).useValue(...)` antes de compilar;
-OpenAPI usa overrides tipados de `appConfig` y `openapiConfig`.
+`CORS_ORIGINS=https://allowed.example`, `CORS_MAX_AGE_SECONDS=600`, `THROTTLE_LIMIT=2`,
+`THROTTLE_TTL_SECONDS=60`, `OPENAPI_ENABLED=false`, `OPENAPI_DOCS_ROUTE=docs` y
+`OPENAPI_DOCUMENT_ROUTE=openapi.json`. El helper E2E no lee, modifica ni restaura `process.env`;
+Vitest aplica esos valores dentro de la configuración E2E, incluso cuando el proceso invocador
+aporta valores conflictivos. Las suites que necesitan otra configuración construyen valores tipados
+con las factories y los inyectan mediante `overrideProvider(...KEY).useValue(...)` antes de
+compilar; OpenAPI usa el baseline controlado para el escenario deshabilitado y overrides tipados de
+`appConfig` u `openapiConfig` solo cuando un escenario requiere otra configuración.
 
 ## Contratos HTTP cubiertos
 

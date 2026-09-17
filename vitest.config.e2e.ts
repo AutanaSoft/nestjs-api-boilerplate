@@ -25,6 +25,9 @@ export default defineConfig({
     env: {
       CORS_ORIGINS: 'https://allowed.example',
       CORS_MAX_AGE_SECONDS: '600',
+      OPENAPI_ENABLED: 'false',
+      OPENAPI_DOCS_ROUTE: 'docs',
+      OPENAPI_DOCUMENT_ROUTE: 'openapi.json',
       THROTTLE_LIMIT: '2',
       THROTTLE_TTL_SECONDS: '60',
     },
