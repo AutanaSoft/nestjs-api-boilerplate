@@ -1,8 +1,10 @@
 import swc from 'unplugin-swc';
 import { defineConfig } from 'vitest/config';
-import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
+  resolve: {
+    tsconfigPaths: true,
+  },
   // Resolves the path aliases declared in tsconfig.json, including the ones
   // added by `nest g library`.
   plugins: [
@@ -18,11 +20,13 @@ export default defineConfig({
         },
       },
     }),
-    tsconfigPaths(),
   ],
   test: {
     globals: true,
     root: './',
     include: ['**/*.spec.ts'],
+    env: {
+      NODE_ENV: 'test',
+    },
   },
 });

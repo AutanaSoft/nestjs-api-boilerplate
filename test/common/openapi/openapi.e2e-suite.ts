@@ -6,8 +6,6 @@ import { appConfigFactory } from '../../../src/config/app.config.js';
 import { buildApiConfig } from '../../../src/config/api.config.js';
 import { buildOpenApiConfig } from '../../../src/config/openapi.config.js';
 import { healthResponseSchema } from '../../../src/modules/health/contracts/health-response.schema.js';
-import { createE2EApplication } from '../../support/create-e2e-application.js';
-import { runE2EScenario } from '../../support/e2e-context.js';
 import type { E2ESuiteRegistration } from '../../support/e2e-context.js';
 
 const OPENAPI_PATHS = ['/api/v1/health/live', '/api/v1/health/ready'];
@@ -41,8 +39,7 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
       });
       const openapiConfig = buildOpenApiConfig({ OPENAPI_ENABLED: 'true' });
 
-      await runE2EScenario(
-        () => createE2EApplication({ appConfig, openapiConfig }),
+      await registration.runScenario(
         async ({ app }) => {
           const document = await request(app.getHttpServer()).get('/openapi.json').expect(200);
           const docs = await request(app.getHttpServer())
@@ -105,19 +102,12 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
             await request(app.getHttpServer()).get(path).expect(404);
           }
         },
+        { application: { appConfig, openapiConfig } },
       );
     });
 
     it('uses configured routes and does not retain default document endpoints', async () => {
-      await runE2EScenario(
-        () =>
-          createE2EApplication({
-            openapiConfig: buildOpenApiConfig({
-              OPENAPI_ENABLED: 'true',
-              OPENAPI_DOCS_ROUTE: 'reference',
-              OPENAPI_DOCUMENT_ROUTE: 'schema.json',
-            }),
-          }),
+      await registration.runScenario(
         async ({ app }) => {
           await request(app.getHttpServer()).get('/reference').expect(200);
           await request(app.getHttpServer()).get('/schema.json').expect(200);
@@ -126,21 +116,31 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
             await request(app.getHttpServer()).get(path).expect(404);
           }
         },
+        {
+          application: {
+            openapiConfig: buildOpenApiConfig({
+              OPENAPI_ENABLED: 'true',
+              OPENAPI_DOCS_ROUTE: 'reference',
+              OPENAPI_DOCUMENT_ROUTE: 'schema.json',
+            }),
+          },
+        },
       );
     });
 
     it('keeps documentation routes unprefixed while document paths retain versioning', async () => {
-      await runE2EScenario(
-        () =>
-          createE2EApplication({
-            apiConfig: buildApiConfig({ API_GLOBAL_PREFIX: '' }),
-            openapiConfig: buildOpenApiConfig({ OPENAPI_ENABLED: 'true' }),
-          }),
+      await registration.runScenario(
         async ({ app }) => {
           const document = await request(app.getHttpServer()).get('/openapi.json').expect(200);
           expect(Object.keys(document.body.paths)).toEqual(['/v1/health/live', '/v1/health/ready']);
           await request(app.getHttpServer()).get('/v1/openapi.json').expect(404);
           await request(app.getHttpServer()).get('/api/openapi.json').expect(404);
+        },
+        {
+          application: {
+            apiConfig: buildApiConfig({ API_GLOBAL_PREFIX: '' }),
+            openapiConfig: buildOpenApiConfig({ OPENAPI_ENABLED: 'true' }),
+          },
         },
       );
     });

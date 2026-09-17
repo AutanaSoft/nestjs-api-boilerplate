@@ -13,12 +13,12 @@ beforeAll(async () => {
   environment = await createE2EEnvironment();
 });
 
-const runScenario: RunE2EScenario = async (scenario) => {
+const runScenario: RunE2EScenario = async (scenario, options) => {
   if (environment === undefined) {
     throw new Error('E2E environment is not initialized');
   }
 
-  await environment.runScenario(scenario);
+  await environment.runScenario(scenario, options);
 };
 
 registerHealthE2ESuite({ runScenario });

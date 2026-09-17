@@ -1,8 +1,10 @@
 import swc from 'unplugin-swc';
 import { defineConfig } from 'vitest/config';
-import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
+  resolve: {
+    tsconfigPaths: true,
+  },
   plugins: [
     swc.vite({
       jsc: {
@@ -16,13 +18,15 @@ export default defineConfig({
         },
       },
     }),
-    tsconfigPaths(),
   ],
   test: {
     globals: true,
     root: './',
     include: ['test/main.e2e-spec.ts'],
     env: {
+      NODE_ENV: 'test',
+      API_GLOBAL_PREFIX: 'api',
+      TRUST_PROXY_HOPS: '0',
       CORS_ORIGINS: 'https://allowed.example',
       CORS_MAX_AGE_SECONDS: '600',
       OPENAPI_ENABLED: 'false',

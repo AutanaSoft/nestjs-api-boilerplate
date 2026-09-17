@@ -2,12 +2,11 @@ import request from 'supertest';
 import { vi } from 'vitest';
 import { StructuredLoggerService } from '../../../src/common/observability/logging/logger.service.js';
 import { buildApiConfig } from '../../../src/config/api.config.js';
-import { createE2EApplication } from '../../support/create-e2e-application.js';
-import { runE2EScenario } from '../../support/e2e-context.js';
 import type { E2ESuiteRegistration } from '../../support/e2e-context.js';
 
 const DEFAULT_HEALTH_PATHS = ['/api/v1/health/live', '/api/v1/health/ready'];
 const UNPREFIXED_HEALTH_PATHS = ['/v1/health/live', '/v1/health/ready'];
+const CANONICAL_UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 const HEALTH_CHECK_RESPONSE = {
   status: 'ok',
@@ -72,6 +71,7 @@ export function registerHealthE2ESuite(registration: E2ESuiteRegistration): void
     it('adopts only canonical UUIDv4 request IDs and generates replacements', async () => {
       await registration.runScenario(async ({ app }) => {
         const adoptedRequestId = '123e4567-e89b-42d3-a456-426614174000';
+        const nonCanonicalRequestId = adoptedRequestId.toUpperCase();
         const adopted = await request(app.getHttpServer())
           .get('/api/v1/health/live')
           .set('X-Request-Id', adoptedRequestId)
@@ -81,16 +81,23 @@ export function registerHealthE2ESuite(registration: E2ESuiteRegistration): void
           .get('/api/v1/health/live')
           .set('X-Request-Id', 'not-a-canonical-uuid')
           .expect(200);
+        const replacedNonCanonical = await request(app.getHttpServer())
+          .get('/api/v1/health/live')
+          .set('X-Request-Id', nonCanonicalRequestId)
+          .expect(200);
+        const generatedRequestIds = [
+          generated.headers['x-request-id'],
+          replaced.headers['x-request-id'],
+          replacedNonCanonical.headers['x-request-id'],
+        ];
 
         expect(adopted.headers['x-request-id']).toBe(adoptedRequestId);
-        expect(generated.headers['x-request-id']).toMatch(
-          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
-        );
-        expect(replaced.headers['x-request-id']).toMatch(
-          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
-        );
+        for (const requestId of generatedRequestIds) {
+          expect(requestId).toMatch(CANONICAL_UUID_V4);
+        }
         expect(replaced.headers['x-request-id']).not.toBe('not-a-canonical-uuid');
-        expect(generated.headers['x-request-id']).not.toBe(replaced.headers['x-request-id']);
+        expect(replacedNonCanonical.headers['x-request-id']).not.toBe(nonCanonicalRequestId);
+        expect(new Set(generatedRequestIds)).toHaveLength(generatedRequestIds.length);
       });
     });
 
@@ -193,8 +200,7 @@ export function registerHealthE2ESuite(registration: E2ESuiteRegistration): void
     });
 
     it('serves health routes without a prefix when it is explicitly empty', async () => {
-      await runE2EScenario(
-        () => createE2EApplication({ apiConfig: buildApiConfig({ API_GLOBAL_PREFIX: '' }) }),
+      await registration.runScenario(
         async ({ app }) => {
           for (const path of UNPREFIXED_HEALTH_PATHS) {
             await request(app.getHttpServer()).get(path).expect(200);
@@ -210,6 +216,7 @@ export function registerHealthE2ESuite(registration: E2ESuiteRegistration): void
             await request(app.getHttpServer()).get(path).expect(404);
           }
         },
+        { application: { apiConfig: buildApiConfig({ API_GLOBAL_PREFIX: '' }) } },
       );
     });
 

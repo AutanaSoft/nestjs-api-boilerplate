@@ -24,8 +24,10 @@ owner de esa frontera de prueba es [testing.md](testing.md).
 ## Propietario y registro de suites
 
 `test/main.e2e-spec.ts` es el único propietario del registro E2E. Registra las suites en un orden
-explícito y les proporciona el ejecutor que crea y cierra una aplicación por escenario. El ownership
-de producción determina la ubicación de cada suite:
+explícito y les proporciona el ejecutor que crea, ejecuta y cierra una aplicación por escenario. El
+harness concentra ese lifecycle y la agregación de errores de escenario y cleanup en una única
+implementación; las suites no crean aplicaciones ni llaman helpers de lifecycle directamente. El
+ownership de producción determina la ubicación de cada suite:
 
 ```text
 src/modules/<feature> → test/modules/<feature>
@@ -70,36 +72,47 @@ helper no reproduce manualmente middleware de producción. Los componentes inter
 permanecen reales. El módulo de pruebas añade `E2ERateLimitController` únicamente para verificar el
 throttling global; ese controlador no forma parte de la aplicación de producción.
 
-`vitest.config.e2e.ts` define, mediante `test.env`, los valores E2E de
+El ejecutor registrado acepta `E2EScenarioOptions` como segundo argumento. Los overrides del
+bootstrap se declaran bajo `application` y conservan el tipo `CreateE2EApplicationOptions`; por
+ejemplo, `runScenario(escenario, { application: { apiConfig } })`. Esta forma mantiene el callback
+como primer argumento y permite añadir opciones de infraestructura por escenario sin entregar el
+control del lifecycle a las suites.
+
+`vitest.config.e2e.ts` define, mediante `test.env`, el baseline determinista completo del contrato
+HTTP: `NODE_ENV=test`, `API_GLOBAL_PREFIX=api`, `TRUST_PROXY_HOPS=0`,
 `CORS_ORIGINS=https://allowed.example`, `CORS_MAX_AGE_SECONDS=600`, `THROTTLE_LIMIT=2`,
 `THROTTLE_TTL_SECONDS=60`, `OPENAPI_ENABLED=false`, `OPENAPI_DOCS_ROUTE=docs` y
-`OPENAPI_DOCUMENT_ROUTE=openapi.json`. El helper E2E no lee, modifica ni restaura `process.env`;
-Vitest aplica esos valores dentro de la configuración E2E, incluso cuando el proceso invocador
-aporta valores conflictivos. Las suites que necesitan otra configuración construyen valores tipados
-con las factories y los inyectan mediante `overrideProvider(...KEY).useValue(...)` antes de
-compilar; OpenAPI usa el baseline controlado para el escenario deshabilitado y overrides tipados de
+`OPENAPI_DOCUMENT_ROUTE=openapi.json`. Estos valores fijan el entorno, el prefijo, la confianza en
+proxies, CORS, throttling y OpenAPI para que el contrato no dependa de valores del proceso
+invocador. Vitest los aplica dentro de la configuración E2E, incluso cuando el proceso invocador
+aporta valores conflictivos. No se define `PORT`, porque el harness usa un puerto efímero, ni
+configuración de shutdown, porque no participa en esta suite HTTP. El helper E2E no lee, modifica ni
+restaura `process.env`; las suites que necesitan otra configuración construyen valores tipados con
+las factories y los inyectan mediante `overrideProvider(...KEY).useValue(...)` antes de compilar;
+OpenAPI usa el baseline controlado para el escenario deshabilitado y overrides tipados de
 `appConfig` u `openapiConfig` solo cuando un escenario requiere otra configuración.
 
 ## Contratos HTTP cubiertos
 
 La suite de health conserva estos contratos públicos y transversales:
 
-| Contrato                   | Resultado esperado                                                                                                                                                         |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /api/v1/health/live`  | `200` y respuesta básica de Terminus con `status: ok`; `info`, `error` y `details` vacíos.                                                                                 |
-| `GET /api/v1/health/ready` | `200` con la misma respuesta inicial; readiness todavía no comprueba dependencias.                                                                                         |
-| Prefijo vacío              | Con `API_GLOBAL_PREFIX` vacío, `GET /v1/health/live` y `/v1/health/ready` responden `200`.                                                                                 |
-| Rutas no publicadas        | `/health/*`, `/api/v2/health/live` y las rutas con el prefijo predeterminado en modo vacío responden `404`.                                                                |
-| Helmet                     | Ambos probes incluyen `x-content-type-options: nosniff` y `x-frame-options: SAMEORIGIN`.                                                                                   |
-| CORS                       | El origen permitido recibe `access-control-allow-origin`; el no configurado no la recibe.                                                                                  |
-| Preflight                  | `OPTIONS /api/v1/health/live` desde el origen permitido responde `204`, declara métodos, headers, max age y `X-Request-Id`.                                                |
-| Correlación                | Todas las respuestas, incluidos `200`, `404`, `429` y preflight, devuelven `X-Request-Id`; UUIDv4 canónicos se adoptan y las solicitudes concurrentes permanecen aisladas. |
-| Throttling de health       | Las solicitudes repetidas a ambos probes continúan respondiendo `200` porque están excluidos del límite global.                                                            |
-| Throttling global          | La ruta exclusiva E2E versionada responde `200`, `200`, `429` con el límite configurado de dos solicitudes.                                                                |
-| Ruta raíz eliminada        | `GET /` responde `404`.                                                                                                                                                    |
-| OpenAPI deshabilitado      | `/docs`, `/openapi.json` y sus variantes con prefijo o versión responden `404`.                                                                                            |
-| OpenAPI habilitado         | Solo la UI y el JSON configurados responden `200`; el documento conserva rutas versionadas, metadata de `appConfig`, IDs estables y los schemas canónicos de health/error. |
-| Exclusión de OpenAPI       | El documento no incluye el catch-all ni controllers o fixtures exclusivos de E2E.                                                                                          |
+| Contrato                   | Resultado esperado                                                                                                                                                                       |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/v1/health/live`  | `200` y respuesta básica de Terminus con `status: ok`; `info`, `error` y `details` vacíos.                                                                                               |
+| `GET /api/v1/health/ready` | `200` con la misma respuesta inicial; readiness todavía no comprueba dependencias.                                                                                                       |
+| Prefijo vacío              | Con `API_GLOBAL_PREFIX` vacío, `GET /v1/health/live` y `/v1/health/ready` responden `200`.                                                                                               |
+| Rutas no publicadas        | `/health/*`, `/api/v2/health/live` y las rutas con el prefijo predeterminado en modo vacío responden `404`.                                                                              |
+| Helmet                     | Ambos probes incluyen `x-content-type-options: nosniff` y `x-frame-options: SAMEORIGIN`.                                                                                                 |
+| CORS                       | El origen permitido recibe `access-control-allow-origin`; el no configurado no la recibe.                                                                                                |
+| Preflight                  | `OPTIONS /api/v1/health/live` desde el origen permitido responde `204`, declara métodos, headers, max age y `X-Request-Id`.                                                              |
+| Correlación                | Todas las respuestas, incluidos `200`, `404`, `429` y preflight, devuelven `X-Request-Id`; UUIDv4 canónicos se adoptan y las solicitudes concurrentes permanecen aisladas.               |
+| Throttling de health       | Las solicitudes repetidas a ambos probes continúan respondiendo `200` porque están excluidos del límite global.                                                                          |
+| Throttling global          | La ruta exclusiva E2E versionada responde `200`, `200`, `429` con el límite configurado de dos solicitudes.                                                                              |
+| Ruta raíz eliminada        | `GET /` responde `404`.                                                                                                                                                                  |
+| OpenAPI deshabilitado      | `/docs`, `/openapi.json` y sus variantes con prefijo o versión responden `404`.                                                                                                          |
+| OpenAPI habilitado         | Solo la UI y el JSON configurados responden `200`; el documento conserva rutas versionadas, metadata de `appConfig`, IDs estables y los schemas canónicos de health/error.               |
+| Exclusión de OpenAPI       | El documento no incluye el catch-all ni controllers o fixtures exclusivos de E2E.                                                                                                        |
+| JSON malformado            | `POST /api/v1/__test/validation` con JSON sintácticamente inválido responde `400` con el contrato público `BAD_REQUEST`, un `requestId` UUIDv4 correlacionado y sin detalles del parser. |
 
 ## Readiness draining diferido
 

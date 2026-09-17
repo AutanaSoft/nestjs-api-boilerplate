@@ -4,6 +4,8 @@ import { StructuredLoggerService } from '../../../src/common/observability/loggi
 import type { E2ESuiteRegistration } from '../../support/e2e-context.js';
 
 const CANONICAL_UUID_V4 = '123e4567-e89b-42d3-a456-426614174000';
+const MALFORMED_JSON_PAYLOAD = '{"value":';
+const UUID_V4_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const VALID_PAYLOAD = Object.freeze({ value: 'external-input' });
 const FORBIDDEN_DIAGNOSTIC_VALUES = [
   'issues',
@@ -26,6 +28,27 @@ export function registerRequestValidationE2ESuite(registration: E2ESuiteRegistra
           .expect(201);
 
         expect(response.body).toEqual({ value: 'NORMALIZED: external-input' });
+      });
+    });
+
+    it('returns the safe correlated BAD_REQUEST contract for malformed JSON', async () => {
+      await registration.runScenario(async ({ app }) => {
+        const response = await request(app.getHttpServer())
+          .post('/api/v1/__test/validation')
+          .set('Content-Type', 'application/json')
+          .send(MALFORMED_JSON_PAYLOAD)
+          .expect(400);
+
+        expect(response.body).toEqual({
+          statusCode: 400,
+          code: 'BAD_REQUEST',
+          message: 'The request is invalid.',
+          requestId: expect.stringMatching(UUID_V4_PATTERN),
+        });
+        expect(response.headers['x-request-id']).toBe(response.body.requestId);
+        expect(response.body).not.toHaveProperty('details');
+        expect(response.body).not.toHaveProperty('stack');
+        expect(response.body).not.toHaveProperty('payload');
       });
     });
 
