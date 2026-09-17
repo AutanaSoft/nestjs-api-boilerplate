@@ -111,12 +111,13 @@ La base está lista **antes de iniciar el desarrollo de módulos de negocio** so
 - [ ] OB-14 permanece explícitamente diferido y excluido del denominador de completitud, salvo que
       su alcance sea aprobado e implementado por separado.
 
-## Verificación local final (árbol de trabajo limpio)
+## Verificación final de la candidatura
 
-La siguiente verificación se confirmó en un árbol de trabajo limpio: Prettier check y `pnpm lint`
-finalizaron correctamente; Markdown lint comprobó 295 archivos sin incidencias; las pruebas
-unitarias aprobaron con 19 suites y 121 pruebas; E2E aprobó con 1 suite y 22 pruebas; build finalizó
-con TSC sin incidencias y SWC procesando 23 archivos.
+La verificación completada de OB-13 confirmó que la instalación congelada con Corepack pnpm 12.4.2
+finalizó correctamente; Prettier y `pnpm lint` finalizaron correctamente; Markdown lint comprobó 302
+archivos sin incidencias; las pruebas unitarias aprobaron 29 archivos y 208 pruebas; las pruebas de
+proceso de apagado aprobaron 1 archivo y 3 pruebas; E2E aprobó 1 archivo y 33 pruebas; y la
+compilación informó TSC sin incidencias y SWC con 35 archivos.
 
 ## Mantenimiento
 

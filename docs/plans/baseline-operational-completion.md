@@ -106,12 +106,12 @@ The baseline is ready **before starting business module development** only when:
 - [ ] OB-14 remains explicitly deferred and excluded from the completion denominator unless its
       scope is separately approved and implemented.
 
-## Final local verification (clean working tree)
+## Final candidate verification
 
-The following verification was confirmed in a clean working tree: Prettier check and `pnpm lint`
-passed; Markdown lint checked 295 files with 0 issues; unit tests passed with 19 suites and 121
-tests; E2E passed with 1 suite and 22 tests; build completed with TSC reporting 0 issues and SWC
-processing 23 files.
+The completed OB-13 verification confirmed that the Corepack pnpm 12.4.2 frozen install passed;
+Prettier and `pnpm lint` passed; Markdown lint checked 302 files with 0 issues; unit tests passed 29
+files and 208 tests; shutdown process tests passed 1 file and 3 tests; E2E passed 1 file and 33
+tests; and build reported TSC 0 issues and SWC 35 files.
 
 ## Maintenance
 

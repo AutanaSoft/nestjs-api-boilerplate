@@ -2,10 +2,38 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('./app.setup.js', () => ({ setupApplication: vi.fn() }));
 vi.mock('./common/openapi/openapi.setup.js', () => ({ setupOpenApi: vi.fn() }));
+vi.mock('@nestjs/core', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@nestjs/core')>()),
+  NestFactory: { create: vi.fn() },
+}));
 
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module.js';
 import { bootstrap } from './main.js';
 
 describe('bootstrap', () => {
+  it('buffers Nest bootstrap logs until StructuredLoggerService is installed', async () => {
+    const coordinator = { install: vi.fn() };
+    const app = {
+      get: vi
+        .fn()
+        .mockReturnValueOnce({ nodeEnv: 'test' })
+        .mockReturnValueOnce({ port: 3000 })
+        .mockReturnValueOnce({})
+        .mockReturnValueOnce({ globalPrefix: '' })
+        .mockReturnValueOnce({})
+        .mockReturnValueOnce(coordinator),
+      listen: vi.fn().mockResolvedValue(undefined),
+      flushLogs: vi.fn(),
+    };
+    vi.mocked(NestFactory.create).mockResolvedValue(app as never);
+
+    await bootstrap();
+
+    expect(NestFactory.create).toHaveBeenCalledExactlyOnceWith(AppModule, { bufferLogs: true });
+    expect(app.flushLogs).not.toHaveBeenCalled();
+  });
+
   it('installs runtime signal listeners only after the application listens', async () => {
     const coordinator = { install: vi.fn() };
     const app = {
