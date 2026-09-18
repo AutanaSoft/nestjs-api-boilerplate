@@ -1,15 +1,15 @@
 import { ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
 import { describe, expect, it, vi } from 'vitest';
-import type { ApiConfig } from '../../config/api.config.js';
-import { createUserRequestSchema } from './contracts/create-user-request.schema.js';
+import type { ApiConfig } from '../../../config/api.config.js';
+import { createUserRequestSchema } from '../contracts/create-user-request.schema.js';
 import {
   queryUsersRequestSchema,
   queryUsersUrlQuerySchema,
-} from './contracts/query-users-request.schema.js';
-import { updateUserRequestSchema } from './contracts/update-user-request.schema.js';
-import { userSchema } from './contracts/user.schema.js';
+} from '../contracts/query-users-request.schema.js';
+import { updateUserRequestSchema } from '../contracts/update-user-request.schema.js';
+import { userSchema } from '../contracts/user.schema.js';
 import { UsersController } from './users.controller.js';
-import type { UsersService } from './users.service.js';
+import type { UsersService } from '../services/users.service.js';
 
 const user = {
   id: '123e4567-e89b-42d3-a456-426614174000',

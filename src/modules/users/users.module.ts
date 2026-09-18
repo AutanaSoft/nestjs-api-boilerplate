@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../../database/database.module.js';
-import { UsersController } from './users.controller.js';
-import { PrismaUsersRepository } from './users.repository.js';
-import { USERS_REPOSITORY } from './users.repository.port.js';
-import { UsersService } from './users.service.js';
+import { UsersController } from './controllers/users.controller.js';
+import { PrismaUsersRepository } from './repositories/users.repository.js';
+import { USERS_REPOSITORY } from './repositories/users.repository.port.js';
+import { UsersService } from './services/users.service.js';
 
 @Module({
   imports: [DatabaseModule],

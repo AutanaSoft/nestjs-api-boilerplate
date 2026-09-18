@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Prisma } from '../../database/generated/client.js';
-import type { PrismaService } from '../../database/prisma.service.js';
+import { Prisma } from '../../../database/generated/client.js';
+import type { PrismaService } from '../../../database/prisma.service.js';
 import { ZodError } from 'zod';
-import { UserEmailConflictError } from './users.errors.js';
+import { UserEmailConflictError } from '../users.errors.js';
 import { PrismaUsersRepository } from './users.repository.js';
 
 const user = {

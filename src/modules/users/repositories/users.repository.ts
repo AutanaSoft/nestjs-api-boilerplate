@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '../../database/generated/client.js';
-import { PrismaService } from '../../database/prisma.service.js';
-import type { CreateUserRequest } from './contracts/create-user-request.schema.js';
-import type { UpdateUserRequest } from './contracts/update-user-request.schema.js';
-import { userSchema } from './contracts/user.schema.js';
-import type { User } from './contracts/user.schema.js';
-import { UserEmailConflictError } from './users.errors.js';
+import { Prisma } from '../../../database/generated/client.js';
+import { PrismaService } from '../../../database/prisma.service.js';
+import type { CreateUserRequest } from '../contracts/create-user-request.schema.js';
+import type { UpdateUserRequest } from '../contracts/update-user-request.schema.js';
+import { userSchema } from '../contracts/user.schema.js';
+import type { User } from '../contracts/user.schema.js';
+import { UserEmailConflictError } from '../users.errors.js';
 import type {
   ListUsersRepositoryQuery,
   ListUsersRepositoryResult,

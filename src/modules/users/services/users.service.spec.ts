@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { UserNotFoundError } from './users.errors.js';
-import type { UsersRepository } from './users.repository.port.js';
+import { UserNotFoundError } from '../users.errors.js';
+import type { UsersRepository } from '../repositories/users.repository.port.js';
 import { UsersService } from './users.service.js';
 
 const user = {

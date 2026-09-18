@@ -30,24 +30,24 @@ import {
   ApiTooManyRequestsResponse,
 } from '@nestjs/swagger';
 import type { Response } from 'express';
-import { errorResponseSchema } from '../../common/error-handling/error-response.js';
-import { toOpenApiSchema } from '../../common/openapi/openapi-schema.js';
-import apiConfig, { API_VERSION } from '../../config/api.config.js';
-import { createUserRequestSchema } from './contracts/create-user-request.schema.js';
-import { listUsersRequestSchema } from './contracts/list-users-request.schema.js';
-import type { ListUsersRequest } from './contracts/list-users-request.schema.js';
-import { listUsersResponseSchema } from './contracts/list-users-response.schema.js';
+import { errorResponseSchema } from '../../../common/error-handling/error-response.js';
+import { toOpenApiSchema } from '../../../common/openapi/openapi-schema.js';
+import apiConfig, { API_VERSION } from '../../../config/api.config.js';
+import { createUserRequestSchema } from '../contracts/create-user-request.schema.js';
+import { listUsersRequestSchema } from '../contracts/list-users-request.schema.js';
+import type { ListUsersRequest } from '../contracts/list-users-request.schema.js';
+import { listUsersResponseSchema } from '../contracts/list-users-response.schema.js';
 import {
   queryUsersRequestSchema,
   queryUsersUrlQuerySchema,
-} from './contracts/query-users-request.schema.js';
-import type { QueryUsersRequest } from './contracts/query-users-request.schema.js';
-import type { CreateUserRequest } from './contracts/create-user-request.schema.js';
-import { updateUserRequestSchema } from './contracts/update-user-request.schema.js';
-import type { UpdateUserRequest } from './contracts/update-user-request.schema.js';
-import { userResponseSchema } from './contracts/user-response.schema.js';
-import { userSchema } from './contracts/user.schema.js';
-import { UsersService } from './users.service.js';
+} from '../contracts/query-users-request.schema.js';
+import type { QueryUsersRequest } from '../contracts/query-users-request.schema.js';
+import type { CreateUserRequest } from '../contracts/create-user-request.schema.js';
+import { updateUserRequestSchema } from '../contracts/update-user-request.schema.js';
+import type { UpdateUserRequest } from '../contracts/update-user-request.schema.js';
+import { userResponseSchema } from '../contracts/user-response.schema.js';
+import { userSchema } from '../contracts/user.schema.js';
+import { UsersService } from '../services/users.service.js';
 
 @Controller({ path: 'users', version: API_VERSION })
 export class UsersController {

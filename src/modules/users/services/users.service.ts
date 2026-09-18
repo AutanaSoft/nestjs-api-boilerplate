@@ -1,13 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { ListUsersRequest } from './contracts/list-users-request.schema.js';
-import type { ListUsersResponseInput } from './contracts/list-users-response.schema.js';
-import type { CreateUserRequest } from './contracts/create-user-request.schema.js';
-import type { UpdateUserRequest } from './contracts/update-user-request.schema.js';
-import type { User } from './contracts/user.schema.js';
-import { decodeListUsersCursor, encodeListUsersCursor } from './list-users-cursor.codec.js';
-import { UserNotFoundError } from './users.errors.js';
-import { USERS_REPOSITORY } from './users.repository.port.js';
-import type { UsersRepository } from './users.repository.port.js';
+import type { ListUsersRequest } from '../contracts/list-users-request.schema.js';
+import type { ListUsersResponseInput } from '../contracts/list-users-response.schema.js';
+import type { CreateUserRequest } from '../contracts/create-user-request.schema.js';
+import type { UpdateUserRequest } from '../contracts/update-user-request.schema.js';
+import type { User } from '../contracts/user.schema.js';
+import { decodeListUsersCursor, encodeListUsersCursor } from '../list-users-cursor.codec.js';
+import { UserNotFoundError } from '../users.errors.js';
+import { USERS_REPOSITORY } from '../repositories/users.repository.port.js';
+import type { UsersRepository } from '../repositories/users.repository.port.js';
 
 @Injectable()
 export class UsersService {

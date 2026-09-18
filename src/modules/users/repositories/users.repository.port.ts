@@ -1,8 +1,8 @@
-import type { CreateUserRequest } from './contracts/create-user-request.schema.js';
-import type { UpdateUserRequest } from './contracts/update-user-request.schema.js';
-import type { ListUsersRequest } from './contracts/list-users-request.schema.js';
-import type { User } from './contracts/user.schema.js';
-import type { ListUsersCursorPosition } from './list-users-cursor.codec.js';
+import type { CreateUserRequest } from '../contracts/create-user-request.schema.js';
+import type { UpdateUserRequest } from '../contracts/update-user-request.schema.js';
+import type { ListUsersRequest } from '../contracts/list-users-request.schema.js';
+import type { User } from '../contracts/user.schema.js';
+import type { ListUsersCursorPosition } from '../list-users-cursor.codec.js';
 
 export type ListUsersRepositoryQuery = Readonly<{
   request: ListUsersRequest;

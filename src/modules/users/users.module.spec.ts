@@ -1,10 +1,10 @@
 import { SELF_DECLARED_DEPS_METADATA } from '@nestjs/common/constants';
 import { MODULE_METADATA } from '@nestjs/common/constants';
 import { describe, expect, it } from 'vitest';
-import { USERS_REPOSITORY } from './users.repository.port.js';
-import { PrismaUsersRepository } from './users.repository.js';
+import { USERS_REPOSITORY } from './repositories/users.repository.port.js';
+import { PrismaUsersRepository } from './repositories/users.repository.js';
 import { UsersModule } from './users.module.js';
-import { UsersService } from './users.service.js';
+import { UsersService } from './services/users.service.js';
 
 describe('UsersModule', () => {
   it('binds the feature repository token to the Prisma adapter', () => {
