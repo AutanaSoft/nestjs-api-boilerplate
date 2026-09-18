@@ -8,6 +8,7 @@ import {
   Inject,
   Param,
   Patch,
+  Query,
   Post,
   Res,
   SerializeOptions,
@@ -24,6 +25,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiTooManyRequestsResponse,
 } from '@nestjs/swagger';
 import type { Response } from 'express';
@@ -31,6 +33,9 @@ import { errorResponseSchema } from '../../common/error-handling/error-response.
 import { toOpenApiSchema } from '../../common/openapi/openapi-schema.js';
 import apiConfig, { API_VERSION } from '../../config/api.config.js';
 import { createUserRequestSchema } from './contracts/create-user-request.schema.js';
+import { listUsersRequestSchema } from './contracts/list-users-request.schema.js';
+import type { ListUsersRequest } from './contracts/list-users-request.schema.js';
+import { listUsersResponseSchema } from './contracts/list-users-response.schema.js';
 import type { CreateUserRequest } from './contracts/create-user-request.schema.js';
 import { updateUserRequestSchema } from './contracts/update-user-request.schema.js';
 import type { UpdateUserRequest } from './contracts/update-user-request.schema.js';
@@ -44,6 +49,39 @@ export class UsersController {
     private readonly usersService: UsersService,
     @Inject(apiConfig.KEY) private readonly api: ConfigType<typeof apiConfig>,
   ) {}
+
+  @Get()
+  @ApiOperation({ operationId: 'listUsers' })
+  @ApiQuery({
+    name: 'email',
+    required: false,
+    schema: toOpenApiSchema(listUsersRequestSchema.shape.email, 'input'),
+  })
+  @ApiQuery({
+    name: 'sort',
+    required: false,
+    schema: toOpenApiSchema(listUsersRequestSchema.shape.sort, 'input'),
+  })
+  @ApiQuery({
+    name: 'direction',
+    required: false,
+    schema: toOpenApiSchema(listUsersRequestSchema.shape.direction, 'input'),
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    schema: { type: 'integer', minimum: 1, maximum: 250, default: 25 },
+  })
+  @ApiQuery({ name: 'after', required: false, schema: { type: 'string', maxLength: 1024 } })
+  @ApiQuery({ name: 'before', required: false, schema: { type: 'string', maxLength: 1024 } })
+  @ApiOkResponse({ schema: toOpenApiSchema(listUsersResponseSchema, 'output') })
+  @ApiBadRequestResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @ApiTooManyRequestsResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @ApiInternalServerErrorResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @SerializeOptions({ schema: listUsersResponseSchema })
+  list(@Query({ schema: listUsersRequestSchema }) query: ListUsersRequest) {
+    return this.usersService.list(query);
+  }
 
   @Get(':userId')
   @ApiOperation({ operationId: 'getUser' })

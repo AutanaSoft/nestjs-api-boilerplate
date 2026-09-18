@@ -7,6 +7,8 @@ import { buildApiConfig } from '../../../src/config/api.config.js';
 import { buildOpenApiConfig } from '../../../src/config/openapi.config.js';
 import { healthResponseSchema } from '../../../src/modules/health/contracts/health-response.schema.js';
 import { createUserRequestSchema } from '../../../src/modules/users/contracts/create-user-request.schema.js';
+import { listUsersRequestSchema } from '../../../src/modules/users/contracts/list-users-request.schema.js';
+import { listUsersResponseSchema } from '../../../src/modules/users/contracts/list-users-response.schema.js';
 import { updateUserRequestSchema } from '../../../src/modules/users/contracts/update-user-request.schema.js';
 import { userResponseSchema } from '../../../src/modules/users/contracts/user-response.schema.js';
 import { userSchema } from '../../../src/modules/users/contracts/user.schema.js';
@@ -14,7 +16,7 @@ import type { E2ESuiteRegistration } from '../../support/e2e-context.js';
 
 const HEALTH_OPENAPI_PATHS = ['/api/v1/health/live', '/api/v1/health/ready'];
 const USER_RETRIEVAL_OPENAPI_PATH = '/api/v1/users/{userId}';
-const OPENAPI_PATHS = [...HEALTH_OPENAPI_PATHS, USER_RETRIEVAL_OPENAPI_PATH, '/api/v1/users'];
+const OPENAPI_PATHS = [...HEALTH_OPENAPI_PATHS, '/api/v1/users', USER_RETRIEVAL_OPENAPI_PATH];
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): void {
@@ -163,6 +165,56 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
             );
           }
 
+          const listUsers = document.body.paths['/api/v1/users'].get;
+          expect(listUsers.operationId).toBe('listUsers');
+          expect(listUsers.parameters).toEqual([
+            {
+              name: 'email',
+              required: false,
+              in: 'query',
+              schema: toOpenApiSchema(listUsersRequestSchema.shape.email, 'input'),
+            },
+            {
+              name: 'sort',
+              required: false,
+              in: 'query',
+              schema: toOpenApiSchema(listUsersRequestSchema.shape.sort, 'input'),
+            },
+            {
+              name: 'direction',
+              required: false,
+              in: 'query',
+              schema: toOpenApiSchema(listUsersRequestSchema.shape.direction, 'input'),
+            },
+            {
+              name: 'limit',
+              required: false,
+              in: 'query',
+              schema: { type: 'integer', minimum: 1, maximum: 250, default: 25 },
+            },
+            {
+              name: 'after',
+              required: false,
+              in: 'query',
+              schema: { type: 'string', maxLength: 1024 },
+            },
+            {
+              name: 'before',
+              required: false,
+              in: 'query',
+              schema: { type: 'string', maxLength: 1024 },
+            },
+          ]);
+          expect(Object.keys(listUsers.responses)).toEqual(['200', '400', '429', '500']);
+          expect(listUsers.responses['200'].content['application/json'].schema).toEqual(
+            toOpenApiSchema(listUsersResponseSchema, 'output'),
+          );
+          for (const status of ['400', '429', '500']) {
+            expect(listUsers.responses[status].content['application/json'].schema).toEqual(
+              toOpenApiSchema(errorResponseSchema, 'output'),
+            );
+          }
+
           const createUser = document.body.paths['/api/v1/users'].post;
           expect(createUser.operationId).toBe('createUser');
           expect(createUser.requestBody.content['application/json'].schema).toEqual(
@@ -227,8 +279,8 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
           expect(Object.keys(document.body.paths)).toEqual([
             '/v1/health/live',
             '/v1/health/ready',
-            '/v1/users/{userId}',
             '/v1/users',
+            '/v1/users/{userId}',
           ]);
           await request(app.getHttpServer()).get('/v1/openapi.json').expect(404);
           await request(app.getHttpServer()).get('/api/openapi.json').expect(404);

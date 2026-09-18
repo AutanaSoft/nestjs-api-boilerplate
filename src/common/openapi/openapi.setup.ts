@@ -1,5 +1,6 @@
 import type { INestApplication } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import type { OpenAPIObject } from '@nestjs/swagger';
 import type { AppConfig } from '../../config/app.config.js';
 import type { OpenApiConfig } from '../../config/openapi.config.js';
 import { HealthModule } from '../../modules/health/health.module.js';
@@ -25,6 +26,7 @@ export function setupOpenApi(
   const configuredRoutes = [openapiConfig.docsRoute, openapiConfig.documentRoute].map(
     (route) => `/${route}`,
   );
+  deduplicateOperationParameters(document);
   const publishedPaths = Object.keys(document.paths ?? {});
 
   if (
@@ -45,4 +47,19 @@ export function setupOpenApi(
     jsonDocumentUrl: openapiConfig.documentRoute,
     raw: ['json'],
   });
+}
+
+function deduplicateOperationParameters(document: OpenAPIObject): void {
+  for (const pathItem of Object.values(document.paths ?? {})) {
+    for (const operation of [pathItem.get, pathItem.post, pathItem.patch, pathItem.delete]) {
+      if (operation?.parameters === undefined) continue;
+
+      const parameters = new Map<string, (typeof operation.parameters)[number]>();
+      for (const parameter of operation.parameters) {
+        if ('$ref' in parameter) continue;
+        parameters.set(`${parameter.in}:${parameter.name}`, parameter);
+      }
+      operation.parameters = [...parameters.values()];
+    }
+  }
 }

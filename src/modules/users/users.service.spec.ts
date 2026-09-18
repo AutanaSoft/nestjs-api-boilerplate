@@ -38,6 +38,28 @@ describe('UsersService', () => {
     await expect(service.findById(user.id)).rejects.toBeInstanceOf(UserNotFoundError);
   });
 
+  it('lists repository pages and emits cursors only for actual adjacent pages', async () => {
+    const repository = {
+      findById: vi.fn(),
+      list: vi.fn().mockResolvedValue({
+        data: [user],
+        hasNextPage: true,
+        hasPreviousPage: false,
+      }),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    } as UsersRepository;
+    const service = new UsersService(repository);
+
+    const page = await service.list({ sort: 'createdAt', direction: 'desc', limit: 25 });
+
+    expect(page.data).toEqual([user]);
+    expect(page.pageInfo).toMatchObject({ hasNextPage: true, hasPreviousPage: false });
+    expect(page.pageInfo.nextCursor).toEqual(expect.any(String));
+    expect(page.pageInfo.previousCursor).toBeNull();
+  });
+
   it('creates users through the feature repository port', async () => {
     const create = vi.fn().mockResolvedValue(user);
     const repository: UsersRepository = {

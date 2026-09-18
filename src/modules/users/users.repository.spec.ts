@@ -20,9 +20,11 @@ function createRepository(
   findUnique = vi.fn(),
   update = vi.fn(),
   deleteUser = vi.fn(),
+  findMany = vi.fn(),
+  findFirst = vi.fn(),
 ): PrismaUsersRepository {
   return new PrismaUsersRepository({
-    user: { create, findUnique, update, delete: deleteUser },
+    user: { create, findUnique, update, delete: deleteUser, findMany, findFirst },
   } as unknown as PrismaService);
 }
 
@@ -57,6 +59,119 @@ describe('PrismaUsersRepository', () => {
     );
 
     await expect(repository.findById(user.id)).rejects.toBeInstanceOf(ZodError);
+  });
+
+  it.each([
+    ['createdAt', 'asc'],
+    ['createdAt', 'desc'],
+    ['displayName', 'asc'],
+    ['displayName', 'desc'],
+  ] as const)(
+    'uses %s %s ordering, an ID tie-breaker, and limit plus one for list queries',
+    async (sort, direction) => {
+      const findMany = vi.fn().mockResolvedValue([user]);
+      const findFirst = vi.fn().mockResolvedValue(null);
+      const repository = createRepository(vi.fn(), vi.fn(), vi.fn(), vi.fn(), findMany, findFirst);
+
+      await expect(repository.list({ request: { sort, direction, limit: 2 } })).resolves.toEqual({
+        data: [user],
+        hasNextPage: false,
+        hasPreviousPage: false,
+      });
+      expect(findMany).toHaveBeenCalledWith({
+        where: {},
+        orderBy: [{ [sort]: direction }, { id: direction }],
+        take: 3,
+        select: {
+          id: true,
+          email: true,
+          displayName: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+    },
+  );
+
+  it('uses lexicographic forward predicates and probes adjacent pages through findFirst', async () => {
+    const findMany = vi.fn().mockResolvedValue([user]);
+    const findFirst = vi.fn().mockResolvedValue(null);
+    const repository = createRepository(vi.fn(), vi.fn(), vi.fn(), vi.fn(), findMany, findFirst);
+    const request = {
+      email: user.email,
+      sort: 'createdAt' as const,
+      direction: 'asc' as const,
+      limit: 1,
+    };
+
+    await repository.list({
+      request,
+      cursor: { id: user.id, createdAt: user.createdAt },
+      cursorDirection: 'after',
+    });
+
+    const forward = {
+      OR: [
+        { createdAt: { gt: user.createdAt } },
+        { createdAt: user.createdAt, id: { gt: user.id } },
+      ],
+    };
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { AND: [{ email: user.email }, forward] },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        take: 2,
+      }),
+    );
+    expect(findFirst).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        where: {
+          AND: [
+            { email: user.email },
+            {
+              OR: [
+                { createdAt: { lt: user.createdAt } },
+                { createdAt: user.createdAt, id: { lt: user.id } },
+              ],
+            },
+          ],
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      }),
+    );
+  });
+
+  it('reverses before pages while retaining public order and uses backward lexicographic predicates', async () => {
+    const later = { ...user, id: '123e4567-e89b-42d3-a456-426614174001' };
+    const findMany = vi.fn().mockResolvedValue([later, user]);
+    const findFirst = vi.fn().mockResolvedValue(null);
+    const repository = createRepository(vi.fn(), vi.fn(), vi.fn(), vi.fn(), findMany, findFirst);
+    const request = { sort: 'displayName' as const, direction: 'asc' as const, limit: 1 };
+
+    await expect(
+      repository.list({
+        request,
+        cursor: { id: later.id, displayName: later.displayName },
+        cursorDirection: 'before',
+      }),
+    ).resolves.toMatchObject({ data: [later] });
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          AND: [
+            {
+              OR: [
+                { displayName: { lt: later.displayName } },
+                { displayName: later.displayName, id: { lt: later.id } },
+              ],
+            },
+          ],
+        },
+        orderBy: [{ displayName: 'desc' }, { id: 'desc' }],
+        take: 2,
+      }),
+    );
   });
 
   it('creates a user through Prisma with only the public projection', async () => {

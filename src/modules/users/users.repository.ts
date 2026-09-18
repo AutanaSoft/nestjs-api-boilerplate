@@ -6,7 +6,11 @@ import type { UpdateUserRequest } from './contracts/update-user-request.schema.j
 import { userSchema } from './contracts/user.schema.js';
 import type { User } from './contracts/user.schema.js';
 import { UserEmailConflictError } from './users.errors.js';
-import type { UsersRepository } from './users.repository.port.js';
+import type {
+  ListUsersRepositoryQuery,
+  ListUsersRepositoryResult,
+  UsersRepository,
+} from './users.repository.port.js';
 
 const userSelect = {
   id: true,
@@ -17,6 +21,7 @@ const userSelect = {
 } satisfies Prisma.UserSelect;
 
 type PrismaUser = Prisma.UserGetPayload<{ select: typeof userSelect }>;
+type Direction = 'asc' | 'desc';
 
 @Injectable()
 export class PrismaUsersRepository implements UsersRepository {
@@ -27,23 +32,55 @@ export class PrismaUsersRepository implements UsersRepository {
       where: { id },
       select: userSelect,
     });
-
     return user === null ? null : userSchema.parse(user);
+  }
+
+  async list(query: ListUsersRepositoryQuery): Promise<ListUsersRepositoryResult> {
+    const { request, cursor, cursorDirection } = query;
+    const direction = cursorDirection === 'before' ? invert(request.direction) : request.direction;
+    const boundary = cursor === undefined ? undefined : seekWhere(request.sort, direction, cursor);
+    const users = await this.prisma.user.findMany({
+      where: combineWhere(request.email, boundary),
+      orderBy: orderBy(request.sort, direction),
+      take: request.limit + 1,
+      select: userSelect,
+    });
+    const page = users.slice(0, request.limit).map((user) => userSchema.parse(user));
+    const data = cursorDirection === 'before' ? page.reverse() : page;
+
+    if (data.length === 0) {
+      return { data, hasNextPage: false, hasPreviousPage: false };
+    }
+
+    const [previous, next] = await Promise.all([
+      this.prisma.user.findFirst({
+        where: combineWhere(
+          request.email,
+          seekWhere(request.sort, invert(request.direction), data[0]),
+        ),
+        orderBy: orderBy(request.sort, invert(request.direction)),
+        select: { id: true },
+      }),
+      this.prisma.user.findFirst({
+        where: combineWhere(
+          request.email,
+          seekWhere(request.sort, request.direction, data.at(-1)!),
+        ),
+        orderBy: orderBy(request.sort, request.direction),
+        select: { id: true },
+      }),
+    ]);
+
+    return { data, hasNextPage: next !== null, hasPreviousPage: previous !== null };
   }
 
   async create(data: CreateUserRequest): Promise<User> {
     try {
-      const user: PrismaUser = await this.prisma.user.create({
-        data,
-        select: userSelect,
-      });
-
+      const user: PrismaUser = await this.prisma.user.create({ data, select: userSelect });
       return userSchema.parse(user);
     } catch (error: unknown) {
-      if (isUniqueEmailViolation(error)) {
+      if (isUniqueEmailViolation(error))
         throw new UserEmailConflictError(data.email, { cause: error });
-      }
-
       throw error;
     }
   }
@@ -55,17 +92,11 @@ export class PrismaUsersRepository implements UsersRepository {
         data,
         select: userSelect,
       });
-
       return userSchema.parse(user);
     } catch (error: unknown) {
-      if (isRecordNotFound(error)) {
-        return null;
-      }
-
-      if (isUniqueEmailViolation(error)) {
+      if (isRecordNotFound(error)) return null;
+      if (isUniqueEmailViolation(error))
         throw new UserEmailConflictError(data.email ?? '', { cause: error });
-      }
-
       throw error;
     }
   }
@@ -75,19 +106,48 @@ export class PrismaUsersRepository implements UsersRepository {
       await this.prisma.user.delete({ where: { id } });
       return true;
     } catch (error: unknown) {
-      if (isRecordNotFound(error)) {
-        return null;
-      }
-
+      if (isRecordNotFound(error)) return null;
       throw error;
     }
   }
 }
 
+function combineWhere(
+  email: string | undefined,
+  boundary: Prisma.UserWhereInput | undefined,
+): Prisma.UserWhereInput {
+  const filters: Prisma.UserWhereInput[] = [];
+  if (email !== undefined) filters.push({ email });
+  if (boundary !== undefined) filters.push(boundary);
+  return filters.length === 0 ? {} : { AND: filters };
+}
+
+function orderBy(
+  sort: 'createdAt' | 'displayName',
+  direction: Direction,
+): Prisma.UserOrderByWithRelationInput[] {
+  return [{ [sort]: direction }, { id: direction }];
+}
+
+function seekWhere(
+  sort: 'createdAt' | 'displayName',
+  direction: Direction,
+  user: Pick<User, 'id'> & Partial<Pick<User, 'createdAt' | 'displayName'>>,
+): Prisma.UserWhereInput {
+  const value = sort === 'createdAt' ? user.createdAt! : user.displayName!;
+  const comparison = direction === 'asc' ? 'gt' : 'lt';
+  return {
+    OR: [{ [sort]: { [comparison]: value } }, { [sort]: value, id: { [comparison]: user.id } }],
+  };
+}
+
+function invert(direction: Direction): Direction {
+  return direction === 'asc' ? 'desc' : 'asc';
+}
+
 function isUniqueEmailViolation(error: unknown): boolean {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
 }
-
 function isRecordNotFound(error: unknown): boolean {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025';
 }

@@ -130,6 +130,190 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
     });
   });
 
+  describe('GET /api/v1/users (e2e)', () => {
+    const listScenarioOptions = {
+      application: {
+        rateLimitConfig: buildRateLimitConfig({
+          THROTTLE_LIMIT: '100',
+          THROTTLE_TTL_SECONDS: '60',
+        }),
+      },
+    };
+
+    it('lists exact normalized-email matches and rejects unsupported query shapes', async () => {
+      await registration.runScenario(async ({ app }) => {
+        const first = await request(app.getHttpServer())
+          .post('/api/v1/users')
+          .send(createPayload())
+          .expect(201);
+        await request(app.getHttpServer()).post('/api/v1/users').send(createPayload()).expect(201);
+
+        const filtered = await request(app.getHttpServer())
+          .get(`/api/v1/users?email=${encodeURIComponent(` ${first.body.email.toUpperCase()} `)}`)
+          .expect(200);
+        expect(filtered.body.data).toHaveLength(1);
+        expect(filtered.body.data[0]).toMatchObject({ id: first.body.id, email: first.body.email });
+        expect(filtered.body.pageInfo).toEqual({
+          nextCursor: null,
+          previousCursor: null,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        });
+
+        for (const query of [
+          'displayName=Ada',
+          'limit=0',
+          'sort=email',
+          'after=a&before=b',
+          'limit=1&limit=2',
+        ]) {
+          await request(app.getHttpServer()).get(`/api/v1/users?${query}`).expect(400);
+        }
+      }, listScenarioOptions);
+    });
+
+    it('paginates every public sort order deterministically and serializes only public rows', async () => {
+      await registration.runScenario(async ({ app }) => {
+        const created = [];
+        for (const displayName of [
+          'Ada Lovelace',
+          'Ada Lovelace',
+          'Ada Lovelace',
+          'Grace Hopper',
+        ]) {
+          const response = await request(app.getHttpServer())
+            .post('/api/v1/users')
+            .send({ ...createPayload(), displayName })
+            .expect(201);
+          created.push(response.body);
+        }
+        const tiedIds = created
+          .slice(0, 3)
+          .map((user) => user.id)
+          .sort();
+
+        for (const [sort, direction] of [
+          ['createdAt', 'asc'],
+          ['createdAt', 'desc'],
+          ['displayName', 'asc'],
+          ['displayName', 'desc'],
+        ]) {
+          const page = await request(app.getHttpServer())
+            .get(`/api/v1/users?sort=${sort}&direction=${direction}&limit=25`)
+            .expect(200);
+          expect(page.body.data).toHaveLength(4);
+          const values = page.body.data.map(
+            (user: { createdAt: string; displayName: string; id: string }) =>
+              sort === 'createdAt' ? user.createdAt : user.displayName,
+          );
+          const expected = [...values].sort((left, right) =>
+            direction === 'asc' ? left.localeCompare(right) : right.localeCompare(left),
+          );
+          expect(values).toEqual(expected);
+        }
+
+        const first = await request(app.getHttpServer())
+          .get('/api/v1/users?sort=displayName&direction=asc&limit=1')
+          .expect(200);
+        expect(first.body.data).toEqual([
+          {
+            id: tiedIds[0],
+            email: created.find((user) => user.id === tiedIds[0]).email,
+            displayName: 'Ada Lovelace',
+            createdAt: expect.stringMatching(ISO_TIMESTAMP),
+            updatedAt: expect.stringMatching(ISO_TIMESTAMP),
+          },
+        ]);
+        expect(first.body.data[0]).not.toHaveProperty('password');
+        expect(first.body.data[0]).not.toHaveProperty('passwordHash');
+        expect(first.body.pageInfo).toEqual({
+          hasNextPage: true,
+          hasPreviousPage: false,
+          nextCursor: expect.any(String),
+          previousCursor: null,
+        });
+
+        const intermediate = await request(app.getHttpServer())
+          .get(
+            `/api/v1/users?sort=displayName&direction=asc&limit=1&after=${first.body.pageInfo.nextCursor}`,
+          )
+          .expect(200);
+        expect(intermediate.body.data[0].id).toBe(tiedIds[1]);
+        expect(intermediate.body.pageInfo).toEqual({
+          hasNextPage: true,
+          hasPreviousPage: true,
+          nextCursor: expect.any(String),
+          previousCursor: expect.any(String),
+        });
+
+        const backward = await request(app.getHttpServer())
+          .get(
+            `/api/v1/users?sort=displayName&direction=asc&limit=1&before=${intermediate.body.pageInfo.previousCursor}`,
+          )
+          .expect(200);
+        expect(backward.body).toEqual(first.body);
+
+        const third = await request(app.getHttpServer())
+          .get(
+            `/api/v1/users?sort=displayName&direction=asc&limit=1&after=${intermediate.body.pageInfo.nextCursor}`,
+          )
+          .expect(200);
+        const last = await request(app.getHttpServer())
+          .get(
+            `/api/v1/users?sort=displayName&direction=asc&limit=1&after=${third.body.pageInfo.nextCursor}`,
+          )
+          .expect(200);
+        expect(last.body.data[0].displayName).toBe('Grace Hopper');
+        expect(last.body.pageInfo).toEqual({
+          hasNextPage: false,
+          hasPreviousPage: true,
+          nextCursor: null,
+          previousCursor: expect.any(String),
+        });
+
+        const empty = await request(app.getHttpServer())
+          .get('/api/v1/users?email=nobody@example.com')
+          .expect(200);
+        expect(empty.body).toEqual({
+          data: [],
+          pageInfo: {
+            hasNextPage: false,
+            hasPreviousPage: false,
+            nextCursor: null,
+            previousCursor: null,
+          },
+        });
+      }, listScenarioOptions);
+    });
+
+    it('rejects malformed, oversized, context-mismatched, and repeated list query values', async () => {
+      await registration.runScenario(async ({ app }) => {
+        const created = await request(app.getHttpServer())
+          .post('/api/v1/users')
+          .send(createPayload())
+          .expect(201);
+        await request(app.getHttpServer()).post('/api/v1/users').send(createPayload()).expect(201);
+        const page = await request(app.getHttpServer()).get('/api/v1/users?limit=1').expect(200);
+        const cursor = page.body.pageInfo.nextCursor;
+
+        for (const query of [
+          'after=not-base64!',
+          `after=${'a'.repeat(1025)}`,
+          `sort=displayName&after=${cursor}`,
+          `email=other@example.com&after=${cursor}`,
+          `direction=asc&after=${cursor}`,
+          `email=${created.body.email}&email=other@example.com`,
+          'sort=createdAt&sort=displayName',
+          'direction=asc&direction=desc',
+          `after=${cursor}&after=${cursor}`,
+          `before=${cursor}&before=${cursor}`,
+        ]) {
+          await request(app.getHttpServer()).get(`/api/v1/users?${query}`).expect(400);
+        }
+      }, listScenarioOptions);
+    });
+  });
+
   describe('PATCH /api/v1/users/:userId (e2e)', () => {
     const updateScenarioOptions = {
       application: {

@@ -15,6 +15,8 @@ import { buildOpenApiConfig } from '../../config/openapi.config.js';
 import type { OpenApiConfig } from '../../config/openapi.config.js';
 import { healthResponseSchema } from '../../modules/health/contracts/health-response.schema.js';
 import { createUserRequestSchema } from '../../modules/users/contracts/create-user-request.schema.js';
+import { listUsersRequestSchema } from '../../modules/users/contracts/list-users-request.schema.js';
+import { listUsersResponseSchema } from '../../modules/users/contracts/list-users-response.schema.js';
 import { updateUserRequestSchema } from '../../modules/users/contracts/update-user-request.schema.js';
 import { userResponseSchema } from '../../modules/users/contracts/user-response.schema.js';
 import { userSchema } from '../../modules/users/contracts/user.schema.js';
@@ -157,8 +159,8 @@ describe('setupOpenApi', () => {
       expect(Object.keys(paths)).toEqual([
         '/api/v1/health/live',
         '/api/v1/health/ready',
-        '/api/v1/users/{userId}',
         '/api/v1/users',
+        '/api/v1/users/{userId}',
       ]);
       const healthOperations = ['/api/v1/health/live', '/api/v1/health/ready'].map(
         (path) => paths[path]?.get,
@@ -295,6 +297,64 @@ describe('setupOpenApi', () => {
         );
       }
 
+      const listUsers = paths['/api/v1/users']?.get;
+      expect(listUsers?.operationId).toBe('listUsers');
+      expect(listUsers?.parameters).toEqual([
+        {
+          name: 'email',
+          required: false,
+          in: 'query',
+          schema: toOpenApiSchema(listUsersRequestSchema.shape.email, 'input'),
+        },
+        {
+          name: 'sort',
+          required: false,
+          in: 'query',
+          schema: toOpenApiSchema(listUsersRequestSchema.shape.sort, 'input'),
+        },
+        {
+          name: 'direction',
+          required: false,
+          in: 'query',
+          schema: toOpenApiSchema(listUsersRequestSchema.shape.direction, 'input'),
+        },
+        {
+          name: 'limit',
+          required: false,
+          in: 'query',
+          schema: { type: 'integer', minimum: 1, maximum: 250, default: 25 },
+        },
+        {
+          name: 'after',
+          required: false,
+          in: 'query',
+          schema: { type: 'string', maxLength: 1024 },
+        },
+        {
+          name: 'before',
+          required: false,
+          in: 'query',
+          schema: { type: 'string', maxLength: 1024 },
+        },
+      ]);
+      expect(Object.keys(listUsers?.responses ?? {})).toEqual(['200', '400', '429', '500']);
+      expect(listUsers?.responses?.['200']).toEqual(
+        expect.objectContaining({
+          content: {
+            'application/json': { schema: toOpenApiSchema(listUsersResponseSchema, 'output') },
+          },
+        }),
+      );
+      for (const status of ['400', '429', '500']) {
+        expect(listUsers?.responses?.[status]).toEqual(
+          expect.objectContaining({
+            content: {
+              'application/json': { schema: toOpenApiSchema(errorResponseSchema, 'output') },
+            },
+          }),
+        );
+      }
+
       const createUser = paths['/api/v1/users']?.post;
       expect(createUser?.operationId).toBe('createUser');
       expect(createUser?.requestBody).toEqual(
@@ -352,8 +412,8 @@ describe('setupOpenApi', () => {
       expect(Object.keys(document?.paths ?? {})).toEqual([
         '/v1/health/live',
         '/v1/health/ready',
-        '/v1/users/{userId}',
         '/v1/users',
+        '/v1/users/{userId}',
       ]);
     } finally {
       await documentApp.close();

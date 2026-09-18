@@ -127,8 +127,14 @@ Client input cannot assign or modify the identifier or timestamps.
       order.
 - [ ] User listing rejects unsupported sort fields, including `email` and `updatedAt`.
 - [ ] Every user-listing order uses `id` as an internal deterministic tie-breaker.
-- [ ] User listing uses opaque cursors, deterministic ordering, a default limit of 25, and a maximum
-      limit of 250.
+- [ ] User listing uses opaque versioned base64url cursors, deterministic ordering, a default limit
+      of 25, and a maximum limit of 250. Cursors bind normalized email, sort, and direction;
+      malformed, incompatible, unknown, repeated, array, or otherwise unsupported query input
+      returns `400`.
+- [ ] User listing accepts mutually exclusive `after` and `before` cursors, and returns
+      `{ data,     pageInfo }` according to the shared pagination contract. Page flags and cursors
+      describe only actual adjacent rows; an empty page has both flags `false` and both cursors
+      `null`.
 - [ ] Successful singular and collection `GET` operations return `200 OK` with their corresponding
       public representation.
 - [ ] Conventional `GET` remains the default supported operation for retrieving the user collection.
@@ -172,7 +178,9 @@ Client input cannot assign or modify the identifier or timestamps.
 - Limit initial lookup to singular retrieval by `id` and exact normalized email filtering; do not
   search by `displayName` or dates.
 - Default conventional `GET` ordering to `createdAt desc`; allow `createdAt` and `displayName` in
-  both directions, with `id` as the internal deterministic tie-breaker.
+  both directions, with `id` following the selected direction as the internal deterministic
+  tie-breaker. Apply the shared pagination rules in `docs/api/pagination.md` rather than duplicating
+  their general contract here.
 - Apply partial updates only to supplied mutable fields, leave omitted fields unchanged, and reject
   `null` for `email` and `displayName`.
 - Return `201` with user and `Location` for creation, `200` with public representations for reads
