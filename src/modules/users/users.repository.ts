@@ -69,6 +69,19 @@ export class PrismaUsersRepository implements UsersRepository {
       throw error;
     }
   }
+
+  async delete(id: string): Promise<boolean | null> {
+    try {
+      await this.prisma.user.delete({ where: { id } });
+      return true;
+    } catch (error: unknown) {
+      if (isRecordNotFound(error)) {
+        return null;
+      }
+
+      throw error;
+    }
+  }
 }
 
 function isUniqueEmailViolation(error: unknown): boolean {

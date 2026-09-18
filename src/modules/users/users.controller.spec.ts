@@ -22,6 +22,7 @@ function createController(globalPrefix: string) {
     create: vi.fn().mockResolvedValue(user),
     findById: vi.fn().mockResolvedValue(user),
     update: vi.fn().mockResolvedValue(user),
+    delete: vi.fn().mockResolvedValue(true),
   } as unknown as UsersService;
   const controller = new UsersController(service, { globalPrefix } satisfies ApiConfig);
   const response = { location: vi.fn() };
@@ -45,6 +46,19 @@ describe('UsersController', () => {
   it('attaches the canonical UUIDv4 schema to the userId path parameter', () => {
     const routeArguments: Record<string, { index: number; data?: string; schema?: unknown }> =
       Reflect.getMetadata(ROUTE_ARGS_METADATA, UsersController, 'findById') ?? {};
+
+    expect(Object.values(routeArguments)).toContainEqual(
+      expect.objectContaining({
+        index: 0,
+        data: 'userId',
+        schema: userSchema.shape.id,
+      }),
+    );
+  });
+
+  it('attaches the canonical UUIDv4 schema to the delete route parameter', () => {
+    const routeArguments: Record<string, { index: number; data?: string; schema?: unknown }> =
+      Reflect.getMetadata(ROUTE_ARGS_METADATA, UsersController, 'delete') ?? {};
 
     expect(Object.values(routeArguments)).toContainEqual(
       expect.objectContaining({
@@ -92,5 +106,12 @@ describe('UsersController', () => {
 
     await expect(controller.findById(user.id)).resolves.toEqual(user);
     expect(service.findById).toHaveBeenCalledWith(user.id);
+  });
+
+  it('deletes a user through the service', async () => {
+    const { controller, service } = createController('api');
+
+    await expect(controller.delete(user.id)).resolves.toBeUndefined();
+    expect(service.delete).toHaveBeenCalledWith(user.id);
   });
 });

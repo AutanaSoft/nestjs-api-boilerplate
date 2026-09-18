@@ -14,7 +14,12 @@ const user = {
 describe('UsersService', () => {
   it('retrieves users through the feature repository port', async () => {
     const findById = vi.fn().mockResolvedValue(user);
-    const repository: UsersRepository = { findById, create: vi.fn() };
+    const repository: UsersRepository = {
+      findById,
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    };
     const service = new UsersService(repository);
 
     await expect(service.findById(user.id)).resolves.toEqual(user);
@@ -25,6 +30,8 @@ describe('UsersService', () => {
     const repository: UsersRepository = {
       findById: vi.fn().mockResolvedValue(null),
       create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
     };
     const service = new UsersService(repository);
 
@@ -33,7 +40,12 @@ describe('UsersService', () => {
 
   it('creates users through the feature repository port', async () => {
     const create = vi.fn().mockResolvedValue(user);
-    const repository: UsersRepository = { findById: vi.fn(), create };
+    const repository: UsersRepository = {
+      findById: vi.fn(),
+      create,
+      update: vi.fn(),
+      delete: vi.fn(),
+    };
     const service = new UsersService(repository);
 
     await expect(
@@ -47,7 +59,12 @@ describe('UsersService', () => {
 
   it('updates users through the feature repository port', async () => {
     const update = vi.fn().mockResolvedValue(user);
-    const repository: UsersRepository = { findById: vi.fn(), create: vi.fn(), update };
+    const repository: UsersRepository = {
+      findById: vi.fn(),
+      create: vi.fn(),
+      update,
+      delete: vi.fn(),
+    };
     const service = new UsersService(repository);
     const data = { displayName: user.displayName };
 
@@ -60,11 +77,38 @@ describe('UsersService', () => {
       findById: vi.fn(),
       create: vi.fn(),
       update: vi.fn().mockResolvedValue(null),
+      delete: vi.fn(),
     };
     const service = new UsersService(repository);
 
     await expect(service.update(user.id, { email: user.email })).rejects.toBeInstanceOf(
       UserNotFoundError,
     );
+  });
+
+  it('deletes users through the feature repository port', async () => {
+    const deleteUser = vi.fn().mockResolvedValue(true);
+    const repository: UsersRepository = {
+      findById: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: deleteUser,
+    };
+    const service = new UsersService(repository);
+
+    await expect(service.delete(user.id)).resolves.toBeUndefined();
+    expect(deleteUser).toHaveBeenCalledWith(user.id);
+  });
+
+  it('maps a missing deleted user to the application resource-not-found error', async () => {
+    const repository: UsersRepository = {
+      findById: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn().mockResolvedValue(null),
+    };
+    const service = new UsersService(repository);
+
+    await expect(service.delete(user.id)).rejects.toBeInstanceOf(UserNotFoundError);
   });
 });

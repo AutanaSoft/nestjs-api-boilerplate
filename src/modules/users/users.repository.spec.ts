@@ -19,9 +19,10 @@ function createRepository(
   create: ReturnType<typeof vi.fn>,
   findUnique = vi.fn(),
   update = vi.fn(),
+  deleteUser = vi.fn(),
 ): PrismaUsersRepository {
   return new PrismaUsersRepository({
-    user: { create, findUnique, update },
+    user: { create, findUnique, update, delete: deleteUser },
   } as unknown as PrismaService);
 }
 
@@ -109,6 +110,29 @@ describe('PrismaUsersRepository', () => {
     const repository = createRepository(vi.fn(), vi.fn(), vi.fn().mockRejectedValue(missing));
 
     await expect(repository.update(user.id, { email: user.email })).resolves.toBeNull();
+  });
+
+  it('deletes a user through Prisma', async () => {
+    const deleteUser = vi.fn().mockResolvedValue(user);
+    const repository = createRepository(vi.fn(), vi.fn(), vi.fn(), deleteUser);
+
+    await expect(repository.delete(user.id)).resolves.toBe(true);
+    expect(deleteUser).toHaveBeenCalledWith({ where: { id: user.id } });
+  });
+
+  it('returns null when Prisma cannot delete a missing user', async () => {
+    const missing = new Prisma.PrismaClientKnownRequestError('Record not found', {
+      code: 'P2025',
+      clientVersion: '7.10.0',
+    });
+    const repository = createRepository(
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+      vi.fn().mockRejectedValue(missing),
+    );
+
+    await expect(repository.delete(user.id)).resolves.toBeNull();
   });
 
   it('translates a P2002 update error to an email conflict', async () => {

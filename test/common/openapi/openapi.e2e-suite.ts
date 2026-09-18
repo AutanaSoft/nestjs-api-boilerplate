@@ -142,6 +142,27 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
             );
           }
 
+          const deleteUser = document.body.paths[USER_RETRIEVAL_OPENAPI_PATH].delete;
+          expect(deleteUser.operationId).toBe('deleteUser');
+          expect(deleteUser.parameters).toEqual([
+            {
+              name: 'userId',
+              required: true,
+              in: 'path',
+              schema: toOpenApiSchema(userSchema.shape.id, 'input'),
+            },
+          ]);
+          expect(Object.keys(deleteUser.responses)).toEqual(['204', '400', '404', '429', '500']);
+          expect(deleteUser.responses['204']).toEqual(
+            expect.objectContaining({ description: expect.any(String) }),
+          );
+          expect(deleteUser.responses['204'].content).toBeUndefined();
+          for (const status of ['400', '404', '429', '500']) {
+            expect(deleteUser.responses[status].content['application/json'].schema).toEqual(
+              toOpenApiSchema(errorResponseSchema, 'output'),
+            );
+          }
+
           const createUser = document.body.paths['/api/v1/users'].post;
           expect(createUser.operationId).toBe('createUser');
           expect(createUser.requestBody.content['application/json'].schema).toEqual(

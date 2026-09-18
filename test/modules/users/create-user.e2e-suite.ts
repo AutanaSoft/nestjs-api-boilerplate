@@ -227,4 +227,84 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
       }, updateScenarioOptions);
     });
   });
+
+  describe('DELETE /api/v1/users/:userId (e2e)', () => {
+    const deleteScenarioOptions = {
+      application: {
+        rateLimitConfig: buildRateLimitConfig({
+          THROTTLE_LIMIT: '100',
+          THROTTLE_TTL_SECONDS: '60',
+        }),
+      },
+    };
+
+    it('physically deletes a user with an empty 204 response and no longer retrieves it', async () => {
+      await registration.runScenario(async ({ app }) => {
+        const created = await request(app.getHttpServer())
+          .post('/api/v1/users')
+          .send(createPayload())
+          .expect(201);
+        const response = await request(app.getHttpServer())
+          .delete(`/api/v1/users/${created.body.id}`)
+          .expect(204);
+
+        expect(response.text).toBe('');
+        expect(response.headers['x-request-id']).toMatch(UUID_V4);
+
+        const fetched = await request(app.getHttpServer())
+          .get(`/api/v1/users/${created.body.id}`)
+          .expect(404);
+        expect(fetched.body).toEqual({
+          statusCode: 404,
+          code: 'RESOURCE_NOT_FOUND',
+          message: 'The requested resource was not found.',
+          requestId: expect.stringMatching(UUID_V4),
+        });
+      }, deleteScenarioOptions);
+    });
+
+    it('rejects a non-canonical user ID with the shared 400 contract', async () => {
+      await registration.runScenario(async ({ app }) => {
+        const response = await request(app.getHttpServer())
+          .delete('/api/v1/users/123e4567-e89b-12d3-a456-426614174000')
+          .expect(400);
+
+        expect(response.body).toMatchObject({
+          statusCode: 400,
+          code: 'BAD_REQUEST',
+          message: 'The request is invalid.',
+        });
+      }, deleteScenarioOptions);
+    });
+
+    it('returns resource-not-found for missing and repeated deletes', async () => {
+      await registration.runScenario(async ({ app }) => {
+        const missing = await request(app.getHttpServer())
+          .delete('/api/v1/users/123e4567-e89b-42d3-a456-426614174001')
+          .expect(404);
+        expect(missing.body).toEqual({
+          statusCode: 404,
+          code: 'RESOURCE_NOT_FOUND',
+          message: 'The requested resource was not found.',
+          requestId: expect.stringMatching(UUID_V4),
+        });
+
+        const created = await request(app.getHttpServer())
+          .post('/api/v1/users')
+          .send(createPayload())
+          .expect(201);
+        await request(app.getHttpServer()).delete(`/api/v1/users/${created.body.id}`).expect(204);
+        const repeated = await request(app.getHttpServer())
+          .delete(`/api/v1/users/${created.body.id}`)
+          .expect(404);
+
+        expect(repeated.body).toEqual({
+          statusCode: 404,
+          code: 'RESOURCE_NOT_FOUND',
+          message: 'The requested resource was not found.',
+          requestId: expect.stringMatching(UUID_V4),
+        });
+      }, deleteScenarioOptions);
+    });
+  });
 }

@@ -270,6 +270,31 @@ describe('setupOpenApi', () => {
         );
       }
 
+      const deleteUser = paths['/api/v1/users/{userId}']?.delete;
+      expect(deleteUser?.operationId).toBe('deleteUser');
+      expect(deleteUser?.parameters).toEqual([
+        {
+          name: 'userId',
+          required: true,
+          in: 'path',
+          schema: toOpenApiSchema(userSchema.shape.id, 'input'),
+        },
+      ]);
+      expect(Object.keys(deleteUser?.responses ?? {})).toEqual(['204', '400', '404', '429', '500']);
+      expect(deleteUser?.responses?.['204']).toEqual(
+        expect.objectContaining({ description: expect.any(String) }),
+      );
+      expect(deleteUser?.responses?.['204']).not.toHaveProperty('content');
+      for (const status of ['400', '404', '429', '500']) {
+        expect(deleteUser?.responses?.[status]).toEqual(
+          expect.objectContaining({
+            content: {
+              'application/json': { schema: toOpenApiSchema(errorResponseSchema, 'output') },
+            },
+          }),
+        );
+      }
+
       const createUser = paths['/api/v1/users']?.post;
       expect(createUser?.operationId).toBe('createUser');
       expect(createUser?.requestBody).toEqual(
