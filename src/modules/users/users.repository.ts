@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '../../database/generated/client.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import type { CreateUserRequest } from './contracts/create-user-request.schema.js';
+import type { UpdateUserRequest } from './contracts/update-user-request.schema.js';
 import { userSchema } from './contracts/user.schema.js';
 import type { User } from './contracts/user.schema.js';
 import { UserEmailConflictError } from './users.errors.js';
@@ -46,8 +47,34 @@ export class PrismaUsersRepository implements UsersRepository {
       throw error;
     }
   }
+
+  async update(id: string, data: UpdateUserRequest): Promise<User | null> {
+    try {
+      const user: PrismaUser = await this.prisma.user.update({
+        where: { id },
+        data,
+        select: userSelect,
+      });
+
+      return userSchema.parse(user);
+    } catch (error: unknown) {
+      if (isRecordNotFound(error)) {
+        return null;
+      }
+
+      if (isUniqueEmailViolation(error)) {
+        throw new UserEmailConflictError(data.email ?? '', { cause: error });
+      }
+
+      throw error;
+    }
+  }
 }
 
 function isUniqueEmailViolation(error: unknown): boolean {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
+}
+
+function isRecordNotFound(error: unknown): boolean {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025';
 }

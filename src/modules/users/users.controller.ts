@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Inject, Param, Post, Res, SerializeOptions } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Inject,
+  Param,
+  Patch,
+  Post,
+  Res,
+  SerializeOptions,
+} from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import {
   ApiBadRequestResponse,
@@ -18,6 +28,8 @@ import { toOpenApiSchema } from '../../common/openapi/openapi-schema.js';
 import apiConfig, { API_VERSION } from '../../config/api.config.js';
 import { createUserRequestSchema } from './contracts/create-user-request.schema.js';
 import type { CreateUserRequest } from './contracts/create-user-request.schema.js';
+import { updateUserRequestSchema } from './contracts/update-user-request.schema.js';
+import type { UpdateUserRequest } from './contracts/update-user-request.schema.js';
 import { userResponseSchema } from './contracts/user-response.schema.js';
 import { userSchema } from './contracts/user.schema.js';
 import { UsersService } from './users.service.js';
@@ -40,6 +52,24 @@ export class UsersController {
   @SerializeOptions({ schema: userResponseSchema })
   findById(@Param('userId', { schema: userSchema.shape.id }) userId: string) {
     return this.usersService.findById(userId);
+  }
+
+  @Patch(':userId')
+  @ApiOperation({ operationId: 'updateUser' })
+  @ApiParam({ name: 'userId', schema: toOpenApiSchema(userSchema.shape.id, 'input') })
+  @ApiBody({ schema: toOpenApiSchema(updateUserRequestSchema, 'input') })
+  @ApiOkResponse({ schema: toOpenApiSchema(userResponseSchema, 'output') })
+  @ApiBadRequestResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @ApiNotFoundResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @ApiConflictResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @ApiTooManyRequestsResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @ApiInternalServerErrorResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @SerializeOptions({ schema: userResponseSchema })
+  update(
+    @Param('userId', { schema: userSchema.shape.id }) userId: string,
+    @Body({ schema: updateUserRequestSchema }) body: UpdateUserRequest,
+  ) {
+    return this.usersService.update(userId, body);
   }
 
   @Post()

@@ -2,6 +2,7 @@ import { ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
 import { describe, expect, it, vi } from 'vitest';
 import type { ApiConfig } from '../../config/api.config.js';
 import { createUserRequestSchema } from './contracts/create-user-request.schema.js';
+import { updateUserRequestSchema } from './contracts/update-user-request.schema.js';
 import { userSchema } from './contracts/user.schema.js';
 import { UsersController } from './users.controller.js';
 import type { UsersService } from './users.service.js';
@@ -20,6 +21,7 @@ function createController(globalPrefix: string) {
   const service = {
     create: vi.fn().mockResolvedValue(user),
     findById: vi.fn().mockResolvedValue(user),
+    update: vi.fn().mockResolvedValue(user),
   } as unknown as UsersService;
   const controller = new UsersController(service, { globalPrefix } satisfies ApiConfig);
   const response = { location: vi.fn() };
@@ -51,6 +53,26 @@ describe('UsersController', () => {
         schema: userSchema.shape.id,
       }),
     );
+  });
+
+  it('attaches canonical schemas to the update route parameters', () => {
+    const routeArguments: Record<string, { index: number; data?: string; schema?: unknown }> =
+      Reflect.getMetadata(ROUTE_ARGS_METADATA, UsersController, 'update') ?? {};
+
+    expect(Object.values(routeArguments)).toContainEqual(
+      expect.objectContaining({ index: 0, data: 'userId', schema: userSchema.shape.id }),
+    );
+    expect(Object.values(routeArguments)).toContainEqual(
+      expect.objectContaining({ index: 1, schema: updateUserRequestSchema }),
+    );
+  });
+
+  it('updates a user through the service', async () => {
+    const { controller, service } = createController('api');
+    const update = { displayName: 'Ada Byron' };
+
+    await expect(controller.update(user.id, update)).resolves.toEqual(user);
+    expect(service.update).toHaveBeenCalledWith(user.id, update);
   });
 
   it.each([

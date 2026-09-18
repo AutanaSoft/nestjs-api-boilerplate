@@ -15,6 +15,7 @@ import { buildOpenApiConfig } from '../../config/openapi.config.js';
 import type { OpenApiConfig } from '../../config/openapi.config.js';
 import { healthResponseSchema } from '../../modules/health/contracts/health-response.schema.js';
 import { createUserRequestSchema } from '../../modules/users/contracts/create-user-request.schema.js';
+import { updateUserRequestSchema } from '../../modules/users/contracts/update-user-request.schema.js';
 import { userResponseSchema } from '../../modules/users/contracts/user-response.schema.js';
 import { userSchema } from '../../modules/users/contracts/user.schema.js';
 import { toOpenApiSchema } from './openapi-schema.js';
@@ -219,6 +220,48 @@ describe('setupOpenApi', () => {
       );
       for (const status of ['400', '404', '429', '500']) {
         expect(getUser?.responses?.[status]).toEqual(
+          expect.objectContaining({
+            content: {
+              'application/json': { schema: toOpenApiSchema(errorResponseSchema, 'output') },
+            },
+          }),
+        );
+      }
+
+      const updateUser = paths['/api/v1/users/{userId}']?.patch;
+      expect(updateUser?.operationId).toBe('updateUser');
+      expect(updateUser?.parameters).toEqual([
+        {
+          name: 'userId',
+          required: true,
+          in: 'path',
+          schema: toOpenApiSchema(userSchema.shape.id, 'input'),
+        },
+      ]);
+      expect(updateUser?.requestBody).toEqual(
+        expect.objectContaining({
+          content: {
+            'application/json': { schema: toOpenApiSchema(updateUserRequestSchema, 'input') },
+          },
+        }),
+      );
+      expect(Object.keys(updateUser?.responses ?? {})).toEqual([
+        '200',
+        '400',
+        '404',
+        '409',
+        '429',
+        '500',
+      ]);
+      expect(updateUser?.responses?.['200']).toEqual(
+        expect.objectContaining({
+          content: {
+            'application/json': { schema: toOpenApiSchema(userResponseSchema, 'output') },
+          },
+        }),
+      );
+      for (const status of ['400', '404', '409', '429', '500']) {
+        expect(updateUser?.responses?.[status]).toEqual(
           expect.objectContaining({
             content: {
               'application/json': { schema: toOpenApiSchema(errorResponseSchema, 'output') },

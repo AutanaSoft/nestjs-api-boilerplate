@@ -44,4 +44,27 @@ describe('UsersService', () => {
       displayName: user.displayName,
     });
   });
+
+  it('updates users through the feature repository port', async () => {
+    const update = vi.fn().mockResolvedValue(user);
+    const repository: UsersRepository = { findById: vi.fn(), create: vi.fn(), update };
+    const service = new UsersService(repository);
+    const data = { displayName: user.displayName };
+
+    await expect(service.update(user.id, data)).resolves.toEqual(user);
+    expect(update).toHaveBeenCalledWith(user.id, data);
+  });
+
+  it('maps a missing updated user to the application resource-not-found error', async () => {
+    const repository: UsersRepository = {
+      findById: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn().mockResolvedValue(null),
+    };
+    const service = new UsersService(repository);
+
+    await expect(service.update(user.id, { email: user.email })).rejects.toBeInstanceOf(
+      UserNotFoundError,
+    );
+  });
 });

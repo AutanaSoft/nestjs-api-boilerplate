@@ -18,8 +18,11 @@ const createRequest = { email: user.email, displayName: user.displayName };
 function createRepository(
   create: ReturnType<typeof vi.fn>,
   findUnique = vi.fn(),
+  update = vi.fn(),
 ): PrismaUsersRepository {
-  return new PrismaUsersRepository({ user: { create, findUnique } } as unknown as PrismaService);
+  return new PrismaUsersRepository({
+    user: { create, findUnique, update },
+  } as unknown as PrismaService);
 }
 
 describe('PrismaUsersRepository', () => {
@@ -77,6 +80,50 @@ describe('PrismaUsersRepository', () => {
     const repository = createRepository(create);
 
     await expect(repository.create(createRequest)).rejects.toBeInstanceOf(ZodError);
+  });
+
+  it('updates a user through Prisma with only the public projection', async () => {
+    const update = vi.fn().mockResolvedValue(user);
+    const repository = createRepository(vi.fn(), vi.fn(), update);
+    const data = { displayName: 'Ada Byron' };
+
+    await expect(repository.update(user.id, data)).resolves.toEqual(user);
+    expect(update).toHaveBeenCalledWith({
+      where: { id: user.id },
+      data,
+      select: {
+        id: true,
+        email: true,
+        displayName: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  });
+
+  it('returns null when Prisma cannot update a missing user', async () => {
+    const missing = new Prisma.PrismaClientKnownRequestError('Record not found', {
+      code: 'P2025',
+      clientVersion: '7.10.0',
+    });
+    const repository = createRepository(vi.fn(), vi.fn(), vi.fn().mockRejectedValue(missing));
+
+    await expect(repository.update(user.id, { email: user.email })).resolves.toBeNull();
+  });
+
+  it('translates a P2002 update error to an email conflict', async () => {
+    const conflict = new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+      code: 'P2002',
+      clientVersion: '7.10.0',
+    });
+    const repository = createRepository(vi.fn(), vi.fn(), vi.fn().mockRejectedValue(conflict));
+
+    await expect(repository.update(user.id, { email: user.email })).rejects.toMatchObject({
+      name: UserEmailConflictError.name,
+      email: user.email,
+      code: 'CONFLICT',
+      cause: conflict,
+    });
   });
 
   it.each([{ meta: { modelName: 'User', target: ['email'] } }, {}])(
