@@ -14,6 +14,8 @@ import { buildHttpConfig } from '../../config/http.config.js';
 import { buildOpenApiConfig } from '../../config/openapi.config.js';
 import type { OpenApiConfig } from '../../config/openapi.config.js';
 import { healthResponseSchema } from '../../modules/health/contracts/health-response.schema.js';
+import { createUserRequestSchema } from '../../modules/users/contracts/create-user-request.schema.js';
+import { userResponseSchema } from '../../modules/users/contracts/user-response.schema.js';
 import { toOpenApiSchema } from './openapi-schema.js';
 import { setupOpenApi } from './openapi.setup.js';
 
@@ -150,23 +152,23 @@ describe('setupOpenApi', () => {
       });
 
       const paths = document?.paths ?? {};
-      expect(Object.keys(paths)).toEqual(['/api/v1/health/live', '/api/v1/health/ready']);
-      const operations = Object.values(paths).flatMap((pathItem) =>
-        Object.values(pathItem).filter(
-          (operation): operation is { operationId?: string; responses: Record<string, unknown> } =>
-            typeof operation === 'object' && operation !== null && 'responses' in operation,
-        ),
+      expect(Object.keys(paths)).toEqual([
+        '/api/v1/health/live',
+        '/api/v1/health/ready',
+        '/api/v1/users',
+      ]);
+      const healthOperations = ['/api/v1/health/live', '/api/v1/health/ready'].map(
+        (path) => paths[path]?.get,
       );
-      const operationIds = operations.map((operation) => operation.operationId);
-      expect(operationIds).toEqual(['healthLive', 'healthReady']);
-      expect(new Set(operationIds).size).toBe(operationIds.length);
-      expect(
-        operationIds.every((operationId) => operationId !== undefined && operationId.length > 0),
-      ).toBe(true);
+      expect(healthOperations.map((operation) => operation?.operationId)).toEqual([
+        'healthLive',
+        'healthReady',
+      ]);
 
-      for (const operation of operations) {
-        expect(Object.keys(operation.responses)).toEqual(['200', '500', '503']);
-        expect(operation.responses['200']).toEqual(
+      for (const operation of healthOperations) {
+        expect(operation).toBeDefined();
+        expect(Object.keys(operation?.responses ?? {})).toEqual(['200', '500', '503']);
+        expect(operation?.responses?.['200']).toEqual(
           expect.objectContaining({
             content: {
               'application/json': {
@@ -175,7 +177,7 @@ describe('setupOpenApi', () => {
             },
           }),
         );
-        expect(operation.responses['503']).toEqual(
+        expect(operation?.responses?.['503']).toEqual(
           expect.objectContaining({
             content: {
               'application/json': {
@@ -184,7 +186,7 @@ describe('setupOpenApi', () => {
             },
           }),
         );
-        expect(operation.responses['500']).toEqual(
+        expect(operation?.responses?.['500']).toEqual(
           expect.objectContaining({
             content: {
               'application/json': {
@@ -193,12 +195,33 @@ describe('setupOpenApi', () => {
             },
           }),
         );
-        const errorSchema = (
-          operation.responses['500'] as {
-            content: { 'application/json': { schema: { properties: Record<string, unknown> } } };
-          }
-        ).content['application/json'].schema;
-        expect(errorSchema.properties).not.toHaveProperty('details');
+      }
+
+      const createUser = paths['/api/v1/users']?.post;
+      expect(createUser?.operationId).toBe('createUser');
+      expect(createUser?.requestBody).toEqual(
+        expect.objectContaining({
+          content: {
+            'application/json': { schema: toOpenApiSchema(createUserRequestSchema, 'input') },
+          },
+        }),
+      );
+      expect(Object.keys(createUser?.responses ?? {})).toEqual(['201', '400', '409', '429', '500']);
+      expect(createUser?.responses?.['201']).toEqual(
+        expect.objectContaining({
+          content: {
+            'application/json': { schema: toOpenApiSchema(userResponseSchema, 'output') },
+          },
+        }),
+      );
+      for (const status of ['400', '409', '429', '500']) {
+        expect(createUser?.responses?.[status]).toEqual(
+          expect.objectContaining({
+            content: {
+              'application/json': { schema: toOpenApiSchema(errorResponseSchema, 'output') },
+            },
+          }),
+        );
       }
       expect(JSON.stringify(document)).not.toMatch(
         /NotFound|__test|rate.limit|serializ|validat|error.handling/i,
@@ -228,7 +251,11 @@ describe('setupOpenApi', () => {
 
       const document = vi.mocked(SwaggerModule.setup).mock.calls[0]?.[2] as
         OpenAPIObject | undefined;
-      expect(Object.keys(document?.paths ?? {})).toEqual(['/v1/health/live', '/v1/health/ready']);
+      expect(Object.keys(document?.paths ?? {})).toEqual([
+        '/v1/health/live',
+        '/v1/health/ready',
+        '/v1/users',
+      ]);
     } finally {
       await documentApp.close();
     }

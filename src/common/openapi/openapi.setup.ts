@@ -3,6 +3,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import type { AppConfig } from '../../config/app.config.js';
 import type { OpenApiConfig } from '../../config/openapi.config.js';
 import { HealthModule } from '../../modules/health/health.module.js';
+import { UsersModule } from '../../modules/users/users.module.js';
 
 export function setupOpenApi(
   app: INestApplication,
@@ -19,7 +20,7 @@ export function setupOpenApi(
     .setVersion(appConfig.version)
     .build();
   const document = SwaggerModule.createDocument(app, documentConfig, {
-    include: [HealthModule],
+    include: [HealthModule, UsersModule],
   });
   const configuredRoutes = [openapiConfig.docsRoute, openapiConfig.documentRoute].map(
     (route) => `/${route}`,
