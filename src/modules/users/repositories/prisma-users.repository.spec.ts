@@ -3,7 +3,7 @@ import { Prisma } from '../../../database/generated/client.js';
 import type { PrismaService } from '../../../database/prisma.service.js';
 import { ZodError } from 'zod';
 import { UserEmailConflictError } from '../users.errors.js';
-import { PrismaUsersRepository } from './users.repository.js';
+import { PrismaUsersRepository } from './prisma-users.repository.js';
 
 const user = {
   id: '123e4567-e89b-42d3-a456-426614174000',

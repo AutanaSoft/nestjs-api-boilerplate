@@ -6,8 +6,8 @@ import type { UpdateUserRequest } from '../contracts/update-user-request.schema.
 import type { User } from '../contracts/user.schema.js';
 import { decodeListUsersCursor, encodeListUsersCursor } from '../list-users-cursor.codec.js';
 import { UserNotFoundError } from '../users.errors.js';
-import { USERS_REPOSITORY } from '../repositories/users.repository.port.js';
-import type { UsersRepository } from '../repositories/users.repository.port.js';
+import { USERS_REPOSITORY } from '../repositories/users.repository.js';
+import type { UsersRepository } from '../repositories/users.repository.js';
 
 @Injectable()
 export class UsersService {
