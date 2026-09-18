@@ -2,6 +2,7 @@ import { ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
 import { describe, expect, it, vi } from 'vitest';
 import type { ApiConfig } from '../../config/api.config.js';
 import { createUserRequestSchema } from './contracts/create-user-request.schema.js';
+import { userSchema } from './contracts/user.schema.js';
 import { UsersController } from './users.controller.js';
 import type { UsersService } from './users.service.js';
 
@@ -16,11 +17,14 @@ const user = {
 const body = { email: user.email, displayName: user.displayName };
 
 function createController(globalPrefix: string) {
-  const service = { create: vi.fn().mockResolvedValue(user) } as unknown as UsersService;
+  const service = {
+    create: vi.fn().mockResolvedValue(user),
+    findById: vi.fn().mockResolvedValue(user),
+  } as unknown as UsersService;
   const controller = new UsersController(service, { globalPrefix } satisfies ApiConfig);
   const response = { location: vi.fn() };
 
-  return { controller, response };
+  return { controller, response, service };
 }
 
 describe('UsersController', () => {
@@ -36,6 +40,19 @@ describe('UsersController', () => {
     );
   });
 
+  it('attaches the canonical UUIDv4 schema to the userId path parameter', () => {
+    const routeArguments: Record<string, { index: number; data?: string; schema?: unknown }> =
+      Reflect.getMetadata(ROUTE_ARGS_METADATA, UsersController, 'findById') ?? {};
+
+    expect(Object.values(routeArguments)).toContainEqual(
+      expect.objectContaining({
+        index: 0,
+        data: 'userId',
+        schema: userSchema.shape.id,
+      }),
+    );
+  });
+
   it.each([
     ['api', '/api/v1/users/123e4567-e89b-42d3-a456-426614174000'],
     ['platform/api', '/platform/api/v1/users/123e4567-e89b-42d3-a456-426614174000'],
@@ -46,5 +63,12 @@ describe('UsersController', () => {
     await controller.create(body, response as never);
 
     expect(response.location).toHaveBeenCalledWith(location);
+  });
+
+  it('retrieves a user through the service', async () => {
+    const { controller, service } = createController('api');
+
+    await expect(controller.findById(user.id)).resolves.toEqual(user);
+    expect(service.findById).toHaveBeenCalledWith(user.id);
   });
 });

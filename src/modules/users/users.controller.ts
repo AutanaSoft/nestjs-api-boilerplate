@@ -1,4 +1,4 @@
-import { Body, Controller, Inject, Post, Res, SerializeOptions } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Post, Res, SerializeOptions } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import {
   ApiBadRequestResponse,
@@ -6,7 +6,10 @@ import {
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiInternalServerErrorResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiTooManyRequestsResponse,
 } from '@nestjs/swagger';
 import type { Response } from 'express';
@@ -16,6 +19,7 @@ import apiConfig, { API_VERSION } from '../../config/api.config.js';
 import { createUserRequestSchema } from './contracts/create-user-request.schema.js';
 import type { CreateUserRequest } from './contracts/create-user-request.schema.js';
 import { userResponseSchema } from './contracts/user-response.schema.js';
+import { userSchema } from './contracts/user.schema.js';
 import { UsersService } from './users.service.js';
 
 @Controller({ path: 'users', version: API_VERSION })
@@ -24,6 +28,19 @@ export class UsersController {
     private readonly usersService: UsersService,
     @Inject(apiConfig.KEY) private readonly api: ConfigType<typeof apiConfig>,
   ) {}
+
+  @Get(':userId')
+  @ApiOperation({ operationId: 'getUser' })
+  @ApiParam({ name: 'userId', schema: toOpenApiSchema(userSchema.shape.id, 'input') })
+  @ApiOkResponse({ schema: toOpenApiSchema(userResponseSchema, 'output') })
+  @ApiBadRequestResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @ApiNotFoundResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @ApiTooManyRequestsResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @ApiInternalServerErrorResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @SerializeOptions({ schema: userResponseSchema })
+  findById(@Param('userId', { schema: userSchema.shape.id }) userId: string) {
+    return this.usersService.findById(userId);
+  }
 
   @Post()
   @ApiOperation({ operationId: 'createUser' })

@@ -38,6 +38,58 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
       });
     });
 
+    it('retrieves a public user by canonical UUIDv4', async () => {
+      await registration.runScenario(async ({ app }) => {
+        const payload = createPayload();
+        const created = await request(app.getHttpServer())
+          .post('/api/v1/users')
+          .send(payload)
+          .expect(201);
+        const response = await request(app.getHttpServer())
+          .get(`/api/v1/users/${created.body.id}`)
+          .expect(200);
+
+        expect(response.body).toEqual({
+          id: created.body.id,
+          email: payload.email.trim().toLowerCase(),
+          displayName: payload.displayName.trim(),
+          createdAt: expect.stringMatching(ISO_TIMESTAMP),
+          updatedAt: expect.stringMatching(ISO_TIMESTAMP),
+        });
+        expect(response.body).not.toHaveProperty('password');
+        expect(response.body).not.toHaveProperty('passwordHash');
+      });
+    });
+
+    it('rejects a non-canonical user ID with the shared 400 contract', async () => {
+      await registration.runScenario(async ({ app }) => {
+        const response = await request(app.getHttpServer())
+          .get('/api/v1/users/not-a-uuid')
+          .expect(400);
+
+        expect(response.body).toMatchObject({
+          statusCode: 400,
+          code: 'BAD_REQUEST',
+          message: 'The request is invalid.',
+        });
+      });
+    });
+
+    it('returns the shared 404 resource-not-found contract for an unknown UUIDv4', async () => {
+      await registration.runScenario(async ({ app }) => {
+        const response = await request(app.getHttpServer())
+          .get('/api/v1/users/123e4567-e89b-42d3-a456-426614174001')
+          .expect(404);
+
+        expect(response.body).toEqual({
+          statusCode: 404,
+          code: 'RESOURCE_NOT_FOUND',
+          message: 'The requested resource was not found.',
+          requestId: expect.stringMatching(UUID_V4),
+        });
+      });
+    });
+
     it('returns the shared 409 conflict contract for a normalized duplicate email', async () => {
       await registration.runScenario(async ({ app }) => {
         const payload = createPayload();

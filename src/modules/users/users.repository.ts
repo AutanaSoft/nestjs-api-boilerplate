@@ -21,6 +21,15 @@ type PrismaUser = Prisma.UserGetPayload<{ select: typeof userSelect }>;
 export class PrismaUsersRepository implements UsersRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  async findById(id: string): Promise<User | null> {
+    const user: PrismaUser | null = await this.prisma.user.findUnique({
+      where: { id },
+      select: userSelect,
+    });
+
+    return user === null ? null : userSchema.parse(user);
+  }
+
   async create(data: CreateUserRequest): Promise<User> {
     try {
       const user: PrismaUser = await this.prisma.user.create({

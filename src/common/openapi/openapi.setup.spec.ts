@@ -16,6 +16,7 @@ import type { OpenApiConfig } from '../../config/openapi.config.js';
 import { healthResponseSchema } from '../../modules/health/contracts/health-response.schema.js';
 import { createUserRequestSchema } from '../../modules/users/contracts/create-user-request.schema.js';
 import { userResponseSchema } from '../../modules/users/contracts/user-response.schema.js';
+import { userSchema } from '../../modules/users/contracts/user.schema.js';
 import { toOpenApiSchema } from './openapi-schema.js';
 import { setupOpenApi } from './openapi.setup.js';
 
@@ -155,6 +156,7 @@ describe('setupOpenApi', () => {
       expect(Object.keys(paths)).toEqual([
         '/api/v1/health/live',
         '/api/v1/health/ready',
+        '/api/v1/users/{userId}',
         '/api/v1/users',
       ]);
       const healthOperations = ['/api/v1/health/live', '/api/v1/health/ready'].map(
@@ -192,6 +194,34 @@ describe('setupOpenApi', () => {
               'application/json': {
                 schema: toOpenApiSchema(errorResponseSchema, 'output'),
               },
+            },
+          }),
+        );
+      }
+
+      const getUser = paths['/api/v1/users/{userId}']?.get;
+      expect(getUser?.operationId).toBe('getUser');
+      expect(getUser?.parameters).toEqual([
+        {
+          name: 'userId',
+          required: true,
+          in: 'path',
+          schema: toOpenApiSchema(userSchema.shape.id, 'input'),
+        },
+      ]);
+      expect(Object.keys(getUser?.responses ?? {})).toEqual(['200', '400', '404', '429', '500']);
+      expect(getUser?.responses?.['200']).toEqual(
+        expect.objectContaining({
+          content: {
+            'application/json': { schema: toOpenApiSchema(userResponseSchema, 'output') },
+          },
+        }),
+      );
+      for (const status of ['400', '404', '429', '500']) {
+        expect(getUser?.responses?.[status]).toEqual(
+          expect.objectContaining({
+            content: {
+              'application/json': { schema: toOpenApiSchema(errorResponseSchema, 'output') },
             },
           }),
         );
@@ -254,6 +284,7 @@ describe('setupOpenApi', () => {
       expect(Object.keys(document?.paths ?? {})).toEqual([
         '/v1/health/live',
         '/v1/health/ready',
+        '/v1/users/{userId}',
         '/v1/users',
       ]);
     } finally {

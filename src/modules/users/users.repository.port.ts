@@ -5,5 +5,6 @@ import type { User } from './contracts/user.schema.js';
 export const USERS_REPOSITORY = Symbol('USERS_REPOSITORY');
 
 export interface UsersRepository {
+  findById(id: string): Promise<User | null>;
   create(data: CreateUserRequest): Promise<User>;
 }
