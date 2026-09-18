@@ -1,4 +1,5 @@
 import request from 'supertest';
+import { Test } from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { buildRateLimitConfig } from '../../../src/config/rate-limit.config.js';
 import type { E2ESuiteRegistration } from '../../support/e2e-context.js';
@@ -311,6 +312,98 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
           await request(app.getHttpServer()).get(`/api/v1/users?${query}`).expect(400);
         }
       }, listScenarioOptions);
+    });
+  });
+
+  describe('QUERY /api/v1/users (e2e)', () => {
+    const queryScenarioOptions = {
+      application: {
+        rateLimitConfig: buildRateLimitConfig({
+          THROTTLE_LIMIT: '100',
+          THROTTLE_TTL_SECONDS: '60',
+        }),
+      },
+    };
+
+    it('normalizes exact email criteria and is safe and idempotent', async () => {
+      await registration.runScenario(async ({ app }) => {
+        const payload = createPayload();
+        const created = await request(app.getHttpServer())
+          .post('/api/v1/users')
+          .send(payload)
+          .expect(201);
+        const body = {
+          criteria: { email: ` ${created.body.email.toUpperCase()} ` },
+          sort: 'displayName',
+          direction: 'asc',
+          limit: 1,
+        };
+        const first = await new Test(app.getHttpServer(), 'QUERY', '/api/v1/users')
+          .send(body)
+          .expect(200);
+        const repeated = await new Test(app.getHttpServer(), 'QUERY', '/api/v1/users')
+          .send(body)
+          .expect(200);
+
+        expect(first.headers['x-request-id']).toMatch(UUID_V4);
+        expect(first.body).toEqual(repeated.body);
+        expect(first.body).toEqual({
+          data: [
+            {
+              id: created.body.id,
+              email: created.body.email,
+              displayName: created.body.displayName,
+              createdAt: created.body.createdAt,
+              updatedAt: created.body.updatedAt,
+            },
+          ],
+          pageInfo: {
+            hasNextPage: false,
+            hasPreviousPage: false,
+            nextCursor: null,
+            previousCursor: null,
+          },
+        });
+        expect(first.body.data[0]).not.toHaveProperty('password');
+        expect(first.body.data[0]).not.toHaveProperty('passwordHash');
+
+        await request(app.getHttpServer()).get(`/api/v1/users/${created.body.id}`).expect(200);
+      }, queryScenarioOptions);
+    });
+
+    it('rejects invalid bodies, mutually exclusive cursors, incompatible cursors, and URL query parameters', async () => {
+      await registration.runScenario(async ({ app }) => {
+        const created = await request(app.getHttpServer())
+          .post('/api/v1/users')
+          .send(createPayload())
+          .expect(201);
+        await request(app.getHttpServer()).post('/api/v1/users').send(createPayload()).expect(201);
+        const listPage = await request(app.getHttpServer())
+          .get('/api/v1/users?limit=1')
+          .expect(200);
+        const incompatibleCursor = listPage.body.pageInfo.nextCursor;
+        const valid = { criteria: { email: created.body.email } };
+
+        for (const body of [
+          null,
+          [],
+          {},
+          { criteria: null },
+          { criteria: [] },
+          { criteria: {} },
+          { criteria: { email: null } },
+          { criteria: { email: created.body.email, displayName: 'Ada' } },
+          { ...valid, unknown: true },
+          { ...valid, after: 'a', before: 'b' },
+          { ...valid, after: incompatibleCursor },
+        ]) {
+          await new Test(app.getHttpServer(), 'QUERY', '/api/v1/users').send(body).expect(400);
+        }
+
+        await new Test(app.getHttpServer(), 'QUERY', '/api/v1/users?limit=1')
+          .send(valid)
+          .expect(400);
+      }, queryScenarioOptions);
     });
   });
 

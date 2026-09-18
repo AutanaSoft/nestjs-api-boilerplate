@@ -78,8 +78,11 @@ updates, and deletes users through a stable public contract.
 - **Conventional user sorting:** `GET` defaults to `createdAt desc` and accepts `createdAt` or
   `displayName` in either direction. Every order uses `id` as an internal deterministic tie-breaker.
 - **Structured user query:** An experimental, safe, and idempotent `QUERY` operation limited to
-  exact normalized email. It uses the same pagination and sorting contract as `GET`, adds no new
-  filter fields or operators, and does not replace `GET`.
+  exact normalized email. Its strict JSON body is
+  `{ criteria: { email }, sort?, direction?, limit?, after?, before? }`; `criteria.email` is
+  required, URL query parameters are rejected, and `null`, arrays, and unknown fields are invalid.
+  It uses the same pagination and sorting contract as `GET`, adds no new filter fields or operators,
+  and does not replace `GET`.
 - **Partial update:** Only supplied mutable fields are changed. Omitted fields remain unchanged, and
   `null` is rejected for required fields.
 - **Deletion policy:** Users are physically removed. Deleted users cannot be retrieved or restored,
@@ -139,6 +142,9 @@ Client input cannot assign or modify the identifier or timestamps.
       public representation.
 - [ ] Conventional `GET` remains the default supported operation for retrieving the user collection.
 - [ ] A consumer can experimentally query by exact normalized email through structured `QUERY`.
+- [ ] Experimental `QUERY` requires the strict body
+      `{ criteria: { email }, sort?, direction?, limit?, after?, before? }`, rejects URL query
+      parameters, and rejects missing, null, array, and unknown body fields.
 - [ ] Experimental `QUERY` rejects `displayName` and accepts no filter fields or operators beyond
       those available through conventional `GET`.
 - [ ] Experimental `QUERY` returns `200 OK` and uses the same paginated collection, pagination, and

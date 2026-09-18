@@ -54,7 +54,12 @@ pruebas de documento en la misma unidad de trabajo.
 Utilice una versión de OpenAPI capaz de representar todos los métodos HTTP publicados por la API.
 
 Cuando la API exponga `QUERY`, utilice OpenAPI 3.2 y represente la operación mediante los mecanismos
-definidos por esa versión.
+definidos por esa versión. Los schemas Zod continúan generándose con el target compatible OpenAPI
+3.0. Después de generar el documento, un transformador recursivo y aislado reemplaza cada semántica
+`nullable` heredada por una unión de tipos JSON Schema compatible con OpenAPI 3.2 y elimina
+`nullable`; también cubre schemas anidados. El documento final se tipa y postprocesa de forma
+acotada a `openapi: 3.2.0` para admitir la operación runtime `query`. No habilite mutaciones
+globales de `nullable` de Swagger.
 
 ## Operations
 
@@ -109,14 +114,16 @@ dependan de él.
 2. Trate OpenAPI como representación del contrato público, no como un owner paralelo.
 3. Mantenga los Schemas OpenAPI alineados con los contratos canónicos.
 4. No duplique manualmente contratos existentes únicamente para documentación.
-5. Utilice OpenAPI 3.2 cuando sea necesario representar `QUERY`.
-6. Documente todas las operaciones HTTP públicas.
-7. Mantenga workarounds de tooling aislados y temporales.
-8. Mantenga OpenAPI consistente con el versionado publicado.
-9. Represente correctamente los requisitos de authentication.
-10. Reutilice el Error Response definido en `http-contracts.md`.
-11. Mantenga `operationId` estable y único.
-12. Mantenga la especificación alineada con el comportamiento observable de la API.
-13. Mantenga UI y JSON fuera del prefijo global y del versionado URI.
-14. Derive schemas desde sus owners canónicos y limite el documento a módulos de producción
+5. Utilice OpenAPI 3.2 cuando sea necesario representar `QUERY`, preservando la generación de
+   schemas compatible con 3.0 y aislando el tipado de compatibilidad del documento final.
+6. No habilite mutaciones globales de `nullable` de Swagger.
+7. Documente todas las operaciones HTTP públicas.
+8. Mantenga workarounds de tooling aislados y temporales.
+9. Mantenga OpenAPI consistente con el versionado publicado.
+10. Represente correctamente los requisitos de authentication.
+11. Reutilice el Error Response definido en `http-contracts.md`.
+12. Mantenga `operationId` estable y único.
+13. Mantenga la especificación alineada con el comportamiento observable de la API.
+14. Mantenga UI y JSON fuera del prefijo global y del versionado URI.
+15. Derive schemas desde sus owners canónicos y limite el documento a módulos de producción
     publicados.

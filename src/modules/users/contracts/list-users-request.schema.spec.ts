@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { listUsersRequestSchema } from './list-users-request.schema.js';
+import { queryUsersRequestSchema } from './query-users-request.schema.js';
 
 describe('listUsersRequestSchema', () => {
   it('normalizes the exact email filter and applies collection defaults', () => {
@@ -9,6 +10,36 @@ describe('listUsersRequestSchema', () => {
       direction: 'desc',
       limit: 25,
     });
+  });
+
+  it('normalizes a structured query and maps it to the canonical list request', () => {
+    expect(
+      queryUsersRequestSchema.parse({
+        criteria: { email: ' Ada@Example.COM ' },
+        limit: 1,
+      }),
+    ).toEqual({
+      email: 'ada@example.com',
+      sort: 'createdAt',
+      direction: 'desc',
+      limit: 1,
+    });
+  });
+
+  it.each([
+    null,
+    [],
+    {},
+    { criteria: null },
+    { criteria: [] },
+    { criteria: {} },
+    { criteria: { email: null } },
+    { criteria: { email: 'ada@example.com', displayName: 'Ada' } },
+    { criteria: { email: 'ada@example.com' }, unknown: 'value' },
+    { criteria: { email: 'ada@example.com' }, after: 'a', before: 'b' },
+    { criteria: { email: 'ada@example.com' }, limit: '25' },
+  ])('rejects invalid structured query input %j', (body) => {
+    expect(() => queryUsersRequestSchema.parse(body)).toThrow();
   });
 
   it.each([

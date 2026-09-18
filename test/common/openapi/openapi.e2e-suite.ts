@@ -8,7 +8,7 @@ import { buildOpenApiConfig } from '../../../src/config/openapi.config.js';
 import { healthResponseSchema } from '../../../src/modules/health/contracts/health-response.schema.js';
 import { createUserRequestSchema } from '../../../src/modules/users/contracts/create-user-request.schema.js';
 import { listUsersRequestSchema } from '../../../src/modules/users/contracts/list-users-request.schema.js';
-import { listUsersResponseSchema } from '../../../src/modules/users/contracts/list-users-response.schema.js';
+import { queryUsersRequestSchema } from '../../../src/modules/users/contracts/query-users-request.schema.js';
 import { updateUserRequestSchema } from '../../../src/modules/users/contracts/update-user-request.schema.js';
 import { userResponseSchema } from '../../../src/modules/users/contracts/user-response.schema.js';
 import { userSchema } from '../../../src/modules/users/contracts/user.schema.js';
@@ -71,6 +71,7 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
           );
           expect(docs.headers['content-security-policy']).toContain("img-src 'self' data:");
 
+          expect(document.body.openapi).toBe('3.2.0');
           expect(document.body.info).toMatchObject({
             title: appConfig.name,
             description: appConfig.description,
@@ -207,10 +208,46 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
           ]);
           expect(Object.keys(listUsers.responses)).toEqual(['200', '400', '429', '500']);
           expect(listUsers.responses['200'].content['application/json'].schema).toEqual(
-            toOpenApiSchema(listUsersResponseSchema, 'output'),
+            expect.objectContaining({
+              type: 'object',
+              properties: expect.objectContaining({
+                pageInfo: expect.objectContaining({
+                  properties: expect.objectContaining({
+                    nextCursor: { type: ['string', 'null'] },
+                    previousCursor: { type: ['string', 'null'] },
+                  }),
+                }),
+              }),
+            }),
           );
           for (const status of ['400', '429', '500']) {
             expect(listUsers.responses[status].content['application/json'].schema).toEqual(
+              toOpenApiSchema(errorResponseSchema, 'output'),
+            );
+          }
+
+          const queryUsers = document.body.paths['/api/v1/users'].query;
+          expect(queryUsers.operationId).toBe('queryUsers');
+          expect(queryUsers.parameters).toEqual([]);
+          expect(queryUsers.requestBody.content['application/json'].schema).toEqual(
+            toOpenApiSchema(queryUsersRequestSchema, 'input'),
+          );
+          expect(Object.keys(queryUsers.responses)).toEqual(['200', '400', '429', '500']);
+          expect(queryUsers.responses['200'].content['application/json'].schema).toEqual(
+            expect.objectContaining({
+              type: 'object',
+              properties: expect.objectContaining({
+                pageInfo: expect.objectContaining({
+                  properties: expect.objectContaining({
+                    nextCursor: { type: ['string', 'null'] },
+                    previousCursor: { type: ['string', 'null'] },
+                  }),
+                }),
+              }),
+            }),
+          );
+          for (const status of ['400', '429', '500']) {
+            expect(queryUsers.responses[status].content['application/json'].schema).toEqual(
               toOpenApiSchema(errorResponseSchema, 'output'),
             );
           }
@@ -230,6 +267,7 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
             );
           }
 
+          expect(JSON.stringify(document.body)).not.toContain('"nullable":');
           expect(JSON.stringify(document.body)).not.toMatch(
             /NotFound|__test|rate.limit|serializ|validat/i,
           );

@@ -9,6 +9,7 @@ import {
   Param,
   Patch,
   Query,
+  QueryMethod,
   Post,
   Res,
   SerializeOptions,
@@ -36,6 +37,11 @@ import { createUserRequestSchema } from './contracts/create-user-request.schema.
 import { listUsersRequestSchema } from './contracts/list-users-request.schema.js';
 import type { ListUsersRequest } from './contracts/list-users-request.schema.js';
 import { listUsersResponseSchema } from './contracts/list-users-response.schema.js';
+import {
+  queryUsersRequestSchema,
+  queryUsersUrlQuerySchema,
+} from './contracts/query-users-request.schema.js';
+import type { QueryUsersRequest } from './contracts/query-users-request.schema.js';
 import type { CreateUserRequest } from './contracts/create-user-request.schema.js';
 import { updateUserRequestSchema } from './contracts/update-user-request.schema.js';
 import type { UpdateUserRequest } from './contracts/update-user-request.schema.js';
@@ -81,6 +87,21 @@ export class UsersController {
   @SerializeOptions({ schema: listUsersResponseSchema })
   list(@Query({ schema: listUsersRequestSchema }) query: ListUsersRequest) {
     return this.usersService.list(query);
+  }
+
+  @QueryMethod()
+  @ApiOperation({ operationId: 'queryUsers' })
+  @ApiBody({ schema: toOpenApiSchema(queryUsersRequestSchema, 'input') })
+  @ApiOkResponse({ schema: toOpenApiSchema(listUsersResponseSchema, 'output') })
+  @ApiBadRequestResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @ApiTooManyRequestsResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @ApiInternalServerErrorResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @SerializeOptions({ schema: listUsersResponseSchema })
+  query(
+    @Body({ schema: queryUsersRequestSchema }) body: QueryUsersRequest,
+    @Query({ schema: queryUsersUrlQuerySchema }) _query: Record<never, never>,
+  ) {
+    return this.usersService.list(body);
   }
 
   @Get(':userId')

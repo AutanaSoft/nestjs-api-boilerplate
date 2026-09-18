@@ -16,7 +16,7 @@ import type { OpenApiConfig } from '../../config/openapi.config.js';
 import { healthResponseSchema } from '../../modules/health/contracts/health-response.schema.js';
 import { createUserRequestSchema } from '../../modules/users/contracts/create-user-request.schema.js';
 import { listUsersRequestSchema } from '../../modules/users/contracts/list-users-request.schema.js';
-import { listUsersResponseSchema } from '../../modules/users/contracts/list-users-response.schema.js';
+import { queryUsersRequestSchema } from '../../modules/users/contracts/query-users-request.schema.js';
 import { updateUserRequestSchema } from '../../modules/users/contracts/update-user-request.schema.js';
 import { userResponseSchema } from '../../modules/users/contracts/user-response.schema.js';
 import { userSchema } from '../../modules/users/contracts/user.schema.js';
@@ -87,6 +87,88 @@ describe('setupOpenApi', () => {
     },
   );
 
+  it('converts nested OpenAPI 3.0 nullable schemas to OpenAPI 3.2 unions', () => {
+    vi.mocked(SwaggerModule.createDocument).mockReturnValueOnce({
+      paths: {
+        '/nullable': {
+          query: {
+            parameters: [
+              {
+                name: 'filter',
+                in: 'query',
+                schema: { type: 'string', nullable: true },
+              },
+            ],
+            requestBody: {
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      name: { type: 'string', nullable: true },
+                      scores: {
+                        type: 'array',
+                        items: { type: 'integer', nullable: true },
+                      },
+                      metadata: { $ref: '#/components/schemas/Metadata', nullable: true },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    } as never);
+
+    setupOpenApi(app, appConfig, {
+      enabled: true,
+      docsRoute: 'docs',
+      documentRoute: 'openapi.json',
+    });
+
+    expect(SwaggerModule.setup).toHaveBeenCalledWith(
+      'docs',
+      app,
+      expect.objectContaining({
+        openapi: '3.2.0',
+        paths: {
+          '/nullable': {
+            query: {
+              parameters: [
+                {
+                  name: 'filter',
+                  in: 'query',
+                  schema: { type: ['string', 'null'] },
+                },
+              ],
+              requestBody: {
+                content: {
+                  'application/json': {
+                    schema: {
+                      type: 'object',
+                      properties: {
+                        name: { type: ['string', 'null'] },
+                        scores: {
+                          type: 'array',
+                          items: { type: ['integer', 'null'] },
+                        },
+                        metadata: {
+                          anyOf: [{ $ref: '#/components/schemas/Metadata' }, { type: 'null' }],
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      }),
+      expect.any(Object),
+    );
+  });
+
   it('builds a document from app metadata and exposes only configured JSON', () => {
     const setTitle = vi.spyOn(DocumentBuilder.prototype, 'setTitle');
     const setDescription = vi.spyOn(DocumentBuilder.prototype, 'setDescription');
@@ -118,7 +200,7 @@ describe('setupOpenApi', () => {
     expect(SwaggerModule.setup).toHaveBeenCalledWith(
       'docs',
       app,
-      {},
+      expect.objectContaining({ openapi: '3.2.0' }),
       {
         useGlobalPrefix: false,
         jsonDocumentUrl: 'openapi.json',
@@ -155,6 +237,7 @@ describe('setupOpenApi', () => {
         version: appConfig.version,
       });
 
+      expect(document?.openapi).toBe('3.2.0');
       const paths = document?.paths ?? {};
       expect(Object.keys(paths)).toEqual([
         '/api/v1/health/live',
@@ -341,12 +424,64 @@ describe('setupOpenApi', () => {
       expect(listUsers?.responses?.['200']).toEqual(
         expect.objectContaining({
           content: {
-            'application/json': { schema: toOpenApiSchema(listUsersResponseSchema, 'output') },
+            'application/json': {
+              schema: expect.objectContaining({
+                type: 'object',
+                properties: expect.objectContaining({
+                  pageInfo: expect.objectContaining({
+                    properties: expect.objectContaining({
+                      nextCursor: { type: ['string', 'null'] },
+                      previousCursor: { type: ['string', 'null'] },
+                    }),
+                  }),
+                }),
+              }),
+            },
           },
         }),
       );
       for (const status of ['400', '429', '500']) {
         expect(listUsers?.responses?.[status]).toEqual(
+          expect.objectContaining({
+            content: {
+              'application/json': { schema: toOpenApiSchema(errorResponseSchema, 'output') },
+            },
+          }),
+        );
+      }
+
+      const queryUsers = paths['/api/v1/users']?.query;
+      expect(queryUsers?.operationId).toBe('queryUsers');
+      expect(queryUsers?.parameters).toEqual([]);
+      expect(queryUsers?.requestBody).toEqual(
+        expect.objectContaining({
+          content: {
+            'application/json': { schema: toOpenApiSchema(queryUsersRequestSchema, 'input') },
+          },
+        }),
+      );
+      expect(Object.keys(queryUsers?.responses ?? {})).toEqual(['200', '400', '429', '500']);
+      expect(queryUsers?.responses?.['200']).toEqual(
+        expect.objectContaining({
+          content: {
+            'application/json': {
+              schema: expect.objectContaining({
+                type: 'object',
+                properties: expect.objectContaining({
+                  pageInfo: expect.objectContaining({
+                    properties: expect.objectContaining({
+                      nextCursor: { type: ['string', 'null'] },
+                      previousCursor: { type: ['string', 'null'] },
+                    }),
+                  }),
+                }),
+              }),
+            },
+          },
+        }),
+      );
+      for (const status of ['400', '429', '500']) {
+        expect(queryUsers?.responses?.[status]).toEqual(
           expect.objectContaining({
             content: {
               'application/json': { schema: toOpenApiSchema(errorResponseSchema, 'output') },
@@ -381,6 +516,7 @@ describe('setupOpenApi', () => {
           }),
         );
       }
+      expect(JSON.stringify(document)).not.toContain('"nullable":');
       expect(JSON.stringify(document)).not.toMatch(
         /NotFound|__test|rate.limit|serializ|validat|error.handling/i,
       );
@@ -409,6 +545,7 @@ describe('setupOpenApi', () => {
 
       const document = vi.mocked(SwaggerModule.setup).mock.calls[0]?.[2] as
         OpenAPIObject | undefined;
+      expect(document?.openapi).toBe('3.2.0');
       expect(Object.keys(document?.paths ?? {})).toEqual([
         '/v1/health/live',
         '/v1/health/ready',

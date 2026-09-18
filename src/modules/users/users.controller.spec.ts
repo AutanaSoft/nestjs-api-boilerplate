@@ -2,6 +2,10 @@ import { ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
 import { describe, expect, it, vi } from 'vitest';
 import type { ApiConfig } from '../../config/api.config.js';
 import { createUserRequestSchema } from './contracts/create-user-request.schema.js';
+import {
+  queryUsersRequestSchema,
+  queryUsersUrlQuerySchema,
+} from './contracts/query-users-request.schema.js';
 import { updateUserRequestSchema } from './contracts/update-user-request.schema.js';
 import { userSchema } from './contracts/user.schema.js';
 import { UsersController } from './users.controller.js';
@@ -21,6 +25,7 @@ function createController(globalPrefix: string) {
   const service = {
     create: vi.fn().mockResolvedValue(user),
     findById: vi.fn().mockResolvedValue(user),
+    list: vi.fn().mockResolvedValue({ data: [user], pageInfo: {} }),
     update: vi.fn().mockResolvedValue(user),
     delete: vi.fn().mockResolvedValue(true),
   } as unknown as UsersService;
@@ -41,6 +46,29 @@ describe('UsersController', () => {
         schema: createUserRequestSchema,
       }),
     );
+  });
+
+  it('attaches strict body-only schemas to the structured query parameters', () => {
+    const routeArguments: Record<string, { index: number; schema?: unknown }> =
+      Reflect.getMetadata(ROUTE_ARGS_METADATA, UsersController, 'query') ?? {};
+
+    expect(Object.values(routeArguments)).toContainEqual(
+      expect.objectContaining({ index: 0, schema: queryUsersRequestSchema }),
+    );
+    expect(Object.values(routeArguments)).toContainEqual(
+      expect.objectContaining({ index: 1, schema: queryUsersUrlQuerySchema }),
+    );
+  });
+
+  it('queries users through the existing list service operation', async () => {
+    const { controller, service } = createController('api');
+    const structuredQuery = queryUsersRequestSchema.parse({ criteria: { email: user.email } });
+
+    await expect(controller.query(structuredQuery, {})).resolves.toEqual({
+      data: [user],
+      pageInfo: {},
+    });
+    expect(service.list).toHaveBeenCalledWith(structuredQuery);
   });
 
   it('attaches the canonical UUIDv4 schema to the userId path parameter', () => {
