@@ -26,7 +26,8 @@ export function parseE2EDatabaseAdminUrl(value: string | undefined): URL {
   if (
     (url.protocol !== 'postgresql:' && url.protocol !== 'postgres:') ||
     !loopbackHosts.has(url.hostname) ||
-    url.pathname !== '/postgres'
+    url.pathname !== '/postgres' ||
+    url.search !== ''
   ) {
     throw new Error(
       'E2E_DATABASE_ADMIN_URL must target the loopback PostgreSQL maintenance database',

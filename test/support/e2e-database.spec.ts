@@ -13,6 +13,8 @@ describe('parseE2EDatabaseAdminUrl', () => {
     'mysql://postgres:postgres@127.0.0.1:3306/postgres',
     'postgresql://postgres:postgres@database.example:5432/postgres',
     'postgresql://postgres:postgres@127.0.0.1:5432/application',
+    'postgresql://postgres:postgres@127.0.0.1:5432/postgres?host=database.example',
+    'postgresql://postgres:postgres@127.0.0.1:5432/postgres?dbname=application',
   ])('rejects an unsafe E2E administrative URL: %s', (url) => {
     expect(() => parseE2EDatabaseAdminUrl(url)).toThrow();
   });
