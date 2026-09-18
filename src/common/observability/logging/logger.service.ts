@@ -1,4 +1,13 @@
-import { ConsoleLogger, Injectable, Optional, type LoggerService } from '@nestjs/common';
+import {
+  ConsoleLogger,
+  Inject,
+  Injectable,
+  Optional,
+  type ConsoleLoggerOptions,
+  type LoggerService,
+} from '@nestjs/common';
+import type { ConfigType } from '@nestjs/config';
+import appConfig, { appConfigFactory } from '../../../config/app.config.js';
 import type {
   ApplicationLogger,
   HttpRequestCompletedMetadata,
@@ -16,15 +25,34 @@ import {
 } from '../constants.js';
 import { RequestContextService } from '../context/request-context.service.js';
 
+const DEVELOPMENT_LOG_LEVELS = ['verbose', 'debug', 'log', 'warn', 'error', 'fatal'] as const;
+const PRODUCTION_LOG_LEVELS = ['log', 'warn', 'error', 'fatal'] as const;
+
+export function buildConsoleLoggerOptions(
+  nodeEnv: ConfigType<typeof appConfig>['nodeEnv'],
+): ConsoleLoggerOptions {
+  const isProduction = nodeEnv === 'production';
+
+  return {
+    logLevels: isProduction ? [...PRODUCTION_LOG_LEVELS] : [...DEVELOPMENT_LOG_LEVELS],
+    json: true,
+    colors: !isProduction,
+    flattenParams: true,
+  };
+}
+
 @Injectable()
 export class StructuredLoggerService implements ApplicationLogger, LoggerService {
   constructor(
     private readonly requestContext: RequestContextService,
     @Optional()
+    @Inject(appConfig.KEY)
+    appMetadata: ConfigType<typeof appConfig> = appConfigFactory(),
+    @Optional()
     private readonly consoleLogger: Pick<
       ConsoleLogger,
       'log' | 'error' | 'warn' | 'debug' | 'verbose' | 'fatal'
-    > = new ConsoleLogger({ json: true, colors: true, flattenParams: true }),
+    > = new ConsoleLogger(buildConsoleLoggerOptions(appMetadata.nodeEnv)),
   ) {}
 
   logHttpRequestCompleted(metadata: HttpRequestCompletedMetadata): void {

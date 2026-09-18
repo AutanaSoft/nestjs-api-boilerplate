@@ -1,7 +1,8 @@
-import type { ConsoleLogger } from '@nestjs/common';
+import { ConsoleLogger } from '@nestjs/common';
 import { describe, expect, it, vi } from 'vitest';
+import { appConfigFactory } from '../../../config/app.config.js';
 import { RequestContextService } from '../context/request-context.service.js';
-import { StructuredLoggerService } from './logger.service.js';
+import { buildConsoleLoggerOptions, StructuredLoggerService } from './logger.service.js';
 import { EmergencyShutdownSink } from '../../shutdown/emergency-shutdown-sink.js';
 
 const consoleLoggerMethods = ['log', 'error', 'warn', 'debug', 'verbose', 'fatal'] as const;
@@ -19,7 +20,11 @@ describe('StructuredLoggerService', () => {
       verbose: vi.fn(),
       fatal: vi.fn(),
     } satisfies ConsoleLoggerMethods;
-    const logger = new StructuredLoggerService(context, consoleLogger);
+    const logger = new StructuredLoggerService(
+      context,
+      appConfigFactory({ NODE_ENV: 'test' }),
+      consoleLogger,
+    );
     const metadataWithSensitiveFields = {
       method: 'GET',
       route: '/health/:probe',
@@ -53,7 +58,11 @@ describe('StructuredLoggerService', () => {
       verbose: vi.fn(),
       fatal: vi.fn(),
     } satisfies ConsoleLoggerMethods;
-    const logger = new StructuredLoggerService(context, consoleLogger);
+    const logger = new StructuredLoggerService(
+      context,
+      appConfigFactory({ NODE_ENV: 'test' }),
+      consoleLogger,
+    );
     const metadataWithSensitiveFields = {
       requestId: '123e4567-e89b-42d3-a456-426614174000',
       requestIdFallback: false,
@@ -91,7 +100,11 @@ describe('StructuredLoggerService', () => {
       verbose: vi.fn(),
       fatal: vi.fn(),
     } satisfies ConsoleLoggerMethods;
-    const logger = new StructuredLoggerService(context, consoleLogger);
+    const logger = new StructuredLoggerService(
+      context,
+      appConfigFactory({ NODE_ENV: 'test' }),
+      consoleLogger,
+    );
 
     logger.logUnexpectedHttpError({
       requestId: '123e4567-e89b-42d3-a456-426614174001',
@@ -120,7 +133,11 @@ describe('StructuredLoggerService', () => {
       verbose: vi.fn(),
       fatal: vi.fn(),
     } satisfies ConsoleLoggerMethods;
-    const logger = new StructuredLoggerService(context, consoleLogger);
+    const logger = new StructuredLoggerService(
+      context,
+      appConfigFactory({ NODE_ENV: 'test' }),
+      consoleLogger,
+    );
     const metadataWithUnexpectedFields = {
       serverUrl: 'http://127.0.0.1:3000',
       apiBasePath: '/api/v1',
@@ -148,7 +165,11 @@ describe('StructuredLoggerService', () => {
       verbose: vi.fn(),
       fatal: vi.fn(),
     } satisfies ConsoleLoggerMethods;
-    const logger = new StructuredLoggerService(context, consoleLogger);
+    const logger = new StructuredLoggerService(
+      context,
+      appConfigFactory({ NODE_ENV: 'test' }),
+      consoleLogger,
+    );
 
     logger.logShutdownStarted({ signal: 'SIGTERM', timeoutMs: 10_000, token: 'secret' });
     logger.logShutdownCompleted({ signal: 'SIGTERM', durationMs: 42, stack: 'sensitive' });
@@ -161,6 +182,44 @@ describe('StructuredLoggerService', () => {
       signal: 'SIGTERM',
       durationMs: 42,
     });
+  });
+});
+
+describe('StructuredLoggerService environment policy', () => {
+  it.each([
+    ['development', ['verbose', 'debug', 'log', 'warn', 'error', 'fatal']],
+    ['test', ['verbose', 'debug', 'log', 'warn', 'error', 'fatal']],
+    ['production', ['log', 'warn', 'error', 'fatal']],
+  ] as const)('enables exact levels for %s', (nodeEnv, logLevels) => {
+    expect(buildConsoleLoggerOptions(nodeEnv)).toEqual({
+      logLevels,
+      json: true,
+      colors: nodeEnv !== 'production',
+      flattenParams: true,
+    });
+  });
+
+  it('emits parseable JSON without ANSI sequences in production', () => {
+    const write = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    const logger = new StructuredLoggerService(
+      new RequestContextService(),
+      appConfigFactory({ NODE_ENV: 'production' }),
+    );
+
+    try {
+      logger.log('application.ready', { port: 3000 });
+
+      const output = write.mock.calls[0]?.[0];
+      expect(output).toBeTypeOf('string');
+      expect(output).not.toContain('\u001B[');
+      expect(JSON.parse(output as string)).toMatchObject({
+        level: 'log',
+        message: 'application.ready',
+        port: 3000,
+      });
+    } finally {
+      write.mockRestore();
+    }
   });
 });
 

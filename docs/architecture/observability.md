@@ -25,9 +25,15 @@ No registre:
 - payloads sensibles completos.
 
 Los errores inesperados deben registrar contexto diagnóstico suficiente sin exponer información
-sensible. La implementación base usa `ConsoleLogger` de NestJS con `json: true` y `colors: true`
-detrás de `ApplicationLogger` y el token `APP_LOGGER`. Los colores ANSI hacen que la representación
-obtenida mediante `inspect()` no sea JSON estricto directamente parseable.
+sensible. La implementación base usa `ConsoleLogger` de NestJS detrás de `ApplicationLogger` y el
+token `APP_LOGGER`. La política se deriva exclusivamente de `appConfig.nodeEnv`: en producción se
+habilitan `log`, `warn`, `error` y `fatal`, con `json: true` y `colors: false`, para que cada
+registro sea JSON estricto directamente parseable; en cualquier otro entorno se habilitan también
+`debug` y `verbose`, preservando `json: true` y `colors: true`.
+
+NestJS decide qué registros emite antes de escribir en stdout o stderr. PM2 es responsable solo de
+capturar, persistir, rotar y reenviar esos streams; su configuración no selecciona niveles ni
+transforma el formato de los eventos de la aplicación.
 
 Los eventos HTTP terminales usan el mensaje estable `http.request.completed`. Sus únicos campos
 variables permitidos son `requestId`, `method`, `route`, `statusCode` y `durationMs`; no incluyen
