@@ -3,18 +3,20 @@ import { ConfigModule } from '@nestjs/config';
 import type { ConfigType } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import apiConfig from './config/api.config.js';
-import appConfig from './config/app.config.js';
-import corsConfig from './config/cors.config.js';
-import httpConfig from './config/http.config.js';
-import openapiConfig from './config/openapi.config.js';
-import rateLimitConfig from './config/rate-limit.config.js';
-import shutdownConfig from './config/shutdown.config.js';
 import { ErrorHandlingModule } from './common/error-handling/error-handling.module.js';
 import { ObservabilityModule } from './common/observability/observability.module.js';
 import { SerializationModule } from './common/serialization/serialization.module.js';
 import { ShutdownModule } from './common/shutdown/shutdown.module.js';
 import { ValidationModule } from './common/validation/validation.module.js';
+import apiConfig from './config/api.config.js';
+import appConfig from './config/app.config.js';
+import corsConfig from './config/cors.config.js';
+import databaseConfig from './config/database.config.js';
+import httpConfig from './config/http.config.js';
+import openapiConfig from './config/openapi.config.js';
+import rateLimitConfig from './config/rate-limit.config.js';
+import shutdownConfig from './config/shutdown.config.js';
+import { DatabaseModule } from './database/database.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 
 @Module({
@@ -26,6 +28,7 @@ import { HealthModule } from './modules/health/health.module.js';
         apiConfig,
         httpConfig,
         corsConfig,
+        databaseConfig,
         rateLimitConfig,
         openapiConfig,
         shutdownConfig,
@@ -41,6 +44,7 @@ import { HealthModule } from './modules/health/health.module.js';
         },
       ],
     }),
+    DatabaseModule,
     HealthModule,
     ObservabilityModule,
     ErrorHandlingModule,

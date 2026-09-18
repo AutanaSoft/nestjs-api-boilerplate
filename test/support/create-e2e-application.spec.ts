@@ -4,11 +4,11 @@ import appConfig from '../../src/config/app.config.js';
 import corsConfig from '../../src/config/cors.config.js';
 import httpConfig from '../../src/config/http.config.js';
 import openapiConfig from '../../src/config/openapi.config.js';
-import { createE2EApplication } from './create-e2e-application.js';
 
 describe('createE2EApplication', () => {
   it('returns an initialized application assembled from the production root module', async () => {
-    const context = await createE2EApplication();
+    const createApplication = await loadProductionBootstrapFactory();
+    const context = await createApplication();
 
     try {
       expect(context.app.getHttpServer()).toBeDefined();
@@ -85,6 +85,15 @@ type ApplicationDouble = Readonly<{
   listen: ReturnType<typeof vi.fn>;
   close: ReturnType<typeof vi.fn>;
 }>;
+
+async function loadProductionBootstrapFactory() {
+  vi.resetModules();
+  vi.doMock('../../src/database/prisma.service.js', () => ({
+    PrismaService: class PrismaService {},
+  }));
+
+  return (await import('./create-e2e-application.js')).createE2EApplication;
+}
 
 async function loadApplicationFactory(failures: BootstrapFailures): Promise<{
   app: ApplicationDouble;

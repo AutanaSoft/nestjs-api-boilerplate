@@ -4,23 +4,26 @@ import { Test } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module.js';
 import { setupApplication } from '../../src/app.setup.js';
 import { setupOpenApi } from '../../src/common/openapi/openapi.setup.js';
-import appConfig from '../../src/config/app.config.js';
-import type { AppConfig } from '../../src/config/app.config.js';
 import apiConfig from '../../src/config/api.config.js';
 import type { ApiConfig } from '../../src/config/api.config.js';
+import appConfig from '../../src/config/app.config.js';
+import type { AppConfig } from '../../src/config/app.config.js';
 import corsConfig from '../../src/config/cors.config.js';
+import databaseConfig from '../../src/config/database.config.js';
+import type { DatabaseConfig } from '../../src/config/database.config.js';
 import httpConfig from '../../src/config/http.config.js';
 import openapiConfig from '../../src/config/openapi.config.js';
 import type { OpenApiConfig } from '../../src/config/openapi.config.js';
 import type { E2EContext } from './e2e-context.js';
 import { E2EErrorHandlingController } from './e2e-error-handling.controller.js';
 import { E2ERateLimitController } from './e2e-rate-limit.controller.js';
-import { E2EResponseSerializationController } from './e2e-response-serialization.controller.js';
 import { E2ERequestValidationController } from './e2e-request-validation.controller.js';
+import { E2EResponseSerializationController } from './e2e-response-serialization.controller.js';
 
 export type CreateE2EApplicationOptions = Readonly<{
   apiConfig?: ApiConfig;
   appConfig?: AppConfig;
+  databaseConfig?: DatabaseConfig;
   openapiConfig?: OpenApiConfig;
 }>;
 
@@ -46,6 +49,10 @@ export async function createE2EApplication(
 
     if (options.appConfig !== undefined) {
       testingModule.overrideProvider(appConfig.KEY).useValue(options.appConfig);
+    }
+
+    if (options.databaseConfig !== undefined) {
+      testingModule.overrideProvider(databaseConfig.KEY).useValue(options.databaseConfig);
     }
 
     if (options.openapiConfig !== undefined) {

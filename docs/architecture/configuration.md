@@ -34,6 +34,7 @@ app       Environment and public application identity
 api       Public URI prefix and HTTP API version bootstrap configuration
 http      Server port and trusted proxy hops
 cors      Complete browser cross-origin policy
+database  PostgreSQL connection URL for Prisma infrastructure
 rateLimit Global in-memory NestJS Throttler limits
 openapi   Conditional OpenAPI exposure and operational routes
 shutdown  Process shutdown deadline
@@ -43,8 +44,10 @@ Cada namespace posee sus external inputs, defaults, normalization, derived value
 final read-only configuration type. `app` es propietario de `NODE_ENV` y los metadatos públicos;
 `api` es propietario de `API_GLOBAL_PREFIX`, mientras que la versión HTTP inicial es una constante
 del código; `cors` usa el entorno únicamente para aplicar su requisito de allowlist explícita en
-producción. `openapi` es propietario únicamente de la habilitación condicional y de las rutas
-operativas de UI/documento; no posee metadata, contratos ni lógica de generación.
+producción. `database` es propietario de `DATABASE_URL`, la valida como URL de PostgreSQL y la
+expone a la infraestructura Prisma mediante su token tipado. `openapi` es propietario únicamente de
+la habilitación condicional y de las rutas operativas de UI/documento; no posee metadata, contratos
+ni lógica de generación.
 
 Los nombres deben ser semánticos, cortos y estables. La configuración específica de un Feature o
 infraestructura debe permanecer junto a su owner cuando exista uno más claro. No centralice
@@ -95,8 +98,9 @@ correspondiente.
 ## Owners operativos
 
 Los valores concretos, defaults y restricciones operativas de `api`, `http`, `cors`, `rateLimit` y
-`openapi` se documentan en `../configuration/http-security.md`. La configuración operativa del
-namespace transversal `shutdown` pertenece a `../configuration/process-lifecycle.md`.
+`openapi` se documentan en `../configuration/http-security.md`. La configuración operativa de
+`database` pertenece a `../configuration/database.md`, y la del namespace transversal `shutdown`
+pertenece a `../configuration/process-lifecycle.md`.
 
 `AppModule` registra `openapi`; el bootstrap obtiene su valor tipado y lo entrega a la
 infraestructura OpenAPI después del bootstrap HTTP común. Las reglas del contrato URI pertenecen

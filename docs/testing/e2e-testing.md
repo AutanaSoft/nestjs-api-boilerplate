@@ -79,17 +79,17 @@ como primer argumento y permite añadir opciones de infraestructura por escenari
 control del lifecycle a las suites.
 
 `vitest.config.e2e.ts` define, mediante `test.env`, el baseline determinista completo del contrato
-HTTP: `NODE_ENV=test`, `API_GLOBAL_PREFIX=api`, `TRUST_PROXY_HOPS=0`,
-`CORS_ORIGINS=https://allowed.example`, `CORS_MAX_AGE_SECONDS=600`, `THROTTLE_LIMIT=2`,
-`THROTTLE_TTL_SECONDS=60`, `OPENAPI_ENABLED=false`, `OPENAPI_DOCS_ROUTE=docs` y
-`OPENAPI_DOCUMENT_ROUTE=openapi.json`. Estos valores fijan el entorno, el prefijo, la confianza en
-proxies, CORS, throttling y OpenAPI para que el contrato no dependa de valores del proceso
-invocador. Vitest los aplica dentro de la configuración E2E, incluso cuando el proceso invocador
-aporta valores conflictivos. No se define `PORT`, porque el harness usa un puerto efímero, ni
-configuración de shutdown, porque no participa en esta suite HTTP. El helper E2E no lee, modifica ni
-restaura `process.env`; las suites que necesitan otra configuración construyen valores tipados con
-las factories y los inyectan mediante `overrideProvider(...KEY).useValue(...)` antes de compilar;
-OpenAPI usa el baseline controlado para el escenario deshabilitado y overrides tipados de
+HTTP y una `DATABASE_URL` de configuración para PostgreSQL: `NODE_ENV=test`,
+`API_GLOBAL_PREFIX=api`, `TRUST_PROXY_HOPS=0`, `CORS_ORIGINS=https://allowed.example`,
+`CORS_MAX_AGE_SECONDS=600`, `THROTTLE_LIMIT=2`, `THROTTLE_TTL_SECONDS=60`, `OPENAPI_ENABLED=false`,
+`OPENAPI_DOCS_ROUTE=docs` y `OPENAPI_DOCUMENT_ROUTE=openapi.json`. Estos valores fijan el entorno,
+el prefijo, la confianza en proxies, CORS, throttling y OpenAPI para que el contrato no dependa de
+valores del proceso invocador. Vitest los aplica dentro de la configuración E2E, incluso cuando el
+proceso invocador aporta valores conflictivos. No se define `PORT`, porque el harness usa un puerto
+efímero, ni configuración de shutdown, porque no participa en esta suite HTTP. El helper E2E no
+modifica ni restaura `process.env`; las suites que necesitan otra configuración construyen valores
+tipados con las factories y los inyectan mediante `overrideProvider(...KEY).useValue(...)` antes de
+compilar; OpenAPI usa el baseline controlado para el escenario deshabilitado y overrides tipados de
 `appConfig` u `openapiConfig` solo cuando un escenario requiere otra configuración.
 
 ## Contratos HTTP cubiertos
@@ -120,15 +120,26 @@ La suite de health conserva estos contratos públicos y transversales:
 responde `503`. La coordinación del cierre de proceso no modifica esa semántica; una capacidad de
 draining requiere un contrato de deployment posterior.
 
+## PostgreSQL y Prisma
+
+La suite E2E usa PostgreSQL 16 y Prisma reales. `E2E_DATABASE_ADMIN_URL` debe referir únicamente a
+la base de mantenimiento `postgres` de una instancia loopback. Antes de cada escenario, el harness
+crea una base con nombre impredecible, aplica las migrations versionadas mediante
+`prisma migrate deploy` y construye el `AppModule` real con su `databaseConfig` tipado. Al
+finalizar, cierra la aplicación —incluido el lifecycle de Prisma— y elimina la base temporal con
+`DROP DATABASE ... WITH (FORCE)`.
+
+El workflow CI provisiona PostgreSQL 16 y entrega esa URL administrativa. La ejecución local debe
+proporcionar una instancia compatible; el harness rechaza URLs remotas o que no señalen `postgres`.
+No se sustituyen Prisma ni Repositories en los flujos E2E.
+
 ## Extensiones futuras no implementadas
 
-La base entregada no implementa PostgreSQL, Prisma, migraciones, autenticación, fixtures, seeds,
-proveedores externos, indicadores de salud para dependencias ni abstracciones para esas capacidades.
+La base no implementa autenticación, fixtures, seeds, proveedores externos ni indicadores de salud
+para dependencias.
 
 Cuando exista una necesidad real, las siguientes pautas aplicarán:
 
-- **PostgreSQL y Prisma:** usar una base temporal aislada, validar su configuración administrativa,
-  aplicar migraciones versionadas y eliminar los recursos al finalizar.
 - **Autenticación:** obtener credenciales mediante los flujos HTTP públicos de registro o inicio de
   sesión; no usar tokens preemitidos para omitir el comportamiento verificado.
 - **Proveedores externos:** aislar únicamente el adaptador inyectado que cruza el límite fuera de

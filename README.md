@@ -27,10 +27,10 @@ See [API versioning](docs/api/versioning.md) for the public URI contract.
 
 ## Prerequisites
 
-- Node.js 26 (the version used by CI)
+- Node.js 24 (the version used by CI)
 - pnpm 12.4.2 (declared by `packageManager` in `package.json`)
 
-Node.js 26 may not include Corepack. Install and enable it to activate the repository's canonical
+Node.js 24 may not include Corepack. Install and enable it to activate the repository's canonical
 package-manager version declared in `package.json`:
 
 ```bash
@@ -62,6 +62,7 @@ policies.
 | API versioning                         | [Versioning](docs/api/versioning.md)                        |
 | OpenAPI                                | [OpenAPI](docs/api/openapi.md)                              |
 | HTTP security configuration            | [HTTP security](docs/configuration/http-security.md)        |
+| Database configuration                 | [Database](docs/configuration/database.md)                  |
 | Testing conventions                    | [Testing](docs/testing/testing.md)                          |
 | End-to-end testing                     | [E2E testing](docs/testing/e2e-testing.md)                  |
 | Contribution workflow                  | [Contributing guide](CONTRIBUTING.md)                       |

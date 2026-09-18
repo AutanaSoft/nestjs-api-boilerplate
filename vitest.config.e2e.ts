@@ -25,6 +25,7 @@ export default defineConfig({
     include: ['test/main.e2e-spec.ts'],
     env: {
       NODE_ENV: 'test',
+      DATABASE_URL: 'postgresql://postgres:postgres@127.0.0.1:5432/postgres',
       API_GLOBAL_PREFIX: 'api',
       TRUST_PROXY_HOPS: '0',
       CORS_ORIGINS: 'https://allowed.example',

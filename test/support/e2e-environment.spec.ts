@@ -7,7 +7,7 @@ describe('createE2EEnvironment', () => {
   it('does not mutate the controlled environment keys during construction or execution', async () => {
     const originalEnvironment = captureEnvironment();
     const application = createApplicationDouble();
-    const { createE2EEnvironment } = await loadEnvironmentFactory([application.context]);
+    const { createE2EEnvironment, databases } = await loadEnvironmentFactory([application.context]);
 
     const environment = await createE2EEnvironment();
 
@@ -16,14 +16,14 @@ describe('createE2EEnvironment', () => {
     await environment.runScenario(async () => undefined);
 
     expect(captureEnvironment()).toEqual(originalEnvironment);
-    expect(environment).not.toHaveProperty('dispose');
+    expect(databases[0]?.dispose).toHaveBeenCalledOnce();
     expect(application.close).toHaveBeenCalledOnce();
   });
 
-  it('creates and closes a fresh application for every successful scenario', async () => {
+  it('creates and closes a fresh application and database for every successful scenario', async () => {
     const firstApplication = createApplicationDouble();
     const secondApplication = createApplicationDouble();
-    const { createE2EEnvironment, createE2EApplication } = await loadEnvironmentFactory([
+    const { createE2EEnvironment, createE2EApplication, databases } = await loadEnvironmentFactory([
       firstApplication.context,
       secondApplication.context,
     ]);
@@ -39,13 +39,16 @@ describe('createE2EEnvironment', () => {
 
     expect(createE2EApplication).toHaveBeenCalledTimes(2);
     expect(applications).toEqual([firstApplication.app, secondApplication.app]);
+    expect(databases).toHaveLength(2);
+    expect(databases[0]?.dispose).toHaveBeenCalledOnce();
+    expect(databases[1]?.dispose).toHaveBeenCalledOnce();
     expect(firstApplication.close).toHaveBeenCalledOnce();
     expect(secondApplication.close).toHaveBeenCalledOnce();
   });
 
-  it('applies typed application overrides to the scenario application', async () => {
+  it('applies typed application overrides and the isolated database configuration', async () => {
     const application = createApplicationDouble();
-    const { createE2EEnvironment, createE2EApplication } = await loadEnvironmentFactory([
+    const { createE2EEnvironment, createE2EApplication, databases } = await loadEnvironmentFactory([
       application.context,
     ]);
     const environment = await createE2EEnvironment();
@@ -57,24 +60,28 @@ describe('createE2EEnvironment', () => {
 
     await environment.runScenario(async () => undefined, options);
 
-    expect(createE2EApplication).toHaveBeenCalledWith(options.application);
+    expect(createE2EApplication).toHaveBeenCalledWith({
+      ...options.application,
+      databaseConfig: { url: databases[0]?.url },
+    });
     expect(application.close).toHaveBeenCalledOnce();
   });
 
   it('propagates an application cleanup failure after a successful scenario', async () => {
     const cleanupFailure = new Error('cleanup failed');
     const application = createApplicationDouble(cleanupFailure);
-    const { createE2EEnvironment } = await loadEnvironmentFactory([application.context]);
+    const { createE2EEnvironment, databases } = await loadEnvironmentFactory([application.context]);
     const environment = await createE2EEnvironment();
 
     await expect(environment.runScenario(async () => undefined)).rejects.toBe(cleanupFailure);
+    expect(databases[0]?.dispose).toHaveBeenCalledOnce();
     expect(application.close).toHaveBeenCalledOnce();
   });
 
-  it('propagates the original scenario failure after successful application cleanup', async () => {
+  it('propagates the original scenario failure after successful application and database cleanup', async () => {
     const scenarioFailure = new Error('scenario failed');
     const application = createApplicationDouble();
-    const { createE2EEnvironment } = await loadEnvironmentFactory([application.context]);
+    const { createE2EEnvironment, databases } = await loadEnvironmentFactory([application.context]);
     const environment = await createE2EEnvironment();
 
     await expect(
@@ -82,14 +89,15 @@ describe('createE2EEnvironment', () => {
         throw scenarioFailure;
       }),
     ).rejects.toBe(scenarioFailure);
+    expect(databases[0]?.dispose).toHaveBeenCalledOnce();
     expect(application.close).toHaveBeenCalledOnce();
   });
 
-  it('preserves a scenario failure before its cleanup failure', async () => {
+  it('preserves a scenario failure before its application cleanup failure', async () => {
     const scenarioFailure = new Error('scenario failed');
     const cleanupFailure = new Error('cleanup failed');
     const application = createApplicationDouble(cleanupFailure);
-    const { createE2EEnvironment } = await loadEnvironmentFactory([application.context]);
+    const { createE2EEnvironment, databases } = await loadEnvironmentFactory([application.context]);
     const environment = await createE2EEnvironment();
 
     await expect(
@@ -102,6 +110,7 @@ describe('createE2EEnvironment', () => {
         error.errors[0] === scenarioFailure &&
         error.errors[1] === cleanupFailure,
     );
+    expect(databases[0]?.dispose).toHaveBeenCalledOnce();
     expect(application.close).toHaveBeenCalledOnce();
   });
 });
@@ -110,6 +119,11 @@ type ApplicationDouble = Readonly<{
   app: INestApplication;
   close: ReturnType<typeof vi.fn>;
   context: E2EContext;
+}>;
+
+type DatabaseDouble = Readonly<{
+  url: string;
+  dispose: ReturnType<typeof vi.fn>;
 }>;
 
 function createApplicationDouble(closeFailure?: Error): ApplicationDouble {
@@ -123,6 +137,13 @@ function createApplicationDouble(closeFailure?: Error): ApplicationDouble {
   return { app, close, context: { app } };
 }
 
+function createDatabaseDouble(index: number): DatabaseDouble {
+  return {
+    url: `postgresql://postgres:postgres@127.0.0.1:5432/e2e_${index}`,
+    dispose: vi.fn(async () => undefined),
+  };
+}
+
 async function loadEnvironmentFactory(contexts: E2EContext[] = []) {
   vi.resetModules();
   const createE2EApplication = vi.fn(async () => {
@@ -134,12 +155,22 @@ async function loadEnvironmentFactory(contexts: E2EContext[] = []) {
 
     return context;
   });
+  const databases: DatabaseDouble[] = [];
+  const createE2EDatabase = vi.fn(async () => {
+    const database = createDatabaseDouble(databases.length);
+    databases.push(database);
+
+    return database;
+  });
+  const applyE2EDatabaseMigrations = vi.fn(async () => undefined);
 
   vi.doMock('./create-e2e-application.js', () => ({ createE2EApplication }));
+  vi.doMock('./e2e-database.js', () => ({ createE2EDatabase, applyE2EDatabaseMigrations }));
 
   return {
     createE2EApplication,
     createE2EEnvironment: (await import('./e2e-environment.js')).createE2EEnvironment,
+    databases,
   };
 }
 
