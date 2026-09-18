@@ -48,6 +48,10 @@ salida.
 
 ## Lifecycle de proceso
 
+Al completar el startup, la aplicación emite `lifecycle.startup.completed` mediante el logger
+estructurado. Sus únicos campos son `serverUrl`, `apiBasePath` y, cuando OpenAPI está habilitado,
+`openapiUrl`; no se incluyen otros valores de configuración ni rutas del documento JSON.
+
 El apagado emite `lifecycle.shutdown.started` y `lifecycle.shutdown.completed` mediante el logger
 estructurado. Sus campos cerrados son, respectivamente, `signal` y `timeoutMs`, y `signal` y
 `durationMs`. Los resultados terminales `lifecycle.shutdown.timed_out` y `shutdown.failed` se

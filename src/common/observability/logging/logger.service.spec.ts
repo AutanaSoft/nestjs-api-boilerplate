@@ -110,6 +110,34 @@ describe('StructuredLoggerService', () => {
     });
   });
 
+  it('emits allowlisted startup lifecycle metadata', () => {
+    const context = new RequestContextService();
+    const consoleLogger = {
+      log: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
+      debug: vi.fn(),
+      verbose: vi.fn(),
+      fatal: vi.fn(),
+    } satisfies ConsoleLoggerMethods;
+    const logger = new StructuredLoggerService(context, consoleLogger);
+    const metadataWithUnexpectedFields = {
+      serverUrl: 'http://127.0.0.1:3000',
+      apiBasePath: '/api/v1',
+      openapiUrl: '/docs',
+      token: 'secret',
+      port: 3000,
+    };
+
+    logger.logStartupCompleted(metadataWithUnexpectedFields);
+
+    expect(consoleLogger.log).toHaveBeenCalledWith('lifecycle.startup.completed', {
+      serverUrl: 'http://127.0.0.1:3000',
+      apiBasePath: '/api/v1',
+      openapiUrl: '/docs',
+    });
+  });
+
   it('emits allowlisted shutdown lifecycle metadata', () => {
     const context = new RequestContextService();
     const consoleLogger = {

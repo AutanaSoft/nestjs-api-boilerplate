@@ -13,6 +13,7 @@ import { bootstrap } from './main.js';
 
 describe('bootstrap', () => {
   it('buffers Nest bootstrap logs until StructuredLoggerService is installed', async () => {
+    const logger = { logStartupCompleted: vi.fn() };
     const coordinator = { install: vi.fn() };
     const app = {
       get: vi
@@ -20,9 +21,11 @@ describe('bootstrap', () => {
         .mockReturnValueOnce({ nodeEnv: 'test' })
         .mockReturnValueOnce({ port: 3000 })
         .mockReturnValueOnce({})
-        .mockReturnValueOnce({ globalPrefix: '' })
-        .mockReturnValueOnce({})
+        .mockReturnValueOnce({ globalPrefix: 'api' })
+        .mockReturnValueOnce({ enabled: false, docsRoute: 'docs' })
+        .mockReturnValueOnce(logger)
         .mockReturnValueOnce(coordinator),
+      getUrl: vi.fn().mockResolvedValue('http://127.0.0.1:3000'),
       listen: vi.fn().mockResolvedValue(undefined),
       flushLogs: vi.fn(),
     };
@@ -34,32 +37,50 @@ describe('bootstrap', () => {
     expect(app.flushLogs).not.toHaveBeenCalled();
   });
 
-  it('installs runtime signal listeners only after the application listens', async () => {
-    const coordinator = { install: vi.fn() };
-    const app = {
-      get: vi
-        .fn()
-        .mockReturnValueOnce({ nodeEnv: 'test' })
-        .mockReturnValueOnce({ port: 3000 })
-        .mockReturnValueOnce({})
-        .mockReturnValueOnce({ globalPrefix: '' })
-        .mockReturnValueOnce({})
-        .mockReturnValueOnce(coordinator),
-      getHttpAdapter: vi.fn().mockReturnValue({ getInstance: vi.fn() }),
-      setGlobalPrefix: vi.fn(),
-      enableVersioning: vi.fn(),
-      useLogger: vi.fn(),
-      use: vi.fn(),
-      enableCors: vi.fn(),
-      listen: vi.fn().mockResolvedValue(undefined),
-      close: vi.fn(),
-    };
+  it.each([
+    ['api', true, 'docs', '/api/v1', '/docs'],
+    ['', false, 'docs', '/v1', undefined],
+    ['internal/api', true, 'developer/openapi', '/internal/api/v1', '/developer/openapi'],
+  ])(
+    'logs the startup summary with normalized paths for prefix %j',
+    async (globalPrefix, openapiEnabled, docsRoute, apiBasePath, openapiUrl) => {
+      const lifecycle: string[] = [];
+      const logger = {
+        logStartupCompleted: vi.fn(() => lifecycle.push('startup log')),
+      };
+      const coordinator = {
+        install: vi.fn(() => lifecycle.push('shutdown install')),
+      };
+      const app = {
+        get: vi
+          .fn()
+          .mockReturnValueOnce({ nodeEnv: 'test' })
+          .mockReturnValueOnce({ port: 3000 })
+          .mockReturnValueOnce({})
+          .mockReturnValueOnce({ globalPrefix })
+          .mockReturnValueOnce({ enabled: openapiEnabled, docsRoute })
+          .mockReturnValueOnce(logger)
+          .mockReturnValueOnce(coordinator),
+        getUrl: vi.fn(async () => {
+          lifecycle.push('getUrl');
+          return 'http://127.0.0.1:3000';
+        }),
+        listen: vi.fn(async () => {
+          lifecycle.push('listen');
+        }),
+      };
 
-    await bootstrap(vi.fn().mockResolvedValue(app));
+      await bootstrap(vi.fn().mockResolvedValue(app));
 
-    expect(app.listen).toHaveBeenCalledBefore(coordinator.install);
-    expect(coordinator.install).toHaveBeenCalledExactlyOnceWith(app);
-  });
+      expect(logger.logStartupCompleted).toHaveBeenCalledExactlyOnceWith({
+        serverUrl: 'http://127.0.0.1:3000',
+        apiBasePath,
+        ...(openapiUrl === undefined ? {} : { openapiUrl }),
+      });
+      expect(lifecycle).toEqual(['listen', 'getUrl', 'startup log', 'shutdown install']);
+      expect(coordinator.install).toHaveBeenCalledExactlyOnceWith(app);
+    },
+  );
 
   it('preserves startup failure after closing a partially created application', async () => {
     const failure = new Error('listen failed');

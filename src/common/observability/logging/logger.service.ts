@@ -3,6 +3,7 @@ import type {
   ApplicationLogger,
   HttpRequestCompletedMetadata,
   ShutdownCompletedMetadata,
+  StartupCompletedMetadata,
   ShutdownStartedMetadata,
   UnexpectedHttpErrorMetadata,
 } from './application-logger.js';
@@ -10,6 +11,7 @@ import {
   HTTP_REQUEST_COMPLETED_EVENT,
   HTTP_REQUEST_FAILED_EVENT,
   SHUTDOWN_COMPLETED_EVENT,
+  STARTUP_COMPLETED_EVENT,
   SHUTDOWN_STARTED_EVENT,
 } from '../constants.js';
 import { RequestContextService } from '../context/request-context.service.js';
@@ -42,6 +44,14 @@ export class StructuredLoggerService implements ApplicationLogger, LoggerService
       method: metadata.method,
       route: metadata.route,
       errorType: metadata.errorType,
+    });
+  }
+
+  logStartupCompleted(metadata: StartupCompletedMetadata): void {
+    this.consoleLogger.log(STARTUP_COMPLETED_EVENT, {
+      serverUrl: metadata.serverUrl,
+      apiBasePath: metadata.apiBasePath,
+      ...(metadata.openapiUrl === undefined ? {} : { openapiUrl: metadata.openapiUrl }),
     });
   }
 

@@ -4,8 +4,9 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module.js';
 import { setupApplication } from './app.setup.js';
 import { setupOpenApi } from './common/openapi/openapi.setup.js';
+import { StructuredLoggerService } from './common/observability/logging/logger.service.js';
 import { ShutdownCoordinatorService } from './common/shutdown/shutdown-coordinator.service.js';
-import apiConfig from './config/api.config.js';
+import apiConfig, { API_VERSION } from './config/api.config.js';
 import appConfig from './config/app.config.js';
 import corsConfig from './config/cors.config.js';
 import httpConfig from './config/http.config.js';
@@ -29,6 +30,13 @@ export async function bootstrap(
     setupApplication(app, http, cors, api);
     setupOpenApi(app, appMetadata, openapi);
     await app.listen(http.port);
+
+    const serverUrl = await app.getUrl();
+    app.get(StructuredLoggerService).logStartupCompleted({
+      serverUrl,
+      apiBasePath: `/${[api.globalPrefix, `v${API_VERSION}`].filter(Boolean).join('/')}`,
+      ...(openapi.enabled ? { openapiUrl: `/${openapi.docsRoute}` } : {}),
+    });
     app.get(ShutdownCoordinatorService).install(app);
   } catch (error) {
     if (app === undefined) {
