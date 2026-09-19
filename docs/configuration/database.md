@@ -17,6 +17,25 @@ pnpm prisma:generate
 pnpm prisma:migrate:deploy
 ```
 
+### Explicit development seed
+
+The root Prisma config registers `tsx src/database/prisma/seed.ts` as the Prisma 7 seed command. Run
+the seed only through the explicit development script:
+
+```bash
+pnpm prisma:seed
+```
+
+This expands to `prisma db seed -- --environment development`. The entry point rejects
+`NODE_ENV=production` and `NODE_ENV=test` before creating the PostgreSQL adapter or Prisma client,
+validates `DATABASE_URL` with `buildDatabaseConfig()`, and always disconnects after the ordered
+feature seeds finish. The initial feature seed is intentionally a no-op: it creates no users,
+accounts, passwords, roles, tokens, credentials, or other default data, and it never deletes or
+resets existing rows. Do not point it at a shared, staging, production, or data-bearing database.
+
+Development seeds are separate from the E2E lifecycle. The E2E harness creates its own temporary
+database and fixtures; it never invokes `prisma db seed`.
+
 `src/database/prisma/schema.prisma` defines only the database provider and generated-client output.
 Persistent models are split into `src/database/prisma/models/`, and versioned migrations live in
 `src/database/prisma/migrations/`. Persistent models and their migrations are owned by the Feature

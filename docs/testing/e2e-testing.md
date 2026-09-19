@@ -133,6 +133,12 @@ El workflow CI provisiona PostgreSQL 16 y entrega esa URL administrativa. La eje
 proporcionar una instancia compatible; el harness rechaza URLs remotas o que no señalen `postgres`.
 No se sustituyen Prisma ni Repositories en los flujos E2E.
 
+El seed de desarrollo es una operación independiente y no forma parte del bootstrap E2E. La suite no
+ejecuta `prisma db seed`: cada escenario obtiene una base temporal propia y crea sus datos de prueba
+dentro de su lifecycle. El seed explícito requiere `--environment development`, rechaza
+`NODE_ENV=production` y `NODE_ENV=test`, y su implementación inicial no crea usuarios, credenciales
+ni ningún otro dato por defecto.
+
 ## Extensiones futuras no implementadas
 
 La base no implementa autenticación, fixtures, seeds, proveedores externos ni indicadores de salud

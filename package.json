@@ -26,6 +26,7 @@
     "lint-staged": "lint-staged",
     "prisma:generate": "prisma generate",
     "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:seed": "prisma db seed -- --environment development",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
@@ -78,6 +79,7 @@
     "prisma": "7.10.0",
     "source-map-support": "^0.5.21",
     "supertest": "^7.2.2",
+    "tsx": "^4.23.13",
     "typescript": "^6.0.3",
     "unplugin-swc": "^1.6.0",
     "vitest": "^5.0.0"
