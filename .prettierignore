@@ -1,5 +1,6 @@
 # Versioned external skill artifacts; preserve their upstream formatting.
 /.agents/
+/src/database/generated/
 
 # pnpm owns the lockfile formatting.
 pnpm-lock.yaml
