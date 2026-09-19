@@ -296,13 +296,39 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
         await request(app.getHttpServer()).post('/api/v1/users').send(createPayload()).expect(201);
         const page = await request(app.getHttpServer()).get('/api/v1/users?limit=1').expect(200);
         const cursor = page.body.pageInfo.nextCursor;
+        const crossFilter = await request(app.getHttpServer())
+          .get(`/api/v1/users?email=other@example.com&after=${cursor}`)
+          .expect(200);
+        expect(crossFilter.body).toEqual({
+          data: [],
+          pageInfo: {
+            hasNextPage: false,
+            hasPreviousPage: false,
+            nextCursor: null,
+            previousCursor: null,
+          },
+        });
+
+        const legacyCursor = Buffer.from(
+          JSON.stringify({
+            v: 1,
+            email: created.body.email,
+            sort: 'createdAt',
+            direction: 'desc',
+            position: {
+              id: page.body.data[0].id,
+              createdAt: page.body.data[0].createdAt,
+            },
+          }),
+          'utf8',
+        ).toString('base64url');
 
         for (const query of [
           'after=not-base64!',
           `after=${'a'.repeat(1025)}`,
           `sort=displayName&after=${cursor}`,
-          `email=other@example.com&after=${cursor}`,
           `direction=asc&after=${cursor}`,
+          `after=${legacyCursor}`,
           `email=${created.body.email}&email=other@example.com`,
           'sort=createdAt&sort=displayName',
           'direction=asc&direction=desc',
@@ -371,7 +397,7 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
       }, queryScenarioOptions);
     });
 
-    it('rejects invalid bodies, mutually exclusive cursors, incompatible cursors, and URL query parameters', async () => {
+    it('accepts cross-filter cursors and rejects invalid bodies, legacy cursors, and URL query parameters', async () => {
       await registration.runScenario(async ({ app }) => {
         const created = await request(app.getHttpServer())
           .post('/api/v1/users')
@@ -381,8 +407,30 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
         const listPage = await request(app.getHttpServer())
           .get('/api/v1/users?limit=1')
           .expect(200);
-        const incompatibleCursor = listPage.body.pageInfo.nextCursor;
+        const crossFilterCursor = listPage.body.pageInfo.nextCursor;
         const valid = { criteria: { email: created.body.email } };
+        const crossFilter = await new Test(app.getHttpServer(), 'QUERY', '/api/v1/users')
+          .send({ ...valid, after: crossFilterCursor })
+          .expect(200);
+        expect(
+          crossFilter.body.data.every(
+            (user: { email: string }) => user.email === created.body.email,
+          ),
+        ).toBe(true);
+
+        const legacyCursor = Buffer.from(
+          JSON.stringify({
+            v: 1,
+            email: created.body.email,
+            sort: 'createdAt',
+            direction: 'desc',
+            position: {
+              id: listPage.body.data[0].id,
+              createdAt: listPage.body.data[0].createdAt,
+            },
+          }),
+          'utf8',
+        ).toString('base64url');
 
         for (const body of [
           null,
@@ -395,7 +443,7 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
           { criteria: { email: created.body.email, displayName: 'Ada' } },
           { ...valid, unknown: true },
           { ...valid, after: 'a', before: 'b' },
-          { ...valid, after: incompatibleCursor },
+          { ...valid, after: legacyCursor },
         ]) {
           await new Test(app.getHttpServer(), 'QUERY', '/api/v1/users').send(body).expect(400);
         }

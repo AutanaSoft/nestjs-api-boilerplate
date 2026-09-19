@@ -60,6 +60,50 @@ describe('UsersService', () => {
     expect(page.pageInfo.previousCursor).toBeNull();
   });
 
+  it('reuses cursors across email filters while applying the current request filter', async () => {
+    const list = vi
+      .fn()
+      .mockResolvedValueOnce({
+        data: [user],
+        hasNextPage: true,
+        hasPreviousPage: false,
+      })
+      .mockResolvedValueOnce({
+        data: [],
+        hasNextPage: false,
+        hasPreviousPage: false,
+      });
+    const repository = {
+      findById: vi.fn(),
+      list,
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    } as UsersRepository;
+    const service = new UsersService(repository);
+    const firstRequest = {
+      email: user.email,
+      sort: 'createdAt' as const,
+      direction: 'desc' as const,
+      limit: 1,
+    };
+    const firstPage = await service.list(firstRequest);
+    const secondRequest = {
+      email: 'grace@example.com',
+      sort: 'createdAt' as const,
+      direction: 'desc' as const,
+      limit: 1,
+      after: firstPage.pageInfo.nextCursor!,
+    };
+
+    await expect(service.list(secondRequest)).resolves.toMatchObject({ data: [] });
+    expect(list).toHaveBeenNthCalledWith(2, {
+      request: secondRequest,
+      cursor: { id: user.id, createdAt: user.createdAt },
+      cursorDirection: 'after',
+    });
+  });
+
   it('creates users through the feature repository port', async () => {
     const create = vi.fn().mockResolvedValue(user);
     const repository: UsersRepository = {

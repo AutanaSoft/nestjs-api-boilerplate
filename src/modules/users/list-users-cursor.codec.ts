@@ -2,13 +2,12 @@ import { BadRequestException } from '@nestjs/common';
 import { z } from 'zod';
 import type { ListUsersRequest } from './contracts/list-users-request.schema.js';
 
-export type ListUsersCursorContext = Pick<ListUsersRequest, 'email' | 'sort' | 'direction'>;
+export type ListUsersCursorContext = Pick<ListUsersRequest, 'sort' | 'direction'>;
 export type ListUsersCursorPosition =
   Readonly<{ id: string; createdAt: Date }> | Readonly<{ id: string; displayName: string }>;
 
 const cursorSchema = z.strictObject({
   v: z.literal(1),
-  email: z.string().nullable(),
   sort: z.enum(['createdAt', 'displayName']),
   direction: z.enum(['asc', 'desc']),
   position: z.strictObject({
@@ -24,7 +23,6 @@ export function encodeListUsersCursor(
 ): string {
   const value = {
     v: 1,
-    email: context.email ?? null,
     sort: context.sort,
     direction: context.direction,
     position:
@@ -54,7 +52,6 @@ export function decodeListUsersCursor(
   const parsed = cursorSchema.safeParse(decoded);
   if (
     !parsed.success ||
-    parsed.data.email !== (context.email ?? null) ||
     parsed.data.sort !== context.sort ||
     parsed.data.direction !== context.direction
   ) {

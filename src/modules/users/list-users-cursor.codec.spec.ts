@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { decodeListUsersCursor, encodeListUsersCursor } from './list-users-cursor.codec.js';
 
 const context = {
-  email: 'ada@example.com',
   sort: 'createdAt' as const,
   direction: 'desc' as const,
 };
@@ -12,11 +11,26 @@ const position = {
 };
 
 describe('list users cursor codec', () => {
-  it('round-trips a versioned opaque base64url cursor bound to its query context', () => {
+  it('round-trips a versioned opaque base64url cursor bound to its sort and direction', () => {
     const cursor = encodeListUsersCursor(context, position);
 
     expect(cursor).toMatch(/^[A-Za-z0-9_-]+$/);
     expect(decodeListUsersCursor(cursor, context)).toEqual(position);
+  });
+
+  it('encodes no raw filter values in the cursor payload', () => {
+    const cursor = encodeListUsersCursor(context, position);
+    const payload: unknown = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8'));
+
+    expect(payload).toEqual({
+      v: 1,
+      sort: 'createdAt',
+      direction: 'desc',
+      position: {
+        id: position.id,
+        createdAt: position.createdAt.toISOString(),
+      },
+    });
   });
 
   it.each([
@@ -30,10 +44,33 @@ describe('list users cursor codec', () => {
     expect(() => decodeListUsersCursor(cursor, context)).toThrow();
   });
 
-  it('rejects cursors from another normalized filter, sort, or direction', () => {
+  it('rejects cursors from another sort or direction', () => {
     const cursor = encodeListUsersCursor(context, position);
 
     expect(() => decodeListUsersCursor(cursor, { ...context, direction: 'asc' })).toThrow();
-    expect(() => decodeListUsersCursor(cursor, { ...context, email: undefined })).toThrow();
+  });
+
+  it('decodes a cursor without filter context', () => {
+    const cursor = encodeListUsersCursor(context, position);
+
+    expect(decodeListUsersCursor(cursor, context)).toEqual(position);
+  });
+
+  it('rejects legacy v1 cursors that contain an email', () => {
+    const cursor = Buffer.from(
+      JSON.stringify({
+        v: 1,
+        email: 'ada@example.com',
+        sort: context.sort,
+        direction: context.direction,
+        position: {
+          id: position.id,
+          createdAt: position.createdAt.toISOString(),
+        },
+      }),
+      'utf8',
+    ).toString('base64url');
+
+    expect(() => decodeListUsersCursor(cursor, context)).toThrow();
   });
 });

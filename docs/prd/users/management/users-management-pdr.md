@@ -77,6 +77,12 @@ updates, and deletes users through a stable public contract.
   dates, and other fields are not searchable in the initial contract.
 - **Conventional user sorting:** `GET` defaults to `createdAt desc` and accepts `createdAt` or
   `displayName` in either direction. Every order uses `id` as an internal deterministic tie-breaker.
+- **User listing cursors:** Cursor v1 contains only `v`, `sort`, `direction`, and `position`. It
+  contains no raw filter values and binds only sort and direction. Clients should reuse cursors with
+  the same filtering, but cross-email-filter reuse is accepted by design because the repository
+  applies the current request email filter. This improves token privacy by omitting email while
+  intentionally giving up email compatibility verification and authenticity; legacy v1 cursors that
+  contain `email` are rejected by the strict schema.
 - **Structured user query:** An experimental, safe, and idempotent `QUERY` operation limited to
   exact normalized email. Its strict JSON body is
   `{ criteria: { email }, sort?, direction?, limit?, after?, before? }`; `criteria.email` is
@@ -131,9 +137,13 @@ Client input cannot assign or modify the identifier or timestamps.
 - [ ] User listing rejects unsupported sort fields, including `email` and `updatedAt`.
 - [ ] Every user-listing order uses `id` as an internal deterministic tie-breaker.
 - [ ] User listing uses opaque versioned base64url cursors, deterministic ordering, a default limit
-      of 25, and a maximum limit of 250. Cursors bind normalized email, sort, and direction;
-      malformed, incompatible, unknown, repeated, array, or otherwise unsupported query input
-      returns `400`.
+      of 25, and a maximum limit of 250. Cursor v1 contains only `v`, `sort`, `direction`, and
+      `position`, with no raw filter values. Cursors bind sort and direction; clients should reuse
+      them with the same filtering, while cross-email-filter reuse remains accepted by design and
+      the repository applies the current request email filter. This privacy tradeoff omits email
+      from the token and therefore does not provide email compatibility verification or
+      authenticity. Legacy v1 cursors containing `email` are rejected. Malformed, incompatible,
+      unknown, repeated, array, or otherwise unsupported query input returns `400`.
 - [ ] User listing accepts mutually exclusive `after` and `before` cursors, and returns
       `{ data,     pageInfo }` according to the shared pagination contract. Page flags and cursors
       describe only actual adjacent rows; an empty page has both flags `false` and both cursors
@@ -189,6 +199,10 @@ Client input cannot assign or modify the identifier or timestamps.
   their general contract here.
 - Apply partial updates only to supplied mutable fields, leave omitted fields unchanged, and reject
   `null` for `email` and `displayName`.
+- Keep Users cursor v1 private by omission rather than hashing or signing filter values: encode only
+  version, sort, direction, and position; bind sort and direction; accept cross-email-filter reuse;
+  apply the current request email filter in the repository; and reject old email-bearing v1 cursors
+  through strict schema validation.
 - Return `201` with user and `Location` for creation, `200` with public representations for reads
   and updates, and `204` without a body for deletion; include `X-Request-Id` on every response.
 - Require authentication and explicit authorization for every Users management operation when
