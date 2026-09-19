@@ -5,6 +5,7 @@ import { createServer, Socket } from 'node:net';
 
 const HARNESS_DEADLINE_MS = 10_000;
 const MAX_DIAGNOSTIC_BYTES = 8_192;
+const SHUTDOWN_TEST_DATABASE_URL = 'postgresql://postgres:postgres@127.0.0.1:5432/postgres';
 
 type ExitResult = Readonly<{
   code: number | null;
@@ -57,6 +58,7 @@ function spawnApplication(port: number, shutdownTimeoutMs?: number): ChildHandle
   const child = spawn(process.execPath, ['dist/main.js'], {
     cwd: process.cwd(),
     env: {
+      DATABASE_URL: SHUTDOWN_TEST_DATABASE_URL,
       NODE_ENV: 'development',
       PORT: String(port),
       ...(shutdownTimeoutMs === undefined ? {} : { SHUTDOWN_TIMEOUT_MS: String(shutdownTimeoutMs) }),
