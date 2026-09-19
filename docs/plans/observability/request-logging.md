@@ -1,14 +1,13 @@
 # Plan de implementación de correlación de solicitudes y logs estructurados
 
-Este plan define cómo completar **OB-11** mediante un contexto de solicitud con `requestId` y logs
-estructurados, sin incorporar todavía la traducción central de errores de OB-10 ni las métricas y
-trazas diferidas en OB-14.
+Este plan define cómo completar **OB-11** mediante un contexto de solicitud con `requestId` y logs estructurados, sin
+incorporar todavía la traducción central de errores de OB-10 ni las métricas y trazas diferidas en OB-14.
 
 ## Resultado esperado
 
-Al finalizar, cada solicitud HTTP deberá disponer de un `requestId` durante todo su ciclo de vida.
-Los eventos HTTP deberán emitirse con mensajes estables, campos estructurados y sin datos sensibles.
-La misma configuración deberá utilizarse en producción y en las pruebas E2E.
+Al finalizar, cada solicitud HTTP deberá disponer de un `requestId` durante todo su ciclo de vida. Los eventos HTTP
+deberán emitirse con mensajes estables, campos estructurados y sin datos sensibles. La misma configuración deberá
+utilizarse en producción y en las pruebas E2E.
 
 ## Alcance
 
@@ -35,21 +34,22 @@ La misma configuración deberá utilizarse en producción y en las pruebas E2E.
 
 La implementación debe respetar los siguientes documentos:
 
-- [Observabilidad](../../architecture/observability.md): correlación, mensajes estables, estructura
-  y protección de datos sensibles.
-- [Contratos HTTP](../../api/http-contracts.md): uso público de `requestId`, especialmente en el
-  futuro contrato de error.
-- [Manejo de errores](../../architecture/error-handling.md): integración posterior de OB-10 con el
-  contexto de correlación.
-- [Seguridad HTTP](../../configuration/http-security.md): política CORS cuando el identificador se
-  exponga como header.
-- [Pruebas](../../testing/testing.md) y [pruebas E2E](../../testing/e2e-testing.md): niveles y
-  estrategia de verificación.
+- [Observabilidad](../../architecture/observability.md): correlación, mensajes estables, estructura y protección de
+  datos sensibles.
+- [Contratos HTTP](../../api/http-contracts.md): uso público de `requestId`, especialmente en el futuro contrato de
+  error.
+- [Manejo de errores](../../architecture/error-handling.md): integración posterior de OB-10 con el contexto de
+  correlación.
+- [Seguridad HTTP](../../configuration/http-security.md): política CORS cuando el identificador se exponga como header.
+- [Pruebas](../../testing/testing.md) y [pruebas E2E](../../testing/e2e-testing.md): niveles y estrategia de
+  verificación.
 
 ## Decisiones requeridas antes de implementar
 
-Estas decisiones deben registrarse en el documento owner correspondiente antes de consolidar la API
-interna. No deben quedar implícitas en el middleware o en las pruebas.
+Estas decisiones deben registrarse en el documento owner correspondiente antes de consolidar la API interna. No deben
+quedar implícitas en el middleware o en las pruebas.
+
+<!-- markdownlint-disable MD013 -->
 
 | Decisión                    | Decisión adoptada                                                                                                             | Criterio                                                                                                                  |
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
@@ -60,6 +60,8 @@ interna. No deben quedar implícitas en el middleware o en las pruebas.
 | Backend de logging          | **Resuelta:** usar `ConsoleLogger` con `json: true` y `colors: true` detrás de `ApplicationLogger` y `APP_LOGGER`             | Evita dependencias adicionales, conserva colores y permite sustituir la implementación por Pino sin cambiar consumidores. |
 | Evento HTTP inicial         | **Resuelta:** emitir un único evento terminal `http.request.completed` por solicitud                                          | Reduce ruido, evita duplicados y ofrece una base estable para diagnóstico.                                                |
 | Ruta registrada             | **Resuelta:** usar la plantilla de ruta normalizada y no registrar valores concretos ni query strings                         | Evita datos sensibles y cardinalidad no controlada.                                                                       |
+
+<!-- markdownlint-enable MD013 -->
 
 ## Diseño propuesto
 
@@ -99,8 +101,8 @@ docs/plans/baseline-operational-completion.md
 docs/plans/baseline-operational-completion.es.md
 ```
 
-La lista es una previsión de alcance. Si durante la implementación se requiere otro archivo, deberá
-justificarse antes de ampliar el cambio.
+La lista es una previsión de alcance. Si durante la implementación se requiere otro archivo, deberá justificarse antes
+de ampliar el cambio.
 
 ### Responsabilidades
 
@@ -124,14 +126,12 @@ justificarse antes de ampliar el cambio.
 
 - Definir un contrato propio y mínimo para niveles y metadatos estructurados.
 - Proveer un token de inyección estable `APP_LOGGER` desde `constants.ts`.
-- Impedir que los consumidores dependan directamente de `ConsoleLogger` o de una integración futura
-  con Pino.
+- Impedir que los consumidores dependan directamente de `ConsoleLogger` o de una integración futura con Pino.
 - Mantener reutilizables las pruebas de contrato para cualquier implementación del logger.
 
 #### `StructuredLoggerService`
 
-- Implementar `ApplicationLogger` adaptando `ConsoleLogger` de NestJS con `json: true` y
-  `colors: true`.
+- Implementar `ApplicationLogger` adaptando `ConsoleLogger` de NestJS con `json: true` y `colors: true`.
 - Documentar que los códigos ANSI impiden considerar la salida como JSON estricto.
 - Adjuntar automáticamente el `requestId` cuando exista.
 - Recibir mensajes estables y contexto como campos separados.
@@ -149,14 +149,12 @@ justificarse antes de ampliar el cambio.
 #### `ObservabilityModule`
 
 - Registrar y exportar únicamente los providers transversales necesarios.
-- Registrar los middlewares de correlación y logging terminal antes de CORS en el bootstrap
-  compartido.
+- Registrar los middlewares de correlación y logging terminal antes de CORS en el bootstrap compartido.
 - Mantener la infraestructura de observabilidad separada de los módulos de negocio.
 
 ## Secuencia de implementación
 
-La ejecución seguirá ciclos RED, GREEN, TRIANGULATE y REFACTOR. Cada fase debe mantener las pruebas
-anteriores en verde.
+La ejecución seguirá ciclos RED, GREEN, TRIANGULATE y REFACTOR. Cada fase debe mantener las pruebas anteriores en verde.
 
 ### Fase 1 — Formalizar contratos
 
@@ -169,8 +167,7 @@ anteriores en verde.
 
 ### Fase 2 — Crear el contexto de solicitud
 
-1. Escribir pruebas unitarias fallidas para creación, lectura, ausencia e independencia del
-   contexto.
+1. Escribir pruebas unitarias fallidas para creación, lectura, ausencia e independencia del contexto.
 2. Implementar `RequestContextService` con una API mínima.
 3. Triangular con solicitudes concurrentes para detectar contaminación entre contextos.
 4. Refactorizar sin exponer detalles de `AsyncLocalStorage` a consumidores.
@@ -179,26 +176,21 @@ anteriores en verde.
 
 ### Fase 3 — Incorporar correlación al pipeline HTTP
 
-1. Escribir pruebas fallidas para generación, adopción válida, reemplazo de valores inválidos y
-   header de respuesta.
+1. Escribir pruebas fallidas para generación, adopción válida, reemplazo de valores inválidos y header de respuesta.
 2. Implementar `RequestCorrelationMiddleware`.
-3. Registrarlo suficientemente temprano para que guards, interceptors y controllers compartan el
-   mismo contexto.
-4. Ajustar CORS para permitir y exponer el header únicamente si así lo establece el contrato
-   aprobado.
+3. Registrarlo suficientemente temprano para que guards, interceptors y controllers compartan el mismo contexto.
+4. Ajustar CORS para permitir y exponer el header únicamente si así lo establece el contrato aprobado.
 5. Ampliar `src/app.setup.spec.ts` para verificar la configuración compartida.
 
 **Salida:** toda solicitud HTTP entra al pipeline con un identificador seguro.
 
 ### Fase 4 — Añadir logging estructurado
 
-1. Escribir pruebas fallidas para mensajes estables, campos estructurados e inclusión automática de
-   `requestId`.
+1. Escribir pruebas fallidas para mensajes estables, campos estructurados e inclusión automática de `requestId`.
 2. Implementar `StructuredLoggerService` sobre `ConsoleLogger` con `json: true` y `colors: true`.
 3. Escribir pruebas fallidas para el evento terminal HTTP, incluyendo éxito y fallo.
 4. Implementar y registrar `HttpRequestLoggingMiddleware` antes de CORS.
-5. Verificar que el evento no incluya query strings, bodies, cookies, authorization headers ni stack
-   traces.
+5. Verificar que el evento no incluya query strings, bodies, cookies, authorization headers ni stack traces.
 
 **Salida:** un evento estructurado y correlacionado por solicitud completada.
 
@@ -215,19 +207,20 @@ Extender la suite E2E existente para demostrar que:
 7. el preflight CORS declara el header cuando corresponda;
 8. el evento terminal contiene los campos acordados y no expone datos sensibles.
 
-La forma JSON uniforme de los errores no se comprobará aquí: será responsabilidad de OB-10, que
-consumirá `RequestContextService` para completar `ErrorResponse.requestId`.
+La forma JSON uniforme de los errores no se comprobará aquí: será responsabilidad de OB-10, que consumirá
+`RequestContextService` para completar `ErrorResponse.requestId`.
 
 ### Fase 6 — Cerrar evidencia y documentación
 
 1. Ejecutar las comprobaciones enfocadas durante cada ciclo TDD.
 2. Ejecutar la verificación completa del repositorio.
 3. Actualizar ambas versiones de `baseline-operational-completion` con el mismo estado y evidencia.
-4. Marcar OB-11 como completa solo si la implementación y todas las comprobaciones son
-   reproducibles.
+4. Marcar OB-11 como completa solo si la implementación y todas las comprobaciones son reproducibles.
 5. Registrar explícitamente que OB-10 queda como siguiente tarea desbloqueada.
 
 ## Estrategia de pruebas
+
+<!-- markdownlint-disable MD013 -->
 
 | Nivel    | Objetivo                                  | Evidencia principal                                                               |
 | -------- | ----------------------------------------- | --------------------------------------------------------------------------------- |
@@ -238,14 +231,15 @@ consumirá `RequestContextService` para completar `ErrorResponse.requestId`.
 | Setup    | Registro global y CORS                    | Orden del pipeline y configuración del header.                                    |
 | E2E      | Comportamiento HTTP real                  | Generación, adopción, propagación, concurrencia, `200`, `404`, `429` y preflight. |
 
-Las pruebas de tiempo no deben depender de esperas reales: la fuente monotónica deberá poder
-controlarse o comprobarse sin afirmar duraciones exactas.
+<!-- markdownlint-enable MD013 -->
+
+Las pruebas de tiempo no deben depender de esperas reales: la fuente monotónica deberá poder controlarse o comprobarse
+sin afirmar duraciones exactas.
 
 ## Comandos de verificación
 
-La implementación deberá identificar primero los archivos afectados y ejecutar el flujo configurado
-de `lint-staged` sobre ese conjunto hasta que una segunda ejecución no produzca cambios. Después se
-ejecutará, como mínimo:
+La implementación deberá identificar primero los archivos afectados y ejecutar el flujo configurado de `lint-staged`
+sobre ese conjunto hasta que una segunda ejecución no produzca cambios. Después se ejecutará, como mínimo:
 
 ```bash
 pnpm test
@@ -255,10 +249,12 @@ pnpm lint:md
 pnpm build
 ```
 
-También se ejecutará Prettier sobre los Markdown editados antes de `markdownlint-cli2`, conforme a
-las reglas del repositorio.
+También se ejecutará Prettier sobre los Markdown editados antes de `markdownlint-cli2`, conforme a las reglas del
+repositorio.
 
 ## Riesgos y mitigaciones
+
+<!-- markdownlint-disable MD013 -->
 
 | Riesgo                                                   | Mitigación                                                                                                                               |
 | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
@@ -271,6 +267,8 @@ las reglas del repositorio.
 | Esperar JSON estricto con colores ANSI                   | Documentar y probar que esta configuración produce una representación estructurada mediante `inspect()`, no JSON directamente parseable. |
 | Generar rutas de alta cardinalidad                       | Preferir plantillas normalizadas y omitir query strings.                                                                                 |
 
+<!-- markdownlint-enable MD013 -->
+
 ## Criterios de aceptación
 
 - [ ] Cada solicitud dispone de un `requestId` durante todo su ciclo de vida.
@@ -278,21 +276,17 @@ las reglas del repositorio.
 - [ ] El identificador se devuelve mediante el header público acordado.
 - [ ] El contexto permanece aislado entre solicitudes concurrentes.
 - [ ] Controllers y servicios no necesitan recibir objetos Express para acceder a la correlación.
-- [ ] Cada solicitud genera un evento terminal con mensaje y campos estables mediante
-      `ConsoleLogger` configurado con `json: true` y `colors: true`.
-- [ ] Los consumidores dependen de `ApplicationLogger` y `APP_LOGGER`, no directamente de
-      `ConsoleLogger`.
-- [ ] La documentación y las pruebas no presentan la salida coloreada como JSON estricto
-      directamente parseable.
+- [ ] Cada solicitud genera un evento terminal con mensaje y campos estables mediante `ConsoleLogger` configurado con
+      `json: true` y `colors: true`.
+- [ ] Los consumidores dependen de `ApplicationLogger` y `APP_LOGGER`, no directamente de `ConsoleLogger`.
+- [ ] La documentación y las pruebas no presentan la salida coloreada como JSON estricto directamente parseable.
 - [ ] Los eventos no contienen secretos, credenciales, payloads completos ni query strings.
 - [ ] Las pruebas cubren respuestas `200`, `404` y `429`, además de CORS cuando corresponda.
 - [ ] Producción y E2E utilizan el mismo registro transversal.
-- [ ] Prettier, lint de TypeScript y Markdown, pruebas unitarias, E2E y build finalizan
-      correctamente.
+- [ ] Prettier, lint de TypeScript y Markdown, pruebas unitarias, E2E y build finalizan correctamente.
 - [ ] Los documentos owner y ambas listas de baseline contienen evidencia sincronizada.
 
 ## Siguiente paso
 
-Una vez completada OB-11, implementar **OB-10 — Central HTTP errors** reutilizando
-`RequestContextService` para poblar `ErrorResponse.requestId` y correlacionar el diagnóstico interno
-sin exponer detalles técnicos al cliente.
+Una vez completada OB-11, implementar **OB-10 — Central HTTP errors** reutilizando `RequestContextService` para poblar
+`ErrorResponse.requestId` y correlacionar el diagnóstico interno sin exponer detalles técnicos al cliente.

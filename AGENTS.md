@@ -1,43 +1,40 @@
 # AGENTS
 
-Mandatory rules for any person or AI agent working in this repository while preserving its
-conventions.
+Mandatory rules for any person or AI agent working in this repository while preserving its conventions.
 
 If a rule in this file conflicts with an installed skill, this file prevails.
 
-Read this file completely before making the first modification. Each section defines its scope and
-limits.
+Read this file completely before making the first modification. Each section defines its scope and limits.
 
 ## Repository Context
 
 - Consult `README.md` when the task requires project overview, prerequisites, or setup instructions.
-- Consult the relevant documentation under `docs/` when the task requires context about
-  architecture, public API conventions, testing, configuration, or technical decisions.
+- Consult the relevant documentation under `docs/` when the task requires context about architecture, public API
+  conventions, testing, configuration, or technical decisions.
 - Do not read unrelated documentation by default.
 
 ## Architecture and Conventions
 
 Use the document owner that matches the responsibility being changed:
 
-- `docs/architecture/` defines how the system is built, including structural boundaries and
-  crosscutting technical strategies.
+- `docs/architecture/` defines how the system is built, including structural boundaries and crosscutting technical
+  strategies.
 - `docs/api/` defines conventions of the public HTTP contract.
 - `docs/testing/` defines testing strategies and conventions.
 - `docs/adr/`, when present, preserves the rationale for significant architectural decisions.
 - `docs/prd/`, when present, defines functional requirements and behavior of Features.
 - `docs/configuration/` contains concrete operator-facing runtime configuration references.
 
-Do not duplicate a rule already owned by another document. Use a brief cross-reference when another
-owner must be consulted.
+Do not duplicate a rule already owned by another document. Use a brief cross-reference when another owner must be
+consulted.
 
-Do not place functional Feature requirements in Architecture, architectural decisions in PRDs,
-public HTTP conventions in Architecture, or general Testing conventions outside `docs/testing/`.
+Do not place functional Feature requirements in Architecture, architectural decisions in PRDs, public HTTP conventions
+in Architecture, or general Testing conventions outside `docs/testing/`.
 
-Additional documentation categories should exist only when they have a concrete responsibility not
-already owned elsewhere.
+Additional documentation categories should exist only when they have a concrete responsibility not already owned
+elsewhere.
 
-Apply only the installed skill rules relevant to the task and consistent with documented project
-decisions.
+Apply only the installed skill rules relevant to the task and consistent with documented project decisions.
 
 For feature organization, module sharing, service responsibility, and persistence boundaries, apply:
 
@@ -46,39 +43,35 @@ For feature organization, module sharing, service responsibility, and persistenc
 - `nestjs-best-practices/rules/arch-single-responsibility.md`
 - `nestjs-best-practices/rules/arch-use-repository-pattern.md`
 
-For NestJS end-to-end testing, apply the `nestjs-e2e-practices` skill and its relevant reference
-cards:
+For NestJS end-to-end testing, apply the `nestjs-e2e-practices` skill and its relevant reference cards:
 
 - `e2e-orchestrate-execution-and-lifecycle.md`
 - `e2e-run-real-application-and-infrastructure.md`
 - `e2e-build-data-and-assert-contracts.md`
 - `e2e-isolate-external-service-boundaries.md`
 
-Do not introduce a framework, library, ORM, or architectural pattern that conflicts with a
-documented project decision.
+Do not introduce a framework, library, ORM, or architectural pattern that conflicts with a documented project decision.
 
-If the implementation conflicts with documented architecture, report the divergence before modifying
-either side.
+If the implementation conflicts with documented architecture, report the divergence before modifying either side.
 
 ## Code Style
 
-- Follow `.editorconfig` for baseline file conventions. For files supported by Prettier, follow
-  `.prettierrc`, which takes precedence for overlapping formatting options.
-- For Markdown and MDX files, run Prettier before `markdownlint-cli2`. Generated or edited Markdown
-  must satisfy `.markdownlint-cli2.jsonc`.
-- Do not manually format generated files unless the project explicitly includes them in its
-  formatting workflow.
+- Follow `.editorconfig` for baseline file conventions. For files supported by Prettier, follow `.prettierrc`, which
+  takes precedence for overlapping formatting options.
+- For Markdown and MDX files, run Prettier before `markdownlint-cli2`. Generated or edited Markdown must satisfy
+  `.markdownlint-cli2.jsonc`.
+- Do not manually format generated files unless the project explicitly includes them in its formatting workflow.
 - Respect the linter and static analysis configured by the project; do not introduce warnings.
 - Do not disable formatting, linting, or type rules without a localized, documented justification.
 
 ## Communication
 
-- Respond concisely and directly, using a neutral technical tone. Include enough detail to
-  understand decisions, risks, and outcomes.
-- Ask one blocking question at a time and wait for the response before continuing. When a workflow
-  provides a grouped or atomic decision set, present it completely without splitting it.
-- Report blockers, necessary assumptions, and any verification that was not performed. Do not
-  present unverified work as complete.
+- Respond concisely and directly, using a neutral technical tone. Include enough detail to understand decisions, risks,
+  and outcomes.
+- Ask one blocking question at a time and wait for the response before continuing. When a workflow provides a grouped or
+  atomic decision set, present it completely without splitting it.
+- Report blockers, necessary assumptions, and any verification that was not performed. Do not present unverified work as
+  complete.
 
 ## Commits and Pushes
 
@@ -88,33 +81,31 @@ either side.
 
 ## Comments and Documentation
 
-- Document exported APIs when their contract, responsibility, constraints, side effects, or expected
-  usage are not evident from the type signature and name.
-- Prefer JSDoc for exported classes, functions, types, interfaces, constants, or provider tokens
-  when additional contract information is required.
-- Do not add documentation that only repeats names, types, parameters, or implementation details
-  already evident from the code.
+- Document exported APIs when their contract, responsibility, constraints, side effects, or expected usage are not
+  evident from the type signature and name.
+- Prefer JSDoc for exported classes, functions, types, interfaces, constants, or provider tokens when additional
+  contract information is required.
+- Do not add documentation that only repeats names, types, parameters, or implementation details already evident from
+  the code.
 - Internal helpers and straightforward private methods normally do not require documentation.
-- Add inline comments only when they explain intent, architectural reasoning, non-obvious behavior,
-  compatibility constraints, security requirements, or implementation limitations.
+- Add inline comments only when they explain intent, architectural reasoning, non-obvious behavior, compatibility
+  constraints, security requirements, or implementation limitations.
 - Keep documentation close to the code or responsibility that owns the documented behavior.
-- Update the relevant document owner when a change modifies a documented architectural decision,
-  public contract, testing convention, configuration reference, or Feature requirement.
+- Update the relevant document owner when a change modifies a documented architectural decision, public contract,
+  testing convention, configuration reference, or Feature requirement.
 - Do not keep commented-out code; Git history preserves prior versions.
 
 ## Planning and Verification
 
-- Before a non-trivial change or when scope is ambiguous, present a plan with the scope, affected
-  files, and steps, then wait for developer approval. An explicit request to implement a clearly
-  scoped change counts as approval. Read-only operations and approved mechanical changes do not
-  require an additional plan.
-- Before starting an RDD review, prepare the intended commit files and run the project's configured
-  `lint-staged` workflow, including all source-mutating formatters and linters normally executed by
-  the pre-commit hook. Start the review only after rerunning that workflow produces no further
-  changes. After the review starts, the actual pre-commit hook must be a no-op for file content and
-  modes; any mutation invalidates the review and requires a new candidate.
-- Do not invent APIs, conventions, or behaviors. Verify against official documentation, cite the URL
-  and version, or ask the developer. Memory and "probably" are not evidence.
+- Before a non-trivial change or when scope is ambiguous, present a plan with the scope, affected files, and steps, then
+  wait for developer approval. An explicit request to implement a clearly scoped change counts as approval. Read-only
+  operations and approved mechanical changes do not require an additional plan.
+- Before starting an RDD review, prepare the intended commit files and run the project's configured `lint-staged`
+  workflow, including all source-mutating formatters and linters normally executed by the pre-commit hook. Start the
+  review only after rerunning that workflow produces no further changes. After the review starts, the actual pre-commit
+  hook must be a no-op for file content and modes; any mutation invalidates the review and requires a new candidate.
+- Do not invent APIs, conventions, or behaviors. Verify against official documentation, cite the URL and version, or ask
+  the developer. Memory and "probably" are not evidence.
 - Do not modify files outside the agreed scope without reporting the reason.
 - If the user questions a technical claim, verify it before accepting or rejecting it.
 
@@ -122,6 +113,6 @@ either side.
 
 - Treat any difference between generated code and the repository's current state as intentional.
 - Do not revert, rewrite, or correct those changes without explicit confirmation.
-- If you identify a potential issue, provide verifiable evidence - URL, line, or diff - and request
-  confirmation before changing it.
+- If you identify a potential issue, provide verifiable evidence - URL, line, or diff - and request confirmation before
+  changing it.
 - If the user explicitly requests reverting or adjusting a change, proceed within the stated scope.

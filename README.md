@@ -1,8 +1,7 @@
 # NestJS API Boilerplate
 
-A public NestJS 12 template for building secure TypeScript APIs. It includes validated HTTP
-configuration, security headers, CORS controls, and rate limiting so a new API starts with a
-practical baseline.
+A public NestJS 12 template for building secure TypeScript APIs. It includes validated HTTP configuration, security
+headers, CORS controls, and rate limiting so a new API starts with a practical baseline.
 
 ## Quick start
 
@@ -19,19 +18,19 @@ pnpm start:dev
 The API listens on `http://localhost:3000` by default and exposes unauthenticated health probes:
 
 - `GET /api/v1/health/live` confirms that the HTTP process is responding.
-- `GET /api/v1/health/ready` confirms that the application has started and can receive traffic. It
-  does not yet check dependencies.
+- `GET /api/v1/health/ready` confirms that the application has started and can receive traffic. It does not yet check
+  dependencies.
 
-Set `API_GLOBAL_PREFIX` to an explicit empty value to publish the same probes under `/v1/health/*`.
-See [API versioning](docs/api/versioning.md) for the public URI contract.
+Set `API_GLOBAL_PREFIX` to an explicit empty value to publish the same probes under `/v1/health/*`. See
+[API versioning](docs/api/versioning.md) for the public URI contract.
 
 ## Prerequisites
 
 - Node.js 24 (the version used by CI)
 - pnpm 12.4.2 (declared by `packageManager` in `package.json`)
 
-Node.js 24 may not include Corepack. Install and enable it to activate the repository's canonical
-package-manager version declared in `package.json`:
+Node.js 24 may not include Corepack. Install and enable it to activate the repository's canonical package-manager
+version declared in `package.json`:
 
 ```bash
 npm install --global corepack
@@ -41,8 +40,7 @@ pnpm install
 
 ## Documentation
 
-Use the focused references for architecture, API conventions, configuration, testing, and project
-policies.
+Use the focused references for architecture, API conventions, configuration, testing, and project policies.
 
 | Topic                                  | Reference                                                   |
 | -------------------------------------- | ----------------------------------------------------------- |
@@ -85,8 +83,7 @@ policies.
 
 ## Quality checks
 
-Before opening a pull request, run the focused checks for your changes. The complete local check
-sequence is:
+Before opening a pull request, run the focused checks for your changes. The complete local check sequence is:
 
 ```bash
 pnpm lint
@@ -96,8 +93,7 @@ pnpm test:e2e
 pnpm build
 ```
 
-GitHub Actions runs formatting verification, linting, tests, and the build on pushes and pull
-requests.
+GitHub Actions runs formatting verification, linting, tests, and the build on pushes and pull requests.
 
 ## Contributing
 

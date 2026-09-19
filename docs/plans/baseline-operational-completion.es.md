@@ -1,17 +1,16 @@
 # Lista de verificación para completar la base operativa
 
-Esta lista registra el trabajo operativo que debe completarse antes de iniciar el desarrollo de
-módulos de negocio. Es una herramienta de seguimiento, no un documento arquitectónico responsable:
-siga los documentos de referencia enlazados para las reglas y los contratos. Swagger/OpenAPI es
-obligatorio antes de iniciar el desarrollo de módulos de negocio.
+Esta lista registra el trabajo operativo que debe completarse antes de iniciar el desarrollo de módulos de negocio. Es
+una herramienta de seguimiento, no un documento arquitectónico responsable: siga los documentos de referencia enlazados
+para las reglas y los contratos. Swagger/OpenAPI es obligatorio antes de iniciar el desarrollo de módulos de negocio.
 
 English version: [Operational baseline completion checklist](baseline-operational-completion.md).
 
 ## Alcance y estado
 
-**Incluido:** la base operativa HTTP y su verificación. **Excluido:** base de datos, autenticación,
-autorización y módulos de negocio. Las métricas y las trazas se difieren deliberadamente; esta base
-**no** representa observabilidad completa.
+**Incluido:** la base operativa HTTP y su verificación. **Excluido:** base de datos, autenticación, autorización y
+módulos de negocio. Las métricas y las trazas se difieren deliberadamente; esta base **no** representa observabilidad
+completa.
 
 | Estado       | Significado                                                              |
 | ------------ | ------------------------------------------------------------------------ |
@@ -22,8 +21,8 @@ autorización y módulos de negocio. Las métricas y las trazas se difieren deli
 
 ### Resumen de estado de tareas
 
-**Denominador de completitud: OB-01 a OB-13.** OB-14 está explícitamente diferido y no cuenta para
-que la base esté lista.
+**Denominador de completitud: OB-01 a OB-13.** OB-14 está explícitamente diferido y no cuenta para que la base esté
+lista.
 
 - [x] OB-01 — Completo
 - [x] OB-02 — Completo
@@ -44,32 +43,32 @@ que la base esté lista.
 
 ### APIs de implementación verificadas y utilizables
 
-- `setupApplication()` configura proxy confiable, prefijo global opcional, versionado URI, Helmet y
-  CORS (`src/app.setup.ts`).
-- `HealthController` expone `GET /health/live` y `GET /health/ready` versionados; las rutas
-  publicadas predeterminadas son `/api/v1/health/live` y `/api/v1/health/ready`
-  (`src/modules/health/health.controller.ts`,
+- `setupApplication()` configura proxy confiable, prefijo global opcional, versionado URI, Helmet y CORS
+  (`src/app.setup.ts`).
+- `HealthController` expone `GET /health/live` y `GET /health/ready` versionados; las rutas publicadas predeterminadas
+  son `/api/v1/health/live` y `/api/v1/health/ready` (`src/modules/health/health.controller.ts`,
   [documento de referencia de versionado](../api/versioning.md)).
-- Factories de configuración Zod tipadas y registradas con `registerAs` proporcionan `app`, `api`,
-  `http`, `cors`, `rateLimit`, `openapi` y `shutdown` (`src/config/`;
+- Factories de configuración Zod tipadas y registradas con `registerAs` proporcionan `app`, `api`, `http`, `cors`,
+  `rateLimit`, `openapi` y `shutdown` (`src/config/`;
   [documento de referencia de configuración](../architecture/configuration.md)).
-- `SerializationModule` registra un único `APP_INTERCEPTOR` global que valida y transforma solo los
-  esquemas declarados explícitamente; el esquema canónico de respuesta de health es responsable de
-  `live` y `ready` (`src/common/serialization/`, `src/modules/health/contracts/`;
+- `SerializationModule` registra un único `APP_INTERCEPTOR` global que valida y transforma solo los esquemas declarados
+  explícitamente; el esquema canónico de respuesta de health es responsable de `live` y `ready`
+  (`src/common/serialization/`, `src/modules/health/contracts/`;
   [documento de referencia de serialización](../architecture/serialization.md)).
-- OpenAPI está deshabilitado de forma predeterminada y, al habilitarse, expone solo rutas no
-  versionadas configuradas de UI y JSON a partir de metadata de `app`; `HealthModule` aporta las
-  únicas operaciones publicadas, con schemas Zod canónicos de health/error, IDs estables y
-  respuestas `200`, `500`, `503` (`src/common/openapi/`, `src/modules/health/health.controller.ts`;
-  [documento de OpenAPI](../api/openapi.md)).
-- `ValidationModule` registra un único `APP_PIPE` global con `StandardSchemaValidationPipe`; los
-  parámetros con `metadata.schema` reciben la salida transformada del schema y la entrada inválida
-  alcanza el Error Boundary seguro existente (`src/common/validation/`, `src/app.module.ts`;
+- OpenAPI está deshabilitado de forma predeterminada y, al habilitarse, expone solo rutas no versionadas configuradas de
+  UI y JSON a partir de metadata de `app`; `HealthModule` aporta las únicas operaciones publicadas, con schemas Zod
+  canónicos de health/error, IDs estables y respuestas `200`, `500`, `503` (`src/common/openapi/`,
+  `src/modules/health/health.controller.ts`; [documento de OpenAPI](../api/openapi.md)).
+- `ValidationModule` registra un único `APP_PIPE` global con `StandardSchemaValidationPipe`; los parámetros con
+  `metadata.schema` reciben la salida transformada del schema y la entrada inválida alcanza el Error Boundary seguro
+  existente (`src/common/validation/`, `src/app.module.ts`;
   [documento de referencia de validación](../architecture/validation.md)).
 
 ## Lista de completitud
 
 ### Base implementada
+
+<!-- markdownlint-disable MD013 -->
 
 | ID    | Estado   | Elemento, evidencia, dependencias y criterios de aceptación                                                                                                                                                                                                                                                                                                                                                                      |
 | ----- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -80,7 +79,11 @@ que la base esté lista.
 | OB-05 | Completo | **Comprobaciones de salud.** Evidencia: `HealthModule` y `HealthController` usan Terminus; E2E afirma ambos probes versionados. Dependencias: OB-02, OB-03, OB-04. Aceptación: liveness y readiness devuelven la respuesta básica de Terminus documentada y todavía no comprueban dependencias. Documento de referencia: [pruebas E2E](../testing/e2e-testing.md).                                                               |
 | OB-06 | Completo | **Calidad y CI.** Evidencia: `.github/workflows/ci.yml` ejecuta instalación congelada, formato, análisis estático de TypeScript/Markdown, pruebas unitarias y E2E, y compilación en pull requests y pushes a `main`. Dependencias: archivo de bloqueo y herramientas. Aceptación: CI continúa ejecutando esa secuencia. Documento de referencia: [pruebas](../testing/testing.md).                                               |
 
+<!-- markdownlint-enable MD013 -->
+
 ### Debe completarse antes de iniciar el desarrollo de módulos de negocio
+
+<!-- markdownlint-disable MD013 -->
 
 | ID    | Estado   | Elemento, evidencia, dependencias y criterios de aceptación                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ----- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -92,42 +95,43 @@ que la base esté lista.
 | OB-12 | Completo | **Apagado ordenado.** Evidencia: `ShutdownCoordinatorService` se instala solo después de un `listen()` exitoso, acepta únicamente `SIGTERM`/`SIGINT`, cierra una vez mediante `app.close(signal)` y emite resultados de lifecycle acotados; `shutdown` valida `SHUTDOWN_TIMEOUT_MS` con un predeterminado de `10_000` ms. La suite POSIX compilada aprobó ambas señales, el cierre del listener y una solicitud JSON incompleta real; los unit tests deterministas del coordinador aprobaron watchdog timeout, completación tardía y fallo de cierre. El comportamiento de Node 26 seleccionó esta frontera: no se afirma una salida por timeout a nivel de proceso. Dependencias: semántica de health y futuros responsables de recursos. Aceptación: la terminación deja de aceptar trabajo, cierra Nest/recursos dentro de una política acotada y sale con un resultado observable. Readiness draining permanece diferido. Documento de referencia: [lifecycle de proceso](../configuration/process-lifecycle.md).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | OB-13 | Completo | **Versión reproducible de pnpm.** Evidencia: `package.json` declara `packageManager: pnpm@12.4.2`; README documenta la instalación y habilitación de Corepack para Node 26; CI ejecuta `pnpm/action-setup@v4` sin una entrada de versión antes de `actions/setup-node@v7`. Verificación observada: `corepack --version` devolvió `0.36.0`; `corepack pnpm --version` devolvió `12.4.2`; `corepack pnpm install` y `corepack pnpm install --frozen-lockfile` finalizaron correctamente; Prettier, análisis estático de TypeScript y Markdown, pruebas unitarias (29 archivos, 208 pruebas), pruebas de apagado (1 archivo, 3 pruebas), pruebas E2E (1 archivo, 33 pruebas), compilación y `git diff --check` finalizaron correctamente. La repetición congelada conservó el hash de `pnpm-lock.yaml` `fd32cfb873f49f48777c7d0bad5ec8694e036da5476b8c1f5e32609a9d1fa429`. Dependencias: política del gestor de paquetes y CI/Corepack. Aceptación: el campo `packageManager` permanece como la única fuente de versión de pnpm; CI instala pnpm desde ese campo; la instalación congelada permanece estable; y los pasos documentados de Corepack funcionan en Node 26.                                                                                                                                                                                                                                                                                                                                                                                                                    |
 
+<!-- markdownlint-enable MD013 -->
+
 ### Diferido explícitamente
+
+<!-- markdownlint-disable MD013 -->
 
 | ID    | Estado   | Elemento, evidencia, dependencias y criterios de aceptación                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | ----- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | OB-14 | Diferido | **Métricas y trazas.** Evidencia: el documento de referencia de observabilidad aprueba OpenTelemetry para métricas y trazas, pero no hay implementación verificada. Dependencias: backend operativo y diseño de instrumentación. Aceptación para eliminar este diferimiento: definir métricas estables de baja cardinalidad y propagación/instrumentación de trazas, y verificarlas. Esto no marca la observabilidad completa. Documento de referencia: [observabilidad](../architecture/observability.md). |
 
+<!-- markdownlint-enable MD013 -->
+
 ## Criterios finales de completitud de la base
 
 La base está lista **antes de iniciar el desarrollo de módulos de negocio** solo cuando:
 
-- [x] Todos los elementos de OB-01 a OB-13 están Completos y tienen evidencia actual de
-      implementación.
-- [x] Todas las decisiones de implementación sin resolver están resueltas y reflejadas en los
-      documentos de referencia pertinentes.
-- [x] Las comprobaciones enfocadas y de calidad del repositorio requeridas se ejecutan nuevamente y
-      finalizan correctamente después de los cambios finales.
-- [ ] OB-14 permanece explícitamente diferido y excluido del denominador de completitud, salvo que
-      su alcance sea aprobado e implementado por separado.
+- [x] Todos los elementos de OB-01 a OB-13 están Completos y tienen evidencia actual de implementación.
+- [x] Todas las decisiones de implementación sin resolver están resueltas y reflejadas en los documentos de referencia
+      pertinentes.
+- [x] Las comprobaciones enfocadas y de calidad del repositorio requeridas se ejecutan nuevamente y finalizan
+      correctamente después de los cambios finales.
+- [ ] OB-14 permanece explícitamente diferido y excluido del denominador de completitud, salvo que su alcance sea
+      aprobado e implementado por separado.
 
 ## Verificación final de la candidatura
 
-La verificación completada de OB-13 confirmó que la instalación congelada con Corepack pnpm 12.4.2
-finalizó correctamente; Prettier y `pnpm lint` finalizaron correctamente; Markdown lint comprobó 302
-archivos sin incidencias; las pruebas unitarias aprobaron 29 archivos y 208 pruebas; las pruebas de
-proceso de apagado aprobaron 1 archivo y 3 pruebas; E2E aprobó 1 archivo y 33 pruebas; y la
-compilación informó TSC sin incidencias y SWC con 35 archivos.
+La verificación completada de OB-13 confirmó que la instalación congelada con Corepack pnpm 12.4.2 finalizó
+correctamente; Prettier y `pnpm lint` finalizaron correctamente; Markdown lint comprobó 302 archivos sin incidencias;
+las pruebas unitarias aprobaron 29 archivos y 208 pruebas; las pruebas de proceso de apagado aprobaron 1 archivo y 3
+pruebas; E2E aprobó 1 archivo y 33 pruebas; y la compilación informó TSC sin incidencias y SWC con 35 archivos.
 
 ## Mantenimiento
 
-- Mantenga idénticos los IDs y estados de los elementos en la
-  [versión en inglés](baseline-operational-completion.md).
-- Actualice evidencia únicamente desde código fuente, pruebas, CI o documentos de referencia
-  verificados; no convierta objetivos en APIs completadas sin evidencia de implementación.
-- Cambie el estado de un elemento, su casilla de tarea, evidencia, dependencias y criterios de
-  aceptación en ambas traducciones dentro del mismo cambio.
-- Mantenga OB-14 fuera del denominador de completitud salvo que un alcance aprobado por separado lo
-  cambie.
-- Enlace los documentos de referencia en lugar de duplicar sus reglas arquitectónicas o de contrato
-  público.
+- Mantenga idénticos los IDs y estados de los elementos en la [versión en inglés](baseline-operational-completion.md).
+- Actualice evidencia únicamente desde código fuente, pruebas, CI o documentos de referencia verificados; no convierta
+  objetivos en APIs completadas sin evidencia de implementación.
+- Cambie el estado de un elemento, su casilla de tarea, evidencia, dependencias y criterios de aceptación en ambas
+  traducciones dentro del mismo cambio.
+- Mantenga OB-14 fuera del denominador de completitud salvo que un alcance aprobado por separado lo cambie.
+- Enlace los documentos de referencia en lugar de duplicar sus reglas arquitectónicas o de contrato público.

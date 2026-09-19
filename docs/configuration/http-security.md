@@ -2,11 +2,10 @@
 
 Status: Implemented
 
-La API aplica Helmet, una política CORS explícita y global Rate Limiting en memoria. Los namespaces
-`api`, `http`, `cors`, `rateLimit` y `openapi` son propietarios de esta configuración. Establezca
-las environment variables indicadas a continuación y reinicie el proceso para que los cambios surtan
-efecto. La configuración de apagado del proceso, incluido `SHUTDOWN_TIMEOUT_MS`, pertenece a
-[process lifecycle](process-lifecycle.md).
+La API aplica Helmet, una política CORS explícita y global Rate Limiting en memoria. Los namespaces `api`, `http`,
+`cors`, `rateLimit` y `openapi` son propietarios de esta configuración. Establezca las environment variables indicadas a
+continuación y reinicie el proceso para que los cambios surtan efecto. La configuración de apagado del proceso, incluido
+`SHUTDOWN_TIMEOUT_MS`, pertenece a [process lifecycle](process-lifecycle.md).
 
 ## Ruta rápida
 
@@ -17,6 +16,8 @@ efecto. La configuración de apagado del proceso, incluido `SHUTDOWN_TIMEOUT_MS`
 5. Habilite `OPENAPI_ENABLED=true` solo cuando deba publicar la UI y el documento OpenAPI.
 
 ## Namespaces y variables
+
+<!-- markdownlint-disable MD013 -->
 
 | Namespace   | Variable                 | Predeterminado                              | Reglas                                                                      |
 | ----------- | ------------------------ | ------------------------------------------- | --------------------------------------------------------------------------- |
@@ -31,23 +32,23 @@ efecto. La configuración de apagado del proceso, incluido `SHUTDOWN_TIMEOUT_MS`
 | `openapi`   | `OPENAPI_DOCS_ROUTE`     | `docs`                                      | Path relativo normalizado para la UI.                                       |
 | `openapi`   | `OPENAPI_DOCUMENT_ROUTE` | `openapi.json`                              | Path relativo normalizado para el documento JSON; debe diferir de la UI.    |
 
-`API_GLOBAL_PREFIX` acepta paths relativos normalizados como `api` o `platform/api`. Rechaza slash
-inicial o final, segmentos vacíos, `.`, `..`, espacios, query strings y fragments. Un valor vacío
-explícito publica las rutas bajo `/v1`; el valor no configura dominios, hosts ni autorización.
+<!-- markdownlint-enable MD013 -->
 
-Las rutas OpenAPI no pueden estar vacías ni comenzar o terminar con `/`; rechazan segmentos vacíos,
-`.`, `..`, espacios, query strings y fragments. Ambas rutas deben diferir. Cuando OpenAPI está
-habilitado, las rutas predeterminadas son `/docs` y `/openapi.json`; permanecen fuera de
-`API_GLOBAL_PREFIX` y del URI versioning. El startup rechaza rutas OpenAPI que se solapen
-estructuralmente con una ruta API publicada.
+`API_GLOBAL_PREFIX` acepta paths relativos normalizados como `api` o `platform/api`. Rechaza slash inicial o final,
+segmentos vacíos, `.`, `..`, espacios, query strings y fragments. Un valor vacío explícito publica las rutas bajo `/v1`;
+el valor no configura dominios, hosts ni autorización.
 
-Los origins se recortan y normalizan. Se rechazan las entradas vacías, duplicados, wildcards,
-credentials en URLs, protocolos no HTTP(S), paths distintos de `/`, query strings y fragments.
+Las rutas OpenAPI no pueden estar vacías ni comenzar o terminar con `/`; rechazan segmentos vacíos, `.`, `..`, espacios,
+query strings y fragments. Ambas rutas deben diferir. Cuando OpenAPI está habilitado, las rutas predeterminadas son
+`/docs` y `/openapi.json`; permanecen fuera de `API_GLOBAL_PREFIX` y del URI versioning. El startup rechaza rutas
+OpenAPI que se solapen estructuralmente con una ruta API publicada.
 
-La política CORS fija los métodos `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS` y
-`QUERY`; permite los headers `Accept`, `Authorization`, `Content-Type` y `X-Request-Id`; expone solo
-`X-Request-Id`; mantiene credentials deshabilitadas; responde preflight con `204`; y no continúa el
-preflight hacia la aplicación.
+Los origins se recortan y normalizan. Se rechazan las entradas vacías, duplicados, wildcards, credentials en URLs,
+protocolos no HTTP(S), paths distintos de `/`, query strings y fragments.
+
+La política CORS fija los métodos `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS` y `QUERY`; permite los
+headers `Accept`, `Authorization`, `Content-Type` y `X-Request-Id`; expone solo `X-Request-Id`; mantiene credentials
+deshabilitadas; responde preflight con `204`; y no continúa el preflight hacia la aplicación.
 
 ## Ejemplos
 
@@ -73,29 +74,28 @@ pnpm start:prod
 
 ### Helmet y Swagger UI
 
-La UI de Swagger se instala después del bootstrap HTTP común y conserva Helmet, correlación y
-logging. La evidencia E2E observó en `/docs` el CSP predeterminado de Helmet: `default-src 'self'`,
-`script-src 'self'`, `style-src 'self' https: 'unsafe-inline'` e `img-src 'self' data:`. No existe
-una excepción de CSP específica para OpenAPI; el documento JSON conserva la política global.
+La UI de Swagger se instala después del bootstrap HTTP común y conserva Helmet, correlación y logging. La evidencia E2E
+observó en `/docs` el CSP predeterminado de Helmet: `default-src 'self'`, `script-src 'self'`,
+`style-src 'self' https: 'unsafe-inline'` e `img-src 'self' data:`. No existe una excepción de CSP específica para
+OpenAPI; el documento JSON conserva la política global.
 
 ### CORS de producción es explícito
 
-El startup en producción falla a menos que se proporcione explícitamente `CORS_ORIGINS` con al menos
-un origin válido. CORS no es authentication ni authorization: únicamente indica a los browsers
-compatibles qué cross-origin Requests pueden exponer. Proteja las APIs con controles adecuados de
-authentication y authorization.
+El startup en producción falla a menos que se proporcione explícitamente `CORS_ORIGINS` con al menos un origin válido.
+CORS no es authentication ni authorization: únicamente indica a los browsers compatibles qué cross-origin Requests
+pueden exponer. Proteja las APIs con controles adecuados de authentication y authorization.
 
 ### Confiar en el proxy requiere conocer la topology
 
-Establezca `TRUST_PROXY_HOPS` únicamente en el número de trusted proxy hops directamente delante de
-la API. Un valor demasiado permisivo puede permitir que los clients influyan en la client address
-aparente, lo que afecta el seguimiento de Rate Limits.
+Establezca `TRUST_PROXY_HOPS` únicamente en el número de trusted proxy hops directamente delante de la API. Un valor
+demasiado permisivo puede permitir que los clients influyan en la client address aparente, lo que afecta el seguimiento
+de Rate Limits.
 
 ### El Throttling es local a un proceso
 
-El NestJS Throttler configurado utiliza in-memory storage. Cada replica tiene sus propios counters,
-por lo que un client puede recibir hasta el limit en cada replica. Utilice shared storage para el
-Throttler o un edge Rate Limiter cuando los límites deban aplicarse entre múltiples replicas.
+El NestJS Throttler configurado utiliza in-memory storage. Cada replica tiene sus propios counters, por lo que un client
+puede recibir hasta el limit en cada replica. Utilice shared storage para el Throttler o un edge Rate Limiter cuando los
+límites deban aplicarse entre múltiples replicas.
 
-Todos los valores se leen y validan durante application startup. Reinicie la API después de
-cambiarlos; los runtime environment changes no reconfiguran un proceso en ejecución.
+Todos los valores se leen y validan durante application startup. Reinicie la API después de cambiarlos; los runtime
+environment changes no reconfiguran un proceso en ejecución.

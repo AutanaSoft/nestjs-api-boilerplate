@@ -55,21 +55,19 @@ Cursor pagination requiere ordering determinista.
 
 Cuando el criterio principal no sea único, debe utilizarse un tie-breaker único.
 
-Los clientes deberían reutilizar los cursors con el mismo filtering y sorting que originaron la
-consulta. Un cursor incluye una versión y se valida como entrada no confiable; debe rechazarse si
-está malformado, supera 1024 caracteres o es incompatible con la consulta. No requiere firma cuando
-no transporte permisos ni datos secretos.
+Los clientes deberían reutilizar los cursors con el mismo filtering y sorting que originaron la consulta. Un cursor
+incluye una versión y se valida como entrada no confiable; debe rechazarse si está malformado, supera 1024 caracteres o
+es incompatible con la consulta. No requiere firma cuando no transporte permisos ni datos secretos.
 
-En Users, el cursor v1 contiene únicamente `v`, `sort`, `direction` y `position`. No contiene
-valores crudos de filtros ni codifica o verifica compatibilidad con `email`; por lo tanto, un cursor
-obtenido con un filtro de email puede reutilizarse con otro filtro de email y el repositorio aplica
-el filtro de la solicitud actual. Esto se acepta por diseño: omitir el filtro mejora la privacidad
-del token, pero sacrifica la validación de compatibilidad entre emails y no proporciona autenticidad
-ni firma. Los cursores v1 antiguos que contienen `email` se rechazan por el schema estricto.
+En Users, el cursor v1 contiene únicamente `v`, `sort`, `direction` y `position`. No contiene valores crudos de filtros
+ni codifica o verifica compatibilidad con `email`; por lo tanto, un cursor obtenido con un filtro de email puede
+reutilizarse con otro filtro de email y el repositorio aplica el filtro de la solicitud actual. Esto se acepta por
+diseño: omitir el filtro mejora la privacidad del token, pero sacrifica la validación de compatibilidad entre emails y
+no proporciona autenticidad ni firma. Los cursores v1 antiguos que contienen `email` se rechazan por el schema estricto.
 
-`hasNextPage` y `hasPreviousPage` describen filas reales adyacentes a la página devuelta. Los
-cursores correspondientes son `null` cuando no existe esa página adyacente. Una página vacía
-devuelve ambos flags en `false` y ambos cursores en `null`.
+`hasNextPage` y `hasPreviousPage` describen filas reales adyacentes a la página devuelta. Los cursores correspondientes
+son `null` cuando no existe esa página adyacente. Una página vacía devuelve ambos flags en `false` y ambos cursores en
+`null`.
 
 ## Reglas
 

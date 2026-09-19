@@ -1,16 +1,15 @@
 # Operational baseline completion checklist
 
-This checklist records the operational work that must be complete before business module development
-begins. It is a tracking aid, not an architecture owner: follow the linked owner documents for rules
-and contracts. Swagger/OpenAPI is required before business module development begins.
+This checklist records the operational work that must be complete before business module development begins. It is a
+tracking aid, not an architecture owner: follow the linked owner documents for rules and contracts. Swagger/OpenAPI is
+required before business module development begins.
 
 Spanish version: [Lista de verificación en español](baseline-operational-completion.es.md).
 
 ## Scope and status
 
-**Included:** the HTTP operational baseline and its verification. **Excluded:** database,
-authentication, authorization, and business modules. Metrics and traces are deliberately deferred;
-this baseline is **not** full observability.
+**Included:** the HTTP operational baseline and its verification. **Excluded:** database, authentication, authorization,
+and business modules. Metrics and traces are deliberately deferred; this baseline is **not** full observability.
 
 | Status     | Meaning                                                        |
 | ---------- | -------------------------------------------------------------- |
@@ -21,8 +20,8 @@ this baseline is **not** full observability.
 
 ### Task status summary
 
-**Completion denominator: OB-01 through OB-13.** OB-14 is explicitly deferred and does not count
-toward baseline readiness.
+**Completion denominator: OB-01 through OB-13.** OB-14 is explicitly deferred and does not count toward baseline
+readiness.
 
 - [x] OB-01 — Complete
 - [x] OB-02 — Complete
@@ -43,30 +42,29 @@ toward baseline readiness.
 
 ### Verified usable implementation APIs
 
-- `setupApplication()` configures trust proxy, optional global prefix, URI versioning, Helmet, and
-  CORS (`src/app.setup.ts`).
-- `HealthController` exposes versioned `GET /health/live` and `GET /health/ready`; the default
-  published paths are `/api/v1/health/live` and `/api/v1/health/ready`
-  (`src/modules/health/health.controller.ts`, [versioning owner](../api/versioning.md)).
-- Typed Zod configuration factories registered with `registerAs` provide `app`, `api`, `http`,
-  `cors`, `rateLimit`, `openapi`, and `shutdown` (`src/config/`;
-  [configuration owner](../architecture/configuration.md)).
-- `SerializationModule` registers one global `APP_INTERCEPTOR` that validates and transforms only
-  explicitly declared schemas; the canonical health response schema owns `live` and `ready`
-  (`src/common/serialization/`, `src/modules/health/contracts/`;
-  [serialization owner](../architecture/serialization.md)).
-- OpenAPI is disabled by default and, when enabled, exposes only unversioned configured UI and JSON
-  routes from `app` metadata; `HealthModule` supplies the only published operations, with canonical
-  Zod health/error schemas, stable IDs, and `200`, `500`, `503` responses (`src/common/openapi/`,
-  `src/modules/health/health.controller.ts`; [OpenAPI owner](../api/openapi.md)).
-- `ValidationModule` registers one global `APP_PIPE` with `StandardSchemaValidationPipe`; parameters
-  with `metadata.schema` receive transformed schema output, and invalid input reaches the existing
-  safe error boundary (`src/common/validation/`, `src/app.module.ts`;
-  [validation owner](../architecture/validation.md)).
+- `setupApplication()` configures trust proxy, optional global prefix, URI versioning, Helmet, and CORS
+  (`src/app.setup.ts`).
+- `HealthController` exposes versioned `GET /health/live` and `GET /health/ready`; the default published paths are
+  `/api/v1/health/live` and `/api/v1/health/ready` (`src/modules/health/health.controller.ts`,
+  [versioning owner](../api/versioning.md)).
+- Typed Zod configuration factories registered with `registerAs` provide `app`, `api`, `http`, `cors`, `rateLimit`,
+  `openapi`, and `shutdown` (`src/config/`; [configuration owner](../architecture/configuration.md)).
+- `SerializationModule` registers one global `APP_INTERCEPTOR` that validates and transforms only explicitly declared
+  schemas; the canonical health response schema owns `live` and `ready` (`src/common/serialization/`,
+  `src/modules/health/contracts/`; [serialization owner](../architecture/serialization.md)).
+- OpenAPI is disabled by default and, when enabled, exposes only unversioned configured UI and JSON routes from `app`
+  metadata; `HealthModule` supplies the only published operations, with canonical Zod health/error schemas, stable IDs,
+  and `200`, `500`, `503` responses (`src/common/openapi/`, `src/modules/health/health.controller.ts`;
+  [OpenAPI owner](../api/openapi.md)).
+- `ValidationModule` registers one global `APP_PIPE` with `StandardSchemaValidationPipe`; parameters with
+  `metadata.schema` receive transformed schema output, and invalid input reaches the existing safe error boundary
+  (`src/common/validation/`, `src/app.module.ts`; [validation owner](../architecture/validation.md)).
 
 ## Completion checklist
 
 ### Implemented baseline
+
+<!-- markdownlint-disable MD013 -->
 
 | ID    | Status   | Item, evidence, dependencies, and acceptance criteria                                                                                                                                                                                                                                                                                                                                   |
 | ----- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -77,7 +75,11 @@ toward baseline readiness.
 | OB-05 | Complete | **Health checks.** Evidence: `HealthModule` and `HealthController` use Terminus; E2E asserts both versioned probes. Dependencies: OB-02, OB-03, OB-04. Acceptance: liveness and readiness return the documented basic Terminus response and do not yet check dependencies. Owner: [E2E testing](../testing/e2e-testing.md).                                                             |
 | OB-06 | Complete | **Quality and CI.** Evidence: `.github/workflows/ci.yml` runs frozen install, formatting, TypeScript/Markdown lint, unit and E2E tests, and build on pull requests and `main` pushes. Dependencies: package lock and toolchain. Acceptance: CI continues to execute that sequence. Owner: [testing](../testing/testing.md).                                                             |
 
+<!-- markdownlint-enable MD013 -->
+
 ### Must complete before starting business module development
+
+<!-- markdownlint-disable MD013 -->
 
 | ID    | Status   | Item, evidence, dependencies, and acceptance criteria                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ----- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -89,11 +91,17 @@ toward baseline readiness.
 | OB-12 | Complete | **Graceful shutdown.** Evidence: `ShutdownCoordinatorService` installs only after successful `listen()`, accepts only `SIGTERM`/`SIGINT`, closes once through `app.close(signal)`, and emits bounded lifecycle outcomes; `shutdown` validates `SHUTDOWN_TIMEOUT_MS` with a `10_000` ms default. The compiled POSIX suite passed for both signals, listener closure, and a real incomplete JSON request; deterministic coordinator unit tests passed for watchdog timeout, late completion, and close failure. Node 26 behavior selected this boundary: no process-level timeout exit is claimed. Dependencies: health semantics and future resource owners. Acceptance: termination stops accepting work, closes Nest/resources within a bounded policy, and exits with an observable outcome. Readiness draining remains deferred. Owner: [process lifecycle](../configuration/process-lifecycle.md).                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | OB-13 | Complete | **Reproducible pnpm version.** Evidence: `package.json` declares `packageManager: pnpm@12.4.2`; README documents installing and enabling Corepack for Node 26; CI runs `pnpm/action-setup@v4` without a version input before `actions/setup-node@v7`. Observed verification: `corepack --version` returned `0.36.0`; `corepack pnpm --version` returned `12.4.2`; `corepack pnpm install` and `corepack pnpm install --frozen-lockfile` passed; Prettier, TypeScript and Markdown lint, unit tests (29 files, 208 tests), shutdown-process tests (1 file, 3 tests), E2E tests (1 file, 33 tests), build, and `git diff --check` passed. The frozen rerun retained the `pnpm-lock.yaml` hash `fd32cfb873f49f48777c7d0bad5ec8694e036da5476b8c1f5e32609a9d1fa429`. Dependencies: package-manager policy and CI/Corepack. Acceptance: the `packageManager` field remains the sole pnpm version source; CI installs pnpm from that field; frozen installation remains stable; and the documented Corepack steps work on Node 26.                                                                                                                                                                                                                                                                                                          |
 
+<!-- markdownlint-enable MD013 -->
+
 ### Explicitly deferred
+
+<!-- markdownlint-disable MD013 -->
 
 | ID    | Status   | Item, evidence, dependencies, and acceptance criteria                                                                                                                                                                                                                                                                                                                                                                                                   |
 | ----- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | OB-14 | Deferred | **Metrics and traces.** Evidence: the observability owner approves OpenTelemetry for metrics and tracing, but no implementation is verified. Dependencies: operational backend and instrumentation design. Acceptance to remove this deferral: define stable low-cardinality metrics and trace propagation/instrumentation, then verify them. This does not mark full observability complete. Owner: [observability](../architecture/observability.md). |
+
+<!-- markdownlint-enable MD013 -->
 
 ## Final baseline completion criteria
 
@@ -101,25 +109,22 @@ The baseline is ready **before starting business module development** only when:
 
 - [x] Every item from OB-01 through OB-13 is Complete and has current implementation evidence.
 - [x] All unresolved implementation decisions are resolved and reflected in the relevant owners.
-- [x] The required focused and repository quality checks are rerun successfully after the final
-      changes.
-- [ ] OB-14 remains explicitly deferred and excluded from the completion denominator unless its
-      scope is separately approved and implemented.
+- [x] The required focused and repository quality checks are rerun successfully after the final changes.
+- [ ] OB-14 remains explicitly deferred and excluded from the completion denominator unless its scope is separately
+      approved and implemented.
 
 ## Final candidate verification
 
-The completed OB-13 verification confirmed that the Corepack pnpm 12.4.2 frozen install passed;
-Prettier and `pnpm lint` passed; Markdown lint checked 302 files with 0 issues; unit tests passed 29
-files and 208 tests; shutdown process tests passed 1 file and 3 tests; E2E passed 1 file and 33
-tests; and build reported TSC 0 issues and SWC 35 files.
+The completed OB-13 verification confirmed that the Corepack pnpm 12.4.2 frozen install passed; Prettier and `pnpm lint`
+passed; Markdown lint checked 302 files with 0 issues; unit tests passed 29 files and 208 tests; shutdown process tests
+passed 1 file and 3 tests; E2E passed 1 file and 33 tests; and build reported TSC 0 issues and SWC 35 files.
 
 ## Maintenance
 
-- Keep item IDs and statuses identical in the
-  [Spanish version](baseline-operational-completion.es.md).
-- Update evidence only from verified source, test, CI, or documented-owner evidence; do not convert
-  targets into completed APIs without implementation evidence.
-- Change an item status, its task checkbox, evidence, dependencies, and acceptance criteria in both
-  translations in the same change.
+- Keep item IDs and statuses identical in the [Spanish version](baseline-operational-completion.es.md).
+- Update evidence only from verified source, test, CI, or documented-owner evidence; do not convert targets into
+  completed APIs without implementation evidence.
+- Change an item status, its task checkbox, evidence, dependencies, and acceptance criteria in both translations in the
+  same change.
 - Keep OB-14 outside the completion denominator unless a separately approved scope changes it.
 - Link owner documents rather than duplicating their architectural or public-contract rules.

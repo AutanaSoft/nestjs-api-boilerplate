@@ -2,15 +2,14 @@
 
 Status: Target
 
-Este documento define la estrategia técnica para convertir resultados internos de aplicación en
-Responses HTTP públicas.
+Este documento define la estrategia técnica para convertir resultados internos de aplicación en Responses HTTP públicas.
 
 Las convenciones de los contratos HTTP públicos se definen en `../api/http-contracts.md`.
 
 ## Límite de salida
 
-Los resultados internos no deben convertirse automáticamente en contratos públicos sólo porque
-puedan serializarse como JSON.
+Los resultados internos no deben convertirse automáticamente en contratos públicos sólo porque puedan serializarse como
+JSON.
 
 ```text
 Service Result
@@ -26,41 +25,33 @@ Response Schema
 HTTP Response
 ```
 
-El Response Schema declarado para la operación define la representación que el mecanismo de
-serialización debe producir.
+El Response Schema declarado para la operación define la representación que el mecanismo de serialización debe producir.
 
 ## Standard Schema
 
-El proyecto utiliza `StandardSchemaSerializerInterceptor` como estrategia predeterminada de Response
-serialization.
+El proyecto utiliza `StandardSchemaSerializerInterceptor` como estrategia predeterminada de Response serialization.
 
-`SerializationModule` registra un único interceptor global mediante `APP_INTERCEPTOR`. `AppModule`
-importa ese módulo una sola vez; no se registran interceptores equivalentes en `main.ts`,
-`setupApplication()` ni en el bootstrap E2E.
+`SerializationModule` registra un único interceptor global mediante `APP_INTERCEPTOR`. `AppModule` importa ese módulo
+una sola vez; no se registran interceptores equivalentes en `main.ts`, `setupApplication()` ni en el bootstrap E2E.
 
-Cada handler o controller que publique una Response JSON estructurada declara explícitamente su
-schema con `@SerializeOptions({ schema })`. No existe un schema global permisivo: sin schema, el
-interceptor conserva el passthrough nativo. Los archivos, streams y otras Responses especiales
-siguen esa excepción explícita.
+Cada handler o controller que publique una Response JSON estructurada declara explícitamente su schema con
+`@SerializeOptions({ schema })`. No existe un schema global permisivo: sin schema, el interceptor conserva el
+passthrough nativo. Los archivos, streams y otras Responses especiales siguen esa excepción explícita.
 
-El wrapper del proyecto delega en `StandardSchemaSerializerInterceptor` la resolución de metadata,
-el passthrough y la validación o transformación Standard Schema. Solo traduce el fallo de salida que
-emerge de ese mecanismo a `ResponseContractViolation`; no reimplementa el algoritmo de NestJS ni
-decide semántica HTTP.
+El wrapper del proyecto delega en `StandardSchemaSerializerInterceptor` la resolución de metadata, el passthrough y la
+validación o transformación Standard Schema. Solo traduce el fallo de salida que emerge de ese mecanismo a
+`ResponseContractViolation`; no reimplementa el algoritmo de NestJS ni decide semántica HTTP.
 
-El schema proyecta en el nivel superior únicamente las propiedades públicas declaradas. Una
-propiedad interna adicional no alcanza la Response HTTP; los campos y su semántica pertenecen al
-contrato público.
+El schema proyecta en el nivel superior únicamente las propiedades públicas declaradas. Una propiedad interna adicional
+no alcanza la Response HTTP; los campos y su semántica pertenecen al contrato público.
 
-`ClassSerializerInterceptor` y `class-transformer` no deben introducirse como estrategia paralela
-por defecto.
+`ClassSerializerInterceptor` y `class-transformer` no deben introducirse como estrategia paralela por defecto.
 
 El ownership y la semántica del contrato público pertenecen a `../api/http-contracts.md`.
 
 ## Mappers
 
-Utilice un Mapper cuando exista una transformación semántica entre el resultado interno y la
-representación pública.
+Utilice un Mapper cuando exista una transformación semántica entre el resultado interno y la representación pública.
 
 Los Mappers pueden:
 
@@ -85,8 +76,8 @@ La serialización debe construir deliberadamente la representación pública cor
 
 ## Representaciones externas
 
-Los valores específicos del runtime o infraestructura que no tengan una representación JSON directa
-deben convertirse antes de alcanzar la Response pública.
+Los valores específicos del runtime o infraestructura que no tengan una representación JSON directa deben convertirse
+antes de alcanzar la Response pública.
 
 La representación concreta pertenece al contrato público correspondiente.
 
@@ -96,8 +87,8 @@ Las Responses paginadas deben seguir la convención definida en `../api/paginati
 
 ## Responses especiales
 
-Archivos, streams u otros tipos de Response que requieran mecanismos específicos no necesitan
-forzarse mediante un Response Schema de objeto.
+Archivos, streams u otros tipos de Response que requieran mecanismos específicos no necesitan forzarse mediante un
+Response Schema de objeto.
 
 La excepción debe ser explícita en el boundary correspondiente.
 

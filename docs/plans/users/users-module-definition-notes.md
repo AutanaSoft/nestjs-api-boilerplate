@@ -2,23 +2,20 @@
 
 Status: Draft input
 
-Este documento conserva las decisiones iniciales para preparar posteriormente el PRD mínimo de
-`UsersModule`. No constituye todavía un PRD, un contrato HTTP definitivo ni una autorización para
-implementar el módulo.
+Este documento conserva las decisiones iniciales para preparar posteriormente el PRD mínimo de `UsersModule`. No
+constituye todavía un PRD, un contrato HTTP definitivo ni una autorización para implementar el módulo.
 
 ## Resultado acordado
 
-El primer módulo de negocio será `UsersModule`. Su implementación precederá a `AuthModule` y
-proporcionará temporalmente operaciones de gestión de usuarios sin autenticación, Guards ni reglas
-de autorización.
+El primer módulo de negocio será `UsersModule`. Su implementación precederá a `AuthModule` y proporcionará temporalmente
+operaciones de gestión de usuarios sin autenticación, Guards ni reglas de autorización.
 
 La implementación se dividirá en dos etapas:
 
 1. `UsersModule`, con persistencia y operaciones de gestión de usuarios.
 2. `AuthModule`, con registro, autenticación, sesiones, Guards y autorización.
 
-Cuando exista `AuthModule`, dependerá de la API exportada por `UsersModule` y no accederá
-directamente a su Repository.
+Cuando exista `AuthModule`, dependerá de la API exportada por `UsersModule` y no accederá directamente a su Repository.
 
 ## Alcance inicial de UsersModule
 
@@ -31,8 +28,8 @@ El módulo proporcionará estos casos de uso:
 - actualizar parcialmente un usuario;
 - eliminar un usuario.
 
-Los Endpoints estarán disponibles sin autenticación durante la etapa inicial de desarrollo. Esta
-exposición es temporal y deberá revisarse cuando se implemente `AuthModule`.
+Los Endpoints estarán disponibles sin autenticación durante la etapa inicial de desarrollo. Esta exposición es temporal
+y deberá revisarse cuando se implemente `AuthModule`.
 
 ## Operaciones HTTP propuestas
 
@@ -45,26 +42,25 @@ exposición es temporal y deberá revisarse cuando se implemente `AuthModule`.
 | `PATCH`  | `/api/v1/users/:userId` | Actualizar parcialmente un usuario.                       |
 | `DELETE` | `/api/v1/users/:userId` | Eliminar un usuario.                                      |
 
-Estas rutas son propuestas de trabajo para el PRD. Sus contratos de Request, Response y Error deben
-cerrarse antes de iniciar la implementación.
+Estas rutas son propuestas de trabajo para el PRD. Sus contratos de Request, Response y Error deben cerrarse antes de
+iniciar la implementación.
 
 ## Semántica de consulta
 
-`GET /api/v1/users` continuará siendo la operación predeterminada para consultas que puedan
-representarse razonablemente mediante Query Params. Incluirá paginación y filtros simples conforme a
-`../../api/pagination.md` y `../../api/conventions.md`.
+`GET /api/v1/users` continuará siendo la operación predeterminada para consultas que puedan representarse razonablemente
+mediante Query Params. Incluirá paginación y filtros simples conforme a `../../api/pagination.md` y
+`../../api/conventions.md`.
 
-`QUERY /api/v1/users` se reservará para consultas safe e idempotent cuyo input necesite Request
-Content, por ejemplo filtros compuestos u ordenamiento estructurado que no resulte práctico expresar
-en la URI.
+`QUERY /api/v1/users` se reservará para consultas safe e idempotent cuyo input necesite Request Content, por ejemplo
+filtros compuestos u ordenamiento estructurado que no resulte práctico expresar en la URI.
 
 Las dos operaciones de consulta deben permanecer libres de modificaciones y efectos secundarios.
 
-`POST /api/v1/users/search` solo podrá considerarse como fallback temporal si una limitación real
-del stack impide publicar `QUERY`. No forma parte del contrato preferido.
+`POST /api/v1/users/search` solo podrá considerarse como fallback temporal si una limitación real del stack impide
+publicar `QUERY`. No forma parte del contrato preferido.
 
-La documentación de una operación `QUERY` deberá seguir `../../api/openapi.md`, incluida la decisión
-vigente de utilizar OpenAPI 3.2 cuando sea necesario representarla.
+La documentación de una operación `QUERY` deberá seguir `../../api/openapi.md`, incluida la decisión vigente de utilizar
+OpenAPI 3.2 cuando sea necesario representarla.
 
 ## Límite de responsabilidad
 
@@ -79,8 +75,8 @@ vigente de utilizar OpenAPI 3.2 cuando sea necesario representarla.
 - sus operaciones OpenAPI;
 - sus pruebas unitarias y E2E.
 
-Los Controllers delegarán el comportamiento a Services. Los Services accederán a persistencia
-mediante el Repository del Feature y no dependerán directamente de Prisma.
+Los Controllers delegarán el comportamiento a Services. Los Services accederán a persistencia mediante el Repository del
+Feature y no dependerán directamente de Prisma.
 
 Los modelos de Prisma, aplicación y transporte permanecerán separados.
 
@@ -98,8 +94,8 @@ La primera etapa no implementará:
 - Roles, Permissions o Policies;
 - restricciones de acceso sobre las operaciones CRUD.
 
-Estas responsabilidades se definirán e implementarán posteriormente bajo el ownership de
-`AuthModule` o de la estrategia de autorización correspondiente.
+Estas responsabilidades se definirán e implementarán posteriormente bajo el ownership de `AuthModule` o de la estrategia
+de autorización correspondiente.
 
 ## Modelo preliminar
 
@@ -113,11 +109,10 @@ createdAt
 updatedAt
 ```
 
-La propuesta asume un email obligatorio, normalizado y único. Este modelo todavía no está aprobado;
-el PRD deberá confirmar sus campos, restricciones, nullability y representación pública.
+La propuesta asume un email obligatorio, normalizado y único. Este modelo todavía no está aprobado; el PRD deberá
+confirmar sus campos, restricciones, nullability y representación pública.
 
-No se añadirán por defecto `username`, teléfono, Roles ni otros datos sin un requisito funcional
-explícito.
+No se añadirán por defecto `username`, teléfono, Roles ni otros datos sin un requisito funcional explícito.
 
 ## Decisiones pendientes para el PRD
 
@@ -155,6 +150,6 @@ La definición posterior debe respetar:
 
 ## Próximo paso
 
-Utilizar estas definiciones como entrada para redactar el PRD mínimo de `UsersModule`. El PRD deberá
-resolver las decisiones pendientes y convertir las operaciones propuestas en contratos funcionales
-verificables antes de comenzar la implementación.
+Utilizar estas definiciones como entrada para redactar el PRD mínimo de `UsersModule`. El PRD deberá resolver las
+decisiones pendientes y convertir las operaciones propuestas en contratos funcionales verificables antes de comenzar la
+implementación.

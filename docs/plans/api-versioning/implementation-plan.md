@@ -1,9 +1,9 @@
 # Implementación del versionado HTTP
 
-Este plan introduce URI Versioning nativo de NestJS. De forma predeterminada, el contrato HTTP se
-publicará bajo `/api/v1`; los despliegues con un subdominio dedicado podrán omitir el prefijo y usar
-`/v1`. El cambio centraliza la configuración en el bootstrap compartido por producción y E2E, migra
-las rutas actuales y conserva las responsabilidades documentales existentes.
+Este plan introduce URI Versioning nativo de NestJS. De forma predeterminada, el contrato HTTP se publicará bajo
+`/api/v1`; los despliegues con un subdominio dedicado podrán omitir el prefijo y usar `/v1`. El cambio centraliza la
+configuración en el bootstrap compartido por producción y E2E, migra las rutas actuales y conserva las responsabilidades
+documentales existentes.
 
 ## Resultado esperado
 
@@ -14,15 +14,15 @@ GET /api/v1/health/live
 GET /api/v1/health/ready
 ```
 
-El versionado se aplicará mediante las APIs nativas de NestJS, sin incluir `api/v1` manualmente en
-los paths de los controladores. Cuando `API_GLOBAL_PREFIX` tenga un valor vacío explícito, las
-mismas operaciones se publicarán como `/v1/health/live` y `/v1/health/ready`.
+El versionado se aplicará mediante las APIs nativas de NestJS, sin incluir `api/v1` manualmente en los paths de los
+controladores. Cuando `API_GLOBAL_PREFIX` tenga un valor vacío explícito, las mismas operaciones se publicarán como
+`/v1/health/live` y `/v1/health/ready`.
 
 ## Límite de responsabilidad del routing
 
-DNS y el proxy o ingress determinan qué dominio recibe la solicitud y a qué servicio se envía.
-NestJS solo controla el path dentro de la aplicación. El proxy deberá documentar si preserva o
-reescribe ese path; `API_GLOBAL_PREFIX` no configura dominios, restringe hosts ni concede acceso.
+DNS y el proxy o ingress determinan qué dominio recibe la solicitud y a qué servicio se envía. NestJS solo controla el
+path dentro de la aplicación. El proxy deberá documentar si preserva o reescribe ese path; `API_GLOBAL_PREFIX` no
+configura dominios, restringe hosts ni concede acceso.
 
 ## Decisiones confirmadas
 
@@ -39,8 +39,8 @@ reescribe ese path; `API_GLOBAL_PREFIX` no configura dominios, restringe hosts n
 | OpenAPI           | Fuera de alcance; se implementará por separado        |
 | Versiones futuras | Solo para breaking changes del contrato público       |
 
-Estas decisiones fijan el alcance de la implementación. Cualquier cambio posterior deberá revisar
-las pruebas y la documentación antes de modificar el contrato HTTP.
+Estas decisiones fijan el alcance de la implementación. Cualquier cambio posterior deberá revisar las pruebas y la
+documentación antes de modificar el contrato HTTP.
 
 ## Alcance
 
@@ -92,8 +92,8 @@ las pruebas y la documentación antes de modificar el contrato HTTP.
 5. No introducir una variable de entorno `API_VERSION`.
 6. No reutilizar `APP_VERSION`: esa propiedad identifica la versión del software y no las rutas.
 
-`API_GLOBAL_PREFIX` deberá aceptar paths relativos normalizados, como `api` o `platform/api`, y
-rechazar slash inicial o final, segmentos vacíos, `.`, `..`, espacios, query strings y fragments.
+`API_GLOBAL_PREFIX` deberá aceptar paths relativos normalizados, como `api` o `platform/api`, y rechazar slash inicial o
+final, segmentos vacíos, `.`, `..`, espacios, query strings y fragments.
 
 ### 2. Escribir pruebas unitarias RED
 
@@ -116,20 +116,18 @@ Modificar `src/app.setup.ts` para:
 2. Recibir la configuración tipada del namespace `api`.
 3. Invocar `setGlobalPrefix()` únicamente cuando `globalPrefix` no esté vacío.
 4. Habilitar URI Versioning con versión inicial `1`.
-5. Mantener la configuración en `setupApplication()` para que producción y E2E usen el mismo
-   bootstrap.
+5. Mantener la configuración en `setupApplication()` para que producción y E2E usen el mismo bootstrap.
 6. Conservar el comportamiento actual de trust proxy, Helmet y CORS.
 
 No se deben codificar segmentos `api/v1` dentro de `@Controller()`.
 
 ### 4. Versionar los controladores
 
-Modificar `src/modules/health/health.controller.ts` para declarar explícitamente la versión `1` a
-nivel de controlador.
+Modificar `src/modules/health/health.controller.ts` para declarar explícitamente la versión `1` a nivel de controlador.
 
-La declaración explícita debe hacer visible el contrato aunque exista una versión por defecto. Las
-versiones futuras deberán permanecer dentro del módulo propietario del feature y compartir servicios
-solo cuando mantengan la misma semántica.
+La declaración explícita debe hacer visible el contrato aunque exista una versión por defecto. Las versiones futuras
+deberán permanecer dentro del módulo propietario del feature y compartir servicios solo cuando mantengan la misma
+semántica.
 
 ### 5. Migrar las pruebas E2E
 
@@ -137,32 +135,29 @@ Actualizar `test/modules/health/health.e2e-suite.ts` para:
 
 1. Probar `/api/v1/health/live` y `/api/v1/health/ready` con la configuración predeterminada.
 2. Probar `/v1/health/live` y `/v1/health/ready` con `API_GLOBAL_PREFIX` vacío.
-3. Ejecutar sobre las rutas predeterminadas las comprobaciones actuales de Terminus, Helmet, CORS y
-   throttling.
+3. Ejecutar sobre las rutas predeterminadas las comprobaciones actuales de Terminus, Helmet, CORS y throttling.
 4. Verificar que `/health/live` y `/health/ready` respondan `404` en ambos modos.
 5. Verificar que `/api/v2/health/live` responda `404` mientras V2 no exista.
 6. Conservar la comprobación de que `/` no expone una ruta raíz.
 
-Adaptar `test/support/e2e-rate-limit.controller.ts` y su prueba para que la ruta auxiliar participe
-del mismo mecanismo de prefijo y versión. No añadir excepciones de bootstrap únicamente para
-facilitar las pruebas.
+Adaptar `test/support/e2e-rate-limit.controller.ts` y su prueba para que la ruta auxiliar participe del mismo mecanismo
+de prefijo y versión. No añadir excepciones de bootstrap únicamente para facilitar las pruebas.
 
 ### 6. Triangular el mecanismo
 
-Añadir una prueba mínima que demuestre que NestJS discrimina versiones y no solo concatena un
-prefijo. La opción preferida es un controlador exclusivo de E2E con handlers pequeños para las
-versiones `1` y `2`.
+Añadir una prueba mínima que demuestre que NestJS discrimina versiones y no solo concatena un prefijo. La opción
+preferida es un controlador exclusivo de E2E con handlers pequeños para las versiones `1` y `2`.
 
-Si esta prueba aumenta desproporcionadamente el soporte E2E, documentar la decisión y limitar la
-triangulación a comprobar una versión inexistente.
+Si esta prueba aumenta desproporcionadamente el soporte E2E, documentar la decisión y limitar la triangulación a
+comprobar una versión inexistente.
 
 ### 7. Actualizar la documentación
 
 1. Sustituir las rutas antiguas en `README.md`.
 2. Actualizar `docs/testing/e2e-testing.md` con las rutas observables finales.
 3. Enlazar `docs/api/versioning.md` en lugar de duplicar allí sus reglas.
-4. Modificar `docs/api/versioning.md` solo si se introduce una excepción para healthchecks,
-   compatibilidad temporal o configuración operacional de la versión.
+4. Modificar `docs/api/versioning.md` solo si se introduce una excepción para healthchecks, compatibilidad temporal o
+   configuración operacional de la versión.
 5. Mantener OpenAPI fuera del cambio y registrar su implementación como trabajo independiente.
 
 ### 8. Refactorizar sin sobrearquitectura
@@ -194,8 +189,8 @@ pnpm prettier --write README.md docs/testing/e2e-testing.md \
 pnpm lint:md
 ```
 
-Antes de iniciar una revisión RDD, ejecutar el workflow configurado para archivos candidatos hasta
-que una segunda ejecución no produzca cambios:
+Antes de iniciar una revisión RDD, ejecutar el workflow configurado para archivos candidatos hasta que una segunda
+ejecución no produzca cambios:
 
 ```bash
 pnpm lint-staged
@@ -218,6 +213,8 @@ pnpm lint-staged
 
 ## Riesgos y mitigaciones
 
+<!-- markdownlint-disable MD013 -->
+
 | Riesgo                                        | Mitigación                                                            |
 | --------------------------------------------- | --------------------------------------------------------------------- |
 | Romper probes configurados con `/health/*`    | Actualizar ejemplos y validar configuraciones de despliegue conocidas |
@@ -229,6 +226,8 @@ pnpm lint-staged
 | Rutas auxiliares E2E dejan de resolver        | Declarar su versión y probar su URL final                             |
 | Complejidad prematura para V2                 | Crear una nueva versión solo ante un breaking change real             |
 | Documentación inconsistente                   | Actualizar cada owner y ejecutar Prettier y markdownlint              |
+
+<!-- markdownlint-enable MD013 -->
 
 ## Referencias
 

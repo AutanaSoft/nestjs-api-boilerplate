@@ -15,10 +15,9 @@ Las versiones forman parte de la URI. El prefijo global predeterminado es `api`:
 /api/v2
 ```
 
-`API_GLOBAL_PREFIX` puede establecerse en un path relativo normalizado, por ejemplo `platform/api`.
-Un valor vacío explícito omite el prefijo y publica `v1` como `/v1`. Esta variable no determina
-dominios, hosts ni autorización; el proxy o ingress conserva o reescribe el path antes de entregarlo
-a NestJS.
+`API_GLOBAL_PREFIX` puede establecerse en un path relativo normalizado, por ejemplo `platform/api`. Un valor vacío
+explícito omite el prefijo y publica `v1` como `/v1`. Esta variable no determina dominios, hosts ni autorización; el
+proxy o ingress conserva o reescribe el path antes de entregarlo a NestJS.
 
 La versión inicial es `1`, expuesta en la URI como:
 
@@ -26,8 +25,8 @@ La versión inicial es `1`, expuesta en la URI como:
 v1
 ```
 
-Cada controlador público declara esta versión explícitamente. `APP_VERSION` identifica el software y
-no modifica las rutas HTTP. No existe una variable `API_VERSION` de entorno.
+Cada controlador público declara esta versión explícitamente. `APP_VERSION` identifica el software y no modifica las
+rutas HTTP. No existe una variable `API_VERSION` de entorno.
 
 Las versiones utilizan números enteros.
 
@@ -78,8 +77,7 @@ El periodo de coexistencia debe permitir una migración explícita de los client
 
 ## Deprecation
 
-Una versión u operación no debe retirarse sin deprecation cuando existan consumidores que puedan
-depender de ella.
+Una versión u operación no debe retirarse sin deprecation cuando existan consumidores que puedan depender de ella.
 
 La deprecation debe:
 
@@ -87,8 +85,8 @@ La deprecation debe:
 - identificar la alternativa;
 - indicar la fecha de retiro cuando sea conocida.
 
-La especificación OpenAPI debe reflejar la deprecation correspondiente cuando se implemente su
-integración; OpenAPI permanece fuera del alcance de este cambio.
+La especificación OpenAPI debe reflejar la deprecation correspondiente cuando se implemente su integración; OpenAPI
+permanece fuera del alcance de este cambio.
 
 ## Reglas
 

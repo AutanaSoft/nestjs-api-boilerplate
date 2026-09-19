@@ -1,9 +1,8 @@
 # Plan de implementación de healthchecks
 
-Este plan incorpora healthchecks HTTP básicos con `@nestjs/terminus`, separa la capacidad en un
-Feature Module y elimina el endpoint demostrativo `GET /`. El cambio cubrirá únicamente la salud del
-proceso NestJS; la información pública de la aplicación y los checks de dependencias quedan fuera de
-alcance.
+Este plan incorpora healthchecks HTTP básicos con `@nestjs/terminus`, separa la capacidad en un Feature Module y elimina
+el endpoint demostrativo `GET /`. El cambio cubrirá únicamente la salud del proceso NestJS; la información pública de la
+aplicación y los checks de dependencias quedan fuera de alcance.
 
 ## Resultado esperado
 
@@ -21,8 +20,7 @@ La aplicación expondrá dos probes operativos:
 | `GET`  | `/health/live`  | Confirmar que el proceso HTTP está vivo y responde                |
 | `GET`  | `/health/ready` | Confirmar, temporalmente, que la aplicación puede recibir tráfico |
 
-Ambos endpoints usarán el contrato estándar de Terminus y quedarán fuera del límite global de
-solicitudes.
+Ambos endpoints usarán el contrato estándar de Terminus y quedarán fuera del límite global de solicitudes.
 
 ## Alcance acordado
 
@@ -51,8 +49,8 @@ Respuesta esperada:
 }
 ```
 
-Este probe no comprobará base de datos, red, memoria, disco ni servicios externos. Su resultado no
-debe depender de recursos ajenos al proceso HTTP.
+Este probe no comprobará base de datos, red, memoria, disco ni servicios externos. Su resultado no debe depender de
+recursos ajenos al proceso HTTP.
 
 ### Readiness
 
@@ -67,18 +65,16 @@ debe depender de recursos ajenos al proceso HTTP.
 }
 ```
 
-En esta etapa, readiness significa únicamente que la aplicación terminó de iniciar y puede responder
-HTTP. Cuando existan dependencias obligatorias para atender tráfico, sus indicadores se añadirán a
-este endpoint sin alterar la responsabilidad de liveness.
+En esta etapa, readiness significa únicamente que la aplicación terminó de iniciar y puede responder HTTP. Cuando
+existan dependencias obligatorias para atender tráfico, sus indicadores se añadirán a este endpoint sin alterar la
+responsabilidad de liveness.
 
 ### Comportamiento transversal
 
 - Los dos endpoints heredarán Helmet y la política CORS global.
-- Los dos endpoints estarán exentos del rate limiting mediante la API declarativa de
-  `@nestjs/throttler`.
+- Los dos endpoints estarán exentos del rate limiting mediante la API declarativa de `@nestjs/throttler`.
 - No se expondrán stack traces, configuración, variables de entorno ni metadatos de la aplicación.
-- No se incorporará autenticación en esta etapa, para permitir el uso directo por orquestadores y
-  balanceadores.
+- No se incorporará autenticación en esta etapa, para permitir el uso directo por orquestadores y balanceadores.
 
 ## Diseño del módulo
 
@@ -107,8 +103,8 @@ No se añadirá un servicio propio mientras no exista lógica de salud independi
 
 ## Estrategia de pruebas
 
-La implementación seguirá RED, GREEN y REFACTOR. Las pruebas fijarán primero el contrato observable
-y evitarán depender de detalles internos de Terminus que no formen parte del API HTTP.
+La implementación seguirá RED, GREEN y REFACTOR. Las pruebas fijarán primero el contrato observable y evitarán depender
+de detalles internos de Terminus que no formen parte del API HTTP.
 
 ### Pruebas unitarias
 
@@ -133,10 +129,9 @@ Actualizar la suite E2E para verificar:
 - Solicitudes repetidas a los probes no producen `429` bajo el límite configurado para la prueba.
 - `GET /` deja de existir y responde `404`.
 
-La cobertura del rate limiting global no deberá depender de los probes excluidos. La suite utilizará
-una ruta controlada exclusiva del entorno de pruebas, o el mecanismo de composición E2E existente,
-para demostrar que una ruta no excluida continúa produciendo `429`. Esa ruta no formará parte del
-contrato de producción.
+La cobertura del rate limiting global no deberá depender de los probes excluidos. La suite utilizará una ruta controlada
+exclusiva del entorno de pruebas, o el mecanismo de composición E2E existente, para demostrar que una ruta no excluida
+continúa produciendo `429`. Esa ruta no formará parte del contrato de producción.
 
 ## Fases de implementación
 
@@ -166,8 +161,8 @@ Criterio de salida: las pruebas nuevas fallan porque los contratos todavía no e
 4. Excluir el controlador o sus rutas del throttling.
 5. Confirmar que no se ejecuten checks de dependencias.
 
-Criterio de salida: ambos endpoints responden con el contrato esperado y nunca reciben `429` en el
-escenario E2E controlado.
+Criterio de salida: ambos endpoints responden con el contrato esperado y nunca reciben `429` en el escenario E2E
+controlado.
 
 ### Fase 4: eliminar Hello World
 
@@ -177,8 +172,7 @@ escenario E2E controlado.
 4. Eliminar `src/app.service.ts`.
 5. Buscar referencias restantes a `getHello`, `Hello World!` y al contrato anterior de `GET /`.
 
-Criterio de salida: no quedan referencias ejecutables al endpoint demostrativo y `GET /` responde
-`404`.
+Criterio de salida: no quedan referencias ejecutables al endpoint demostrativo y `GET /` responde `404`.
 
 ### Fase 5: triangular políticas HTTP
 
@@ -208,8 +202,8 @@ Criterio de salida: ningún documento presenta `GET /` o `Hello World!` como con
 5. Ejecutar el build de producción.
 6. Revisar que el diff permanezca dentro del alcance acordado.
 
-Criterio de salida: todas las verificaciones terminan correctamente y no existen cambios de
-contenido producidos por una segunda ejecución del formateador.
+Criterio de salida: todas las verificaciones terminan correctamente y no existen cambios de contenido producidos por una
+segunda ejecución del formateador.
 
 ## Archivos previstos
 
@@ -237,6 +231,8 @@ contenido producidos por una segunda ejecución del formateador.
 
 ## Riesgos y mitigaciones
 
+<!-- markdownlint-disable MD013 -->
+
 | Riesgo                                        | Mitigación                                                               |
 | --------------------------------------------- | ------------------------------------------------------------------------ |
 | Confundir liveness con readiness              | Mantener rutas y métodos separados, aunque inicialmente compartan checks |
@@ -247,6 +243,8 @@ contenido producidos por una segunda ejecución del formateador.
 | Acoplar health a configuración pública        | No inyectar `appConfig` ni exponer metadatos                             |
 | Añadir indicadores prematuros                 | Mantener vacío el conjunto de checks de dependencias                     |
 | Exponer detalles internos                     | Conservar únicamente el contrato estándar y estable de Terminus          |
+
+<!-- markdownlint-enable MD013 -->
 
 ## Criterios de aceptación
 

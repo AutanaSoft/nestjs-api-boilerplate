@@ -22,23 +22,20 @@ Prisma
 PostgreSQL
 ```
 
-Los Services no deben depender directamente de Prisma Client ni contener queries específicas del
-ORM.
+Los Services no deben depender directamente de Prisma Client ni contener queries específicas del ORM.
 
 ## Repository Ownership
 
-Cada Repository pertenece al Feature propietario de los datos y comportamiento persistente
-correspondiente.
+Cada Repository pertenece al Feature propietario de los datos y comportamiento persistente correspondiente.
 
-Los Repositories deben permanecer privados para su Feature salvo que exista una razón arquitectónica
-explícita para exponerlos.
+Los Repositories deben permanecer privados para su Feature salvo que exista una razón arquitectónica explícita para
+exponerlos.
 
 Otros Features deben consumir la API exportada por el módulo propietario, no sus Repositories.
 
 ## Responsabilidad de los Repositories
 
-Los Repositories encapsulan las operaciones específicas de persistencia, incluyendo cuando
-corresponda:
+Los Repositories encapsulan las operaciones específicas de persistencia, incluyendo cuando corresponda:
 
 - queries;
 - relation loading;
@@ -48,8 +45,7 @@ corresponda:
 - persistence mapping;
 - participación en transactions.
 
-Deben exponer operaciones significativas para la aplicación en lugar de exponer Prisma Client
-directamente.
+Deben exponer operaciones significativas para la aplicación en lugar de exponer Prisma Client directamente.
 
 ## Infraestructura de base de datos
 
@@ -61,29 +57,25 @@ Los Application Services no deben inyectar Prisma Client directamente.
 
 ## Prisma Schema y Migrations
 
-El Prisma Schema define el persistence model y permanece separado de los contratos de aplicación y
-transporte.
+El Prisma Schema define el persistence model y permanece separado de los contratos de aplicación y transporte.
 
-Los assets de Prisma se ubican bajo `src/database/prisma/`: `schema.prisma` contiene el generator y
-datasource, los modelos viven en `models/` y el migration history en `migrations/`. El cliente
-generado permanece en `src/database/generated/` y no debe editarse manualmente.
+Los assets de Prisma se ubican bajo `src/database/prisma/`: `schema.prisma` contiene el generator y datasource, los
+modelos viven en `models/` y el migration history en `migrations/`. El cliente generado permanece en
+`src/database/generated/` y no debe editarse manualmente.
 
-El modelo Prisma `User` conserva sus nombres camelCase para la API de la aplicación y utiliza
-mappings explícitos hacia los identificadores snake_case de PostgreSQL (`users`, `display_name`,
-`created_at` y `updated_at`).
+El modelo Prisma `User` conserva sus nombres camelCase para la API de la aplicación y utiliza mappings explícitos hacia
+los identificadores snake_case de PostgreSQL (`users`, `display_name`, `created_at` y `updated_at`).
 
 Los cambios de schema deben versionarse mediante Prisma Migrate.
 
-El migration history forma parte del repositorio y debe mantenerse junto con los cambios que lo
-requieren.
+El migration history forma parte del repositorio y debe mantenerse junto con los cambios que lo requieren.
 
-`prisma db push` puede utilizarse para prototipado local, pero no sustituye las migrations
-versionadas.
+`prisma db push` puede utilizarse para prototipado local, pero no sustituye las migrations versionadas.
 
 ## Transactions
 
-Utilice transactions cuando una operación requiera múltiples cambios persistentes que deban
-completarse o fallar como una unidad.
+Utilice transactions cuando una operación requiera múltiples cambios persistentes que deban completarse o fallar como
+una unidad.
 
 El transaction boundary pertenece a la operación de aplicación que define esa atomicidad.
 
@@ -95,11 +87,10 @@ No cree transactions internas que impidan una transaction de aplicación más am
 
 Los Repositories son responsables de diseñar relation loading eficiente.
 
-Evite ejecutar queries adicionales por cada elemento de una colección cuando los datos puedan
-recuperarse mediante una estrategia de carga adecuada.
+Evite ejecutar queries adicionales por cada elemento de una colección cuando los datos puedan recuperarse mediante una
+estrategia de carga adecuada.
 
-Utilice `select`, `include` y las estrategias de relation loading deliberadamente según los datos
-requeridos.
+Utilice `select`, `include` y las estrategias de relation loading deliberadamente según los datos requeridos.
 
 ## Query Scope
 
@@ -113,8 +104,7 @@ Las projections y relation loading deben pertenecer a la operación del Reposito
 
 Utilice la API de Prisma por defecto.
 
-Reserve Raw SQL para operaciones que no puedan expresarse con claridad o eficiencia mediante la API
-normal.
+Reserve Raw SQL para operaciones que no puedan expresarse con claridad o eficiencia mediante la API normal.
 
 Las Raw Queries deben:
 
@@ -138,8 +128,7 @@ La separación respecto al contrato HTTP público se define en `../api/http-cont
 5. No inyecte Prisma Client directamente en Application Services.
 6. Mantenga los Repositories privados para su Feature por defecto.
 7. Versione cambios de schema mediante Prisma Migrate.
-8. Comparta el transaction context cuando una operación requiera atomicidad entre varios
-   Repositories.
+8. Comparta el transaction context cuando una operación requiera atomicidad entre varios Repositories.
 9. Evite N+1 queries mediante relation loading deliberado.
 10. Recupere únicamente los datos requeridos.
 11. Mantenga Raw SQL parametrizado dentro del límite de persistencia.

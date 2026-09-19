@@ -1,9 +1,9 @@
 # Reorganize Prisma assets under the database boundary
 
-This plan colocates Prisma schema assets, migrations, generated client code, and future seed sources
-under `src/database/` while keeping `prisma.config.ts` at the repository root for automatic Prisma
-CLI discovery. The change preserves the database schema and runtime behavior while consolidating the
-disposable pre-release migration history into one accepted initial migration.
+This plan colocates Prisma schema assets, migrations, generated client code, and future seed sources under
+`src/database/` while keeping `prisma.config.ts` at the repository root for automatic Prisma CLI discovery. The change
+preserves the database schema and runtime behavior while consolidating the disposable pre-release migration history into
+one accepted initial migration.
 
 ## Target structure
 
@@ -27,9 +27,9 @@ src/database/
         └── users.seed.ts
 ```
 
-`prisma.config.ts` remains at the repository root. Prisma ORM supports custom config locations when
-every invocation supplies `--config`, but the root location is the conventional and automatically
-discovered path. Paths declared in the config are resolved relative to that file.
+`prisma.config.ts` remains at the repository root. Prisma ORM supports custom config locations when every invocation
+supplies `--config`, but the root location is the conventional and automatically discovered path. Paths declared in the
+config are resolved relative to that file.
 
 ## Decisions
 
@@ -61,8 +61,8 @@ discovered path. Paths declared in the config are resolved relative to that file
 - `src/database/prisma.service.ts` owns application client construction and NestJS lifecycle hooks.
 - Feature repositories own queries and persistence-to-domain mapping.
 
-Prisma models remain persistence contracts. They must not replace application models, HTTP request
-schemas, or response schemas.
+Prisma models remain persistence contracts. They must not replace application models, HTTP request schemas, or response
+schemas.
 
 ## Expected Prisma configuration
 
@@ -98,13 +98,13 @@ datasource db {
 }
 ```
 
-The relative generator output is recalculated from the relocated `src/database/prisma/schema.prisma`
-file and must continue to resolve to `src/database/generated/`.
+The relative generator output is recalculated from the relocated `src/database/prisma/schema.prisma` file and must
+continue to resolve to `src/database/generated/`.
 
 ## Physical database naming
 
-Prisma model and field names remain idiomatic TypeScript while `@map` and `@@map` define explicit
-PostgreSQL identifiers. The initial User model will follow this shape:
+Prisma model and field names remain idiomatic TypeScript while `@map` and `@@map` define explicit PostgreSQL
+identifiers. The initial User model will follow this shape:
 
 ```prisma
 model User {
@@ -120,16 +120,15 @@ model User {
 }
 ```
 
-The generated Prisma API continues to expose `User`, `displayName`, `createdAt`, and `updatedAt`.
-PostgreSQL stores the table as `users` and its mapped columns as `display_name`, `created_at`, and
-`updated_at`. The initial migration and trigger SQL must reference these physical names.
+The generated Prisma API continues to expose `User`, `displayName`, `createdAt`, and `updatedAt`. PostgreSQL stores the
+table as `users` and its mapped columns as `display_name`, `created_at`, and `updated_at`. The initial migration and
+trigger SQL must reference these physical names.
 
 ## Seed design
 
 ### Entry point
 
-`seed.ts` will run as an independent CLI process. It must not bootstrap the NestJS application or
-reuse `PrismaService`.
+`seed.ts` will run as an independent CLI process. It must not bootstrap the NestJS application or reuse `PrismaService`.
 
 The entry point will:
 
@@ -143,8 +142,7 @@ The entry point will:
 
 ### Seed modules
 
-Each feature seed will export one focused function that receives the Prisma client. Seed operations
-must:
+Each feature seed will export one focused function that receives the Prisma client. Seed operations must:
 
 - use stable unique keys and `upsert` where possible;
 - be safe to execute repeatedly;
@@ -153,8 +151,8 @@ must:
 - avoid `deleteMany()`, resets, or implicit destructive cleanup;
 - keep update behavior explicit so reruns do not silently overwrite developer data.
 
-The initial implementation will create the seed infrastructure without adding default users,
-passwords, tokens, or other credentials. Feature data requires a separate functional requirement.
+The initial implementation will create the seed infrastructure without adding default users, passwords, tokens, or other
+credentials. Feature data requires a separate functional requirement.
 
 ### Environment boundary
 
@@ -168,19 +166,16 @@ The development seed and E2E fixtures serve different purposes:
 | Uses `prisma db seed`        | Prefers public HTTP setup             |
 | Never runs during deployment | Runs only inside the E2E lifecycle    |
 
-An environment label cannot prove that a connection URL is safe. The command therefore remains an
-explicit operator action and must not be attached to application startup, `migrate deploy`, or the
-E2E bootstrap.
+An environment label cannot prove that a connection URL is safe. The command therefore remains an explicit operator
+action and must not be attached to application startup, `migrate deploy`, or the E2E bootstrap.
 
 ## Migration baseline policy
 
-The project is still in development: no production or shared database depends on the current
-migration identifiers, and development data is disposable. The empty baseline, User table migration,
-and listing-index migration will therefore be replaced by one initial migration representing the
-accepted starting state.
+The project is still in development: no production or shared database depends on the current migration identifiers, and
+development data is disposable. The empty baseline, User table migration, and listing-index migration will therefore be
+replaced by one initial migration representing the accepted starting state.
 
-The consolidated migration must preserve all current behavior while adopting the approved physical
-naming convention:
+The consolidated migration must preserve all current behavior while adopting the approved physical naming convention:
 
 - the `users` table and `users_pkey` primary key;
 - the `users_email_key` unique email index;
@@ -190,51 +185,48 @@ naming convention:
 - the trigger condition over `email` and `display_name`;
 - assignment of the `updated_at` column.
 
-The trigger and function are handwritten SQL that Prisma cannot derive completely from the schema.
-The initial migration must retain them explicitly rather than relying only on generated migration
-SQL. After this baseline is accepted, all later schema changes create immutable incremental
-migrations.
+The trigger and function are handwritten SQL that Prisma cannot derive completely from the schema. The initial migration
+must retain them explicitly rather than relying only on generated migration SQL. After this baseline is accepted, all
+later schema changes create immutable incremental migrations.
 
-Consolidation requires recreating disposable development databases because their applied migration
-identifiers will no longer match the repository history. This destructive action occurs only during
-implementation, after explicit confirmation immediately before execution. The recreated database is
-then migrated from the new baseline and populated through the explicit development seed workflow.
+Consolidation requires recreating disposable development databases because their applied migration identifiers will no
+longer match the repository history. This destructive action occurs only during implementation, after explicit
+confirmation immediately before execution. The recreated database is then migrated from the new baseline and populated
+through the explicit development seed workflow.
 
 ## Implementation phases
 
 ### Phase 1: lock the current database contract
 
-1. Record the current schema, generated client surface, migration SQL, indexes, function, and
-   trigger.
+1. Record the current schema, generated client surface, migration SQL, indexes, function, and trigger.
 2. Add focused checks that prove Prisma exposes the existing `User` model after relocation.
 3. Preserve the trigger test while removing its dependency on the old migration directory name.
 4. Confirm the current history applies successfully to an isolated PostgreSQL database.
 
-Exit criterion: table, indexes, trigger behavior, and generated client have reproducible checks
-before migration history changes.
+Exit criterion: table, indexes, trigger behavior, and generated client have reproducible checks before migration history
+changes.
 
 ### Phase 2: create the initial migration and relocate schema assets
 
 1. Create `src/database/prisma/`.
 2. Move generator and datasource declarations to `src/database/prisma/schema.prisma`.
-3. Move `User` to `src/database/prisma/models/user.prisma` and add the approved table, column,
-   constraint, and index mappings.
+3. Move `User` to `src/database/prisma/models/user.prisma` and add the approved table, column, constraint, and index
+   mappings.
 4. Point root `prisma.config.ts` at the schema directory and relocated migrations.
 5. Remove the three disposable pre-release migration directories.
-6. After explicit destructive confirmation, recreate the disposable development database so its
-   applied migration identifiers cannot conflict with the new baseline.
+6. After explicit destructive confirmation, recreate the disposable development database so its applied migration
+   identifiers cannot conflict with the new baseline.
 7. Run `prisma migrate dev --name initial --create-only` to generate the schema-derived migration.
-8. Review the generated SQL identifiers and append the handwritten function and trigger SQL using
-   `users`, `display_name`, and `updated_at`.
+8. Review the generated SQL identifiers and append the handwritten function and trigger SQL using `users`,
+   `display_name`, and `updated_at`.
 9. Apply the reviewed initial migration with `prisma migrate dev`.
 10. Update direct migration paths and SQL assertions in tests and documentation.
 
-The migration must be generated with `--create-only` first. A plain one-step
-`migrate dev --name initial` would apply the generated SQL before the handwritten trigger is added
-and would not produce the accepted complete baseline.
+The migration must be generated with `--create-only` first. A plain one-step `migrate dev --name initial` would apply
+the generated SQL before the handwritten trigger is added and would not produce the accepted complete baseline.
 
-Exit criterion: Prisma validates the multifile schema and a clean isolated database reaches the
-complete accepted state from the reviewed single initial migration.
+Exit criterion: Prisma validates the multifile schema and a clean isolated database reaches the complete accepted state
+from the reviewed single initial migration.
 
 ### Phase 3: regenerate the client
 
@@ -254,8 +246,8 @@ Exit criterion: the generated client remains at `src/database/generated/` and ex
 5. Add a `prisma:seed` package script that invokes `prisma db seed` explicitly.
 6. Leave feature seed data empty until requirements define the records to create.
 
-Exit criterion: the seed command starts safely, rejects forbidden environments, and succeeds as a
-no-op against an eligible migrated development database.
+Exit criterion: the seed command starts safely, rejects forbidden environments, and succeeds as a no-op against an
+eligible migrated development database.
 
 ### Phase 5: update project references
 
@@ -270,8 +262,8 @@ Review and update, as required:
 - `docs/testing/e2e-testing.md`;
 - `README.md`.
 
-Exit criterion: no repository reference expects a root `prisma/` directory, while `prisma.config.ts`
-remains discoverable at the root.
+Exit criterion: no repository reference expects a root `prisma/` directory, while `prisma.config.ts` remains
+discoverable at the root.
 
 ### Phase 6: verify behavior and operational safety
 
@@ -282,8 +274,7 @@ remains discoverable at the root.
 5. Run the development seed twice and confirm stable data with no duplicates.
 6. Confirm production and test seed attempts fail before any write.
 
-Exit criterion: the relocation changes paths only, and the seed workflow is explicit, repeatable,
-and isolated from E2E.
+Exit criterion: the relocation changes paths only, and the seed workflow is explicit, repeatable, and isolated from E2E.
 
 ## Files expected to change
 
@@ -340,13 +331,12 @@ and isolated from E2E.
 - [ ] Prisma schema assets live under `src/database/prisma/`.
 - [ ] Each persistence model has an independent file under `prisma/models/`.
 - [ ] Prisma APIs remain camelCase while PostgreSQL identifiers use explicit snake_case mappings.
-- [ ] The User model maps to `users`; mapped columns are `display_name`, `created_at`, and
-      `updated_at`.
+- [ ] The User model maps to `users`; mapped columns are `display_name`, `created_at`, and `updated_at`.
 - [ ] Primary key, unique constraint, and listing indexes use explicit snake_case names.
 - [ ] The assembled schema preserves the current application-facing model and datasource behavior.
 - [ ] The three pre-release migrations are replaced by one initial migration.
-- [ ] The initial migration is generated with `--create-only`, reviewed, extended with the function
-      and trigger, and only then applied.
+- [ ] The initial migration is generated with `--create-only`, reviewed, extended with the function and trigger, and
+      only then applied.
 - [ ] The initial migration preserves the table, indexes, function, trigger, and trigger condition.
 - [ ] Applying the initial migration to an empty database reproduces the accepted starting state.
 - [ ] Subsequent migrations are treated as immutable incremental history.

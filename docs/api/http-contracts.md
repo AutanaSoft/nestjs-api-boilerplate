@@ -4,8 +4,8 @@ Status: Target
 
 Este documento define las convenciones compartidas de los contratos HTTP públicos de la API.
 
-Los contratos concretos de un Feature pertenecen a su PRD o especificación funcional cuando exista
-una responsabilidad que justifique mantenerlos allí.
+Los contratos concretos de un Feature pertenecen a su PRD o especificación funcional cuando exista una responsabilidad
+que justifique mantenerlos allí.
 
 ## Alcance
 
@@ -21,8 +21,8 @@ Los contratos HTTP pueden incluir:
 
 Las convenciones REST generales se definen en `conventions.md`.
 
-La implementación técnica de Request validation y Response serialization se define en
-`../architecture/validation.md` y `../architecture/serialization.md`.
+La implementación técnica de Request validation y Response serialization se define en `../architecture/validation.md` y
+`../architecture/serialization.md`.
 
 ## Ownership
 
@@ -36,8 +36,7 @@ No mantenga definiciones públicas equivalentes bajo múltiples owners.
 
 ## Separación de contratos
 
-Los contratos HTTP son independientes de los modelos internos de aplicación, persistencia e
-infraestructura.
+Los contratos HTTP son independientes de los modelos internos de aplicación, persistencia e infraestructura.
 
 Compartir campos no convierte esas representaciones en el mismo contrato.
 
@@ -49,19 +48,17 @@ Request y Response son contratos diferentes aunque compartan información.
 
 Cada uno debe modelar únicamente los campos y la semántica que corresponden a su boundary.
 
-Los campos internos no forman parte de una Response pública únicamente porque estén disponibles en
-el modelo de aplicación o persistencia. El schema canónico de una Response JSON estructurada declara
-sus propiedades públicas de nivel superior; la Response no incluye propiedades adicionales no
-declaradas.
+Los campos internos no forman parte de una Response pública únicamente porque estén disponibles en el modelo de
+aplicación o persistencia. El schema canónico de una Response JSON estructurada declara sus propiedades públicas de
+nivel superior; la Response no incluye propiedades adicionales no declaradas.
 
 ## Contrato inicial de health
 
-`GET /api/v1/health/live` y `GET /api/v1/health/ready` son las primeras Responses JSON estructuradas
-que deben declarar un contrato canónico explícito. Su forma de éxito contiene `status`, `info`,
-`error` y `details`.
+`GET /api/v1/health/live` y `GET /api/v1/health/ready` son las primeras Responses JSON estructuradas que deben declarar
+un contrato canónico explícito. Su forma de éxito contiene `status`, `info`, `error` y `details`.
 
-El contrato canónico debe preservar esa semántica pública y no convertir la representación interna
-de Terminus en un contrato implícito. Propiedades adicionales del resultado interno no se publican.
+El contrato canónico debe preservar esa semántica pública y no convertir la representación interna de Terminus en un
+contrato implícito. Propiedades adicionales del resultado interno no se publican.
 
 ## Nullability y ausencia
 
@@ -70,8 +67,8 @@ La semántica pública debe distinguir explícitamente entre:
 - una propiedad omitida;
 - una propiedad presente con valor `null`.
 
-La elección debe responder al significado real del contrato y mantenerse consistente entre
-documentación e implementación.
+La elección debe responder al significado real del contrato y mantenerse consistente entre documentación e
+implementación.
 
 ## Composición
 
@@ -85,11 +82,10 @@ No reutilice automáticamente estructuras internas únicamente para reducir dupl
 
 ## Request correlation header
 
-Every response includes `X-Request-Id`. Clients may send that header to correlate a request; the
-server adopts only a canonical lowercase UUIDv4 textual value (36 characters) and replaces absent or
-invalid values with a newly generated UUIDv4. Browser clients may send and read this header because
-the CORS policy allows and exposes it. This header is independent of the future JSON error body
-defined below.
+Every response includes `X-Request-Id`. Clients may send that header to correlate a request; the server adopts only a
+canonical lowercase UUIDv4 textual value (36 characters) and replaces absent or invalid values with a newly generated
+UUIDv4. Browser clients may send and read this header because the CORS policy allows and exposes it. This header is
+independent of the future JSON error body defined below.
 
 ## Error Response
 
@@ -109,15 +105,16 @@ type ErrorResponse = {
 
 Los clientes no deben depender de `message` para identificar programáticamente un error.
 
-`details` se omite por defecto. Solo puede incluirse cuando un proyector explícito asociado al
-código produce una estructura definida por un contrato público tipado. No serialice el error
-original ni valores `unknown`; si el proyector falla, omita `details` sin alterar el resto de la
-respuesta.
+`details` se omite por defecto. Solo puede incluirse cuando un proyector explícito asociado al código produce una
+estructura definida por un contrato público tipado. No serialice el error original ni valores `unknown`; si el proyector
+falla, omita `details` sin alterar el resto de la respuesta.
 
 ## Catálogo de Error Responses
 
-Los códigos son `UPPER_SNAKE_CASE`, estables y tienen un único significado. Este es el catálogo
-completo para los status compartidos:
+Los códigos son `UPPER_SNAKE_CASE`, estables y tienen un único significado. Este es el catálogo completo para los status
+compartidos:
+
+<!-- markdownlint-disable MD013 -->
 
 | Status | Código                  | Mensaje exacto                                           | Significado público                                               |
 | ------ | ----------------------- | -------------------------------------------------------- | ----------------------------------------------------------------- |
@@ -130,13 +127,15 @@ completo para los status compartidos:
 | `429`  | `RATE_LIMIT_EXCEEDED`   | `Too many requests.`                                     | Se excedió el límite de solicitudes aplicable.                    |
 | `500`  | `INTERNAL_SERVER_ERROR` | `An unexpected error occurred.`                          | Ocurrió un fallo interno o no confiable.                          |
 
-`ROUTE_NOT_FOUND` y `RESOURCE_NOT_FOUND` no son intercambiables. Los errores esperados específicos
-de aplicación deben usar su código del catálogo; los fallbacks genéricos no los sustituyen.
-`UNAUTHORIZED` y `FORBIDDEN` son únicamente fallbacks públicos definidos por la semántica HTTP: este
-catálogo no define mecanismos ni reglas de autenticación o autorización de negocio.
+<!-- markdownlint-enable MD013 -->
 
-Los fallos de contrato de salida siempre usan `500`, `INTERNAL_SERVER_ERROR` y el mensaje exacto del
-catálogo, sin `details`.
+`ROUTE_NOT_FOUND` y `RESOURCE_NOT_FOUND` no son intercambiables. Los errores esperados específicos de aplicación deben
+usar su código del catálogo; los fallbacks genéricos no los sustituyen. `UNAUTHORIZED` y `FORBIDDEN` son únicamente
+fallbacks públicos definidos por la semántica HTTP: este catálogo no define mecanismos ni reglas de autenticación o
+autorización de negocio.
+
+Los fallos de contrato de salida siempre usan `500`, `INTERNAL_SERVER_ERROR` y el mensaje exacto del catálogo, sin
+`details`.
 
 El Error Response no debe exponer:
 
@@ -148,8 +147,7 @@ El Error Response no debe exponer:
 
 La selección de HTTP Status Codes se define en `conventions.md`.
 
-La traducción entre errores internos y el contrato HTTP se define en
-`../architecture/error-handling.md`.
+La traducción entre errores internos y el contrato HTTP se define en `../architecture/error-handling.md`.
 
 ## Enforcement y documentación
 

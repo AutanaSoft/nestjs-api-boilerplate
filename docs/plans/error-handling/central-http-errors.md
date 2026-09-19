@@ -1,23 +1,22 @@
 # Plan de implementación de errores HTTP centrales
 
-Este plan define cómo completar **OB-10** mediante un único Error Boundary HTTP que traduzca errores
-esperados, errores del framework y fallos desconocidos al contrato público compartido, reutilizando
-la correlación y los logs estructurados de OB-11.
+Este plan define cómo completar **OB-10** mediante un único Error Boundary HTTP que traduzca errores esperados, errores
+del framework y fallos desconocidos al contrato público compartido, reutilizando la correlación y los logs estructurados
+de OB-11.
 
 ## Resultado esperado
 
 Al finalizar, toda respuesta HTTP de error deberá utilizar la forma
-`{ statusCode, code, message, requestId, details? }`. La traducción deberá ocurrir en un filtro
-global, los errores de aplicación deberán permanecer independientes de HTTP y los fallos inesperados
-deberán registrarse con contexto seguro sin exponer información técnica al cliente.
+`{ statusCode, code, message, requestId, details? }`. La traducción deberá ocurrir en un filtro global, los errores de
+aplicación deberán permanecer independientes de HTTP y los fallos inesperados deberán registrarse con contexto seguro
+sin exponer información técnica al cliente.
 
 ## Alcance
 
 ### Incluido
 
 - Definir la representación canónica y reutilizable de `ErrorResponse`.
-- Definir una abstracción mínima para condiciones esperadas de aplicación, independiente del
-  transporte.
+- Definir una abstracción mínima para condiciones esperadas de aplicación, independiente del transporte.
 - Centralizar la traducción de errores mediante un Exception Filter global.
 - Traducir excepciones HTTP conocidas de NestJS sin propagar cuerpos arbitrarios.
 - Traducir errores esperados de aplicación mediante un catálogo explícito.
@@ -30,8 +29,7 @@ deberán registrarse con contexto seguro sin exponer información técnica al cl
 ### Fuera de alcance
 
 - Implementar Request validation o `StandardSchemaValidationPipe`, pertenecientes a OB-08.
-- Implementar Response serialization o `StandardSchemaSerializerInterceptor`, pertenecientes a
-  OB-09.
+- Implementar Response serialization o `StandardSchemaSerializerInterceptor`, pertenecientes a OB-09.
 - Definir esquemas de Request o Response específicos de futuros módulos de negocio.
 - Configurar Swagger/OpenAPI, perteneciente a OB-07.
 - Diseñar errores de dominio para módulos de negocio todavía inexistentes.
@@ -43,30 +41,29 @@ deberán registrarse con contexto seguro sin exponer información técnica al cl
 
 La implementación debe respetar:
 
-- [Manejo de errores](../../architecture/error-handling.md): separación entre errores de aplicación,
-  errores tecnológicos y representación HTTP.
+- [Manejo de errores](../../architecture/error-handling.md): separación entre errores de aplicación, errores
+  tecnológicos y representación HTTP.
 - [Contratos HTTP](../../api/http-contracts.md): forma y restricciones del Error Response público.
 - [Convenciones de API](../../api/conventions.md): semántica de HTTP Status Codes.
-- [Observabilidad](../../architecture/observability.md): correlación, logging estructurado y
-  protección de datos sensibles.
-- [Validación](../../architecture/validation.md): integración posterior de OB-08 con el Error
-  Boundary.
-- [Serialización](../../architecture/serialization.md): tratamiento de fallos de salida como errores
-  internos.
-- [Pruebas](../../testing/testing.md) y [pruebas E2E](../../testing/e2e-testing.md): niveles,
-  aislamiento y verificación por HTTP real.
-- [Baseline operacional](../baseline-operational-completion.md): dependencias y evidencia requerida
-  para completar OB-10.
+- [Observabilidad](../../architecture/observability.md): correlación, logging estructurado y protección de datos
+  sensibles.
+- [Validación](../../architecture/validation.md): integración posterior de OB-08 con el Error Boundary.
+- [Serialización](../../architecture/serialization.md): tratamiento de fallos de salida como errores internos.
+- [Pruebas](../../testing/testing.md) y [pruebas E2E](../../testing/e2e-testing.md): niveles, aislamiento y verificación
+  por HTTP real.
+- [Baseline operacional](../baseline-operational-completion.md): dependencias y evidencia requerida para completar
+  OB-10.
 
-OB-11 ya proporciona `RequestContextService`, `APP_LOGGER`, `StructuredLoggerService`, propagación
-de `X-Request-Id` y logging terminal. OB-10 debe consumir esas capacidades sin crear un segundo
-contexto o backend de logging.
+OB-11 ya proporciona `RequestContextService`, `APP_LOGGER`, `StructuredLoggerService`, propagación de `X-Request-Id` y
+logging terminal. OB-10 debe consumir esas capacidades sin crear un segundo contexto o backend de logging.
 
 ## Decisiones de implementación
 
-Las decisiones requeridas para OB-10 están resueltas. Antes de consolidar las APIs internas, la
-primera fase debe trasladarlas a los documentos owner correspondientes y verificar que no exista una
-contradicción con los contratos vigentes.
+Las decisiones requeridas para OB-10 están resueltas. Antes de consolidar las APIs internas, la primera fase debe
+trasladarlas a los documentos owner correspondientes y verificar que no exista una contradicción con los contratos
+vigentes.
+
+<!-- markdownlint-disable MD013 -->
 
 | Decisión              | Decisión adoptada                                                                                                                                                         | Criterio de aceptación                                                                                                                                                                                |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -80,8 +77,10 @@ contradicción con los contratos vigentes.
 | Ausencia de contexto  | **Resuelta:** generar localmente un UUID v4 con `node:crypto.randomUUID()`                                                                                                | Header, body y log usan el mismo valor; `requestIdFallback: true` solo aparece en metadata interna y nunca se confía en el header entrante.                                                           |
 | Fallos de salida      | **Resuelta:** responder con `500`, `INTERNAL_SERVER_ERROR`, mensaje seguro y sin `details`; clasificar internamente como `ResponseContractViolation`                      | OB-09 emitirá un error interno reconocible sin semántica HTTP; no se registran respuestas completas ni valores inválidos.                                                                             |
 
-Si durante la implementación aparece una contradicción o resulta necesario modificar una decisión,
-debe detenerse ese frente y actualizar primero el documento owner correspondiente.
+<!-- markdownlint-enable MD013 -->
+
+Si durante la implementación aparece una contradicción o resulta necesario modificar una decisión, debe detenerse ese
+frente y actualizar primero el documento owner correspondiente.
 
 ## Diseño propuesto
 
@@ -95,9 +94,9 @@ Unknown / response failure ─────┘          │
                                             └─> diagnóstico interno seguro
 ```
 
-El filtro debe clasificar el valor capturado como `unknown`, seleccionar una traducción conocida y
-construir una respuesta nueva. No debe reutilizar directamente el body de una excepción ni
-inspeccionar propiedades antes de realizar narrowing.
+El filtro debe clasificar el valor capturado como `unknown`, seleccionar una traducción conocida y construir una
+respuesta nueva. No debe reutilizar directamente el body de una excepción ni inspeccionar propiedades antes de realizar
+narrowing.
 
 ### Estructura de archivos prevista
 
@@ -131,9 +130,9 @@ docs/plans/baseline-operational-completion.md
 docs/plans/baseline-operational-completion.es.md
 ```
 
-La lista es una previsión. La implementación deberá confirmar si el fixture de rate limit es
-suficiente o si necesita una ruta E2E exclusiva para provocar un fallo inesperado. Cualquier
-ampliación debe justificarse antes de modificar archivos fuera de este alcance.
+La lista es una previsión. La implementación deberá confirmar si el fixture de rate limit es suficiente o si necesita
+una ruta E2E exclusiva para provocar un fallo inesperado. Cualquier ampliación debe justificarse antes de modificar
+archivos fuera de este alcance.
 
 ### Responsabilidades
 
@@ -147,8 +146,7 @@ ampliación debe justificarse antes de modificar archivos fuera de este alcance.
 #### `ErrorResponse`
 
 - Ser el owner de implementación de la forma pública compartida.
-- Modelar `details` como opcional y validarlo mediante una política explícita, no como propagación
-  libre de `unknown`.
+- Modelar `details` como opcional y validarlo mediante una política explícita, no como propagación libre de `unknown`.
 - Mantener alineados tipo, constructor y futuro schema canónico para OpenAPI.
 - Garantizar que `requestId` siempre sea un string válido conforme a la política de correlación.
 
@@ -165,8 +163,7 @@ ampliación debe justificarse antes de modificar archivos fuera de este alcance.
 - Capturar errores globalmente y tratarlos inicialmente como `unknown`.
 - Obtener el `requestId` desde `RequestContextService` o aplicar el fallback aprobado.
 - Construir y emitir un `ErrorResponse` nuevo.
-- Mantener sincronizados el status de la respuesta, `body.statusCode` y el evento terminal
-  existente.
+- Mantener sincronizados el status de la respuesta, `body.statusCode` y el evento terminal existente.
 - Registrar los fallos inesperados con metadata permitida y correlacionada.
 - No registrar ni devolver bodies, query strings, credenciales, cookies, headers sensibles o stacks.
 
@@ -180,28 +177,26 @@ ampliación debe justificarse antes de modificar archivos fuera de este alcance.
 #### Registro transversal
 
 - Registrar un único filtro para toda la aplicación.
-- Preferir composición mediante DI para reutilizar exactamente el mismo registro en producción y
-  E2E.
+- Preferir composición mediante DI para reutilizar exactamente el mismo registro en producción y E2E.
 - Evitar registro duplicado entre `main.ts`, `setupApplication()` y el helper E2E.
-- Mantener `setupApplication()` como owner del setup imperativo ya existente, sin trasladar allí
-  providers que requieran DI salvo necesidad demostrada.
+- Mantener `setupApplication()` como owner del setup imperativo ya existente, sin trasladar allí providers que requieran
+  DI salvo necesidad demostrada.
 
 ## Secuencia de implementación
 
-La ejecución seguirá ciclos **RED, GREEN, TRIANGULATE y REFACTOR**. Cada fase debe conservar en
-verde las pruebas de las fases anteriores.
+La ejecución seguirá ciclos **RED, GREEN, TRIANGULATE y REFACTOR**. Cada fase debe conservar en verde las pruebas de las
+fases anteriores.
 
 ### Fase 1 — Formalizar los contratos aprobados
 
 1. Trasladar la taxonomía abstracta de errores y la separación del mapping a `error-handling.md`.
-2. Registrar el catálogo público completo, los mensajes, la política de `details` y el tratamiento
-   de fallos de salida en `http-contracts.md`.
-3. Registrar `http.request.failed`, su metadata cerrada y la anomalía de fallback en
-   `observability.md`.
-4. Documentar el registro mediante `APP_FILTER` y la responsabilidad de `ErrorHandlingModule` en el
-   owner arquitectónico apropiado.
-5. Verificar que los códigos aprobados cubren `400`, `401`, `403`, `404`, `409`, `429` y `500`, y
-   que distinguen ruta de recurso.
+2. Registrar el catálogo público completo, los mensajes, la política de `details` y el tratamiento de fallos de salida
+   en `http-contracts.md`.
+3. Registrar `http.request.failed`, su metadata cerrada y la anomalía de fallback en `observability.md`.
+4. Documentar el registro mediante `APP_FILTER` y la responsabilidad de `ErrorHandlingModule` en el owner arquitectónico
+   apropiado.
+5. Verificar que los códigos aprobados cubren `400`, `401`, `403`, `404`, `409`, `429` y `500`, y que distinguen ruta de
+   recurso.
 6. Confirmar el fixture E2E exclusivo de pruebas que provocará el error desconocido.
 
 **Salida:** decisiones aprobadas reflejadas en sus owners antes de crear APIs internas estables.
@@ -210,21 +205,18 @@ verde las pruebas de las fases anteriores.
 
 1. **RED:** escribir pruebas para construcción, discriminación y preservación de datos mínimos.
 2. **GREEN:** implementar la abstracción mínima de `ApplicationError`.
-3. **TRIANGULATE:** añadir al menos dos códigos esperados con datos distintos para evitar un diseño
-   accidentalmente específico.
+3. **TRIANGULATE:** añadir al menos dos códigos esperados con datos distintos para evitar un diseño accidentalmente
+   específico.
 4. **REFACTOR:** eliminar cualquier dependencia de NestJS, Express o HTTP.
 
-**Salida:** los servicios futuros podrán expresar condiciones esperadas sin conocer su
-representación HTTP.
+**Salida:** los servicios futuros podrán expresar condiciones esperadas sin conocer su representación HTTP.
 
 ### Fase 3 — Construir la respuesta pública y el mapping
 
 1. **RED:** probar traducciones para `404`, `429`, un error esperado y un valor desconocido.
-2. **RED:** probar que mensajes técnicos, stacks, causas y cuerpos arbitrarios no aparecen en la
-   respuesta.
+2. **RED:** probar que mensajes técnicos, stacks, causas y cuerpos arbitrarios no aparecen en la respuesta.
 3. **GREEN:** implementar el constructor de `ErrorResponse` y el mapping aprobado.
-4. **TRIANGULATE:** cubrir excepciones de NestJS con body string, body object y contenido no
-   permitido.
+4. **TRIANGULATE:** cubrir excepciones de NestJS con body string, body object y contenido no permitido.
 5. **TRIANGULATE:** cubrir inclusión y omisión de `details` según la lista permitida.
 6. **REFACTOR:** mantener pura y exhaustiva la clasificación; no mezclar escritura HTTP ni logging.
 
@@ -234,8 +226,7 @@ representación HTTP.
 
 1. **RED:** probar status, headers y body emitidos por el filtro con un `requestId` existente.
 2. **RED:** probar el comportamiento aprobado cuando el contexto no contiene `requestId`.
-3. **GREEN:** implementar `HttpExceptionFilter` e inyectar contexto y logger mediante contratos
-   propios.
+3. **GREEN:** implementar `HttpExceptionFilter` e inyectar contexto y logger mediante contratos propios.
 4. **TRIANGULATE:** cubrir errores esperados, `HttpException` permitida y error desconocido.
 5. **TRIANGULATE:** verificar igualdad entre el header `X-Request-Id` y `body.requestId`.
 6. **REFACTOR:** mantener las APIs de Express y NestJS confinadas al filtro.
@@ -249,8 +240,7 @@ representación HTTP.
 3. **RED:** demostrar que un error desconocido produce un único evento seguro y correlacionado.
 4. **GREEN:** ampliar `ApplicationLogger` y `StructuredLoggerService` con la operación mínima.
 5. **GREEN:** registrar el filtro una sola vez mediante el mecanismo aprobado.
-6. **TRIANGULATE:** comprobar que el middleware terminal conserva el status final y no duplica
-   eventos.
+6. **TRIANGULATE:** comprobar que el middleware terminal conserva el status final y no duplica eventos.
 7. **REFACTOR:** eliminar acoplamientos al backend y listas de metadata duplicadas.
 
 **Salida:** producción y E2E comparten un único Error Boundary con diagnóstico interno seguro.
@@ -269,26 +259,25 @@ Extender la suite E2E para demostrar que:
 8. los logs inesperados contienen correlación y campos permitidos, sin payloads sensibles;
 9. el evento terminal `http.request.completed` conserva el status real de la respuesta.
 
-Los endpoints de prueba deberán existir únicamente en el entorno E2E y no ampliar la API publicada
-de producción.
+Los endpoints de prueba deberán existir únicamente en el entorno E2E y no ampliar la API publicada de producción.
 
 **Salida:** evidencia del contrato sobre la aplicación real y el pipeline compartido.
 
 ### Fase 7 — Cerrar evidencia y documentación
 
 1. Ejecutar pruebas enfocadas durante cada ciclo TDD.
-2. Ejecutar el flujo de `lint-staged` sobre los archivos previstos hasta que una segunda ejecución
-   no produzca cambios.
+2. Ejecutar el flujo de `lint-staged` sobre los archivos previstos hasta que una segunda ejecución no produzca cambios.
 3. Ejecutar la verificación completa del repositorio.
 4. Actualizar los documentos owner con las decisiones finales y referencias a la implementación.
-5. Actualizar ambas versiones de `baseline-operational-completion` con estado, evidencia,
-   dependencias y aceptación equivalentes.
-6. Marcar OB-10 como completa únicamente cuando la implementación y todas las verificaciones sean
-   reproducibles.
+5. Actualizar ambas versiones de `baseline-operational-completion` con estado, evidencia, dependencias y aceptación
+   equivalentes.
+6. Marcar OB-10 como completa únicamente cuando la implementación y todas las verificaciones sean reproducibles.
 
 **Salida:** OB-10 completa con evidencia sincronizada y OB-08/OB-09 formalmente desbloqueadas.
 
 ## Estrategia de pruebas
+
+<!-- markdownlint-disable MD013 -->
 
 | Nivel                 | Objetivo              | Evidencia principal                                                          |
 | --------------------- | --------------------- | ---------------------------------------------------------------------------- |
@@ -300,16 +289,17 @@ de producción.
 | Integración de módulo | Registro global       | Un único provider global con dependencias resueltas por DI.                  |
 | E2E                   | Contrato HTTP real    | `404`, `429`, error esperado, `500`, header/body y ausencia de filtraciones. |
 
-Las pruebas unitarias del mapping no deben iniciar una aplicación NestJS. Las pruebas E2E no deben
-reemplazar el filtro, el contexto, el logger ni el throttler: deben recorrer el pipeline real. Los
-dobles solo podrán controlar la condición que provoca el error y la captura del backend externo de
-logging cuando sea necesario observar su salida.
+<!-- markdownlint-enable MD013 -->
+
+Las pruebas unitarias del mapping no deben iniciar una aplicación NestJS. Las pruebas E2E no deben reemplazar el filtro,
+el contexto, el logger ni el throttler: deben recorrer el pipeline real. Los dobles solo podrán controlar la condición
+que provoca el error y la captura del backend externo de logging cuando sea necesario observar su salida.
 
 ## Comandos de verificación
 
-Durante TDD deben ejecutarse primero las pruebas enfocadas de cada archivo. Antes de iniciar la
-revisión RDD, se aplicará el flujo configurado de `lint-staged` al conjunto previsto hasta obtener
-una segunda ejecución sin cambios. Después se ejecutará, como mínimo:
+Durante TDD deben ejecutarse primero las pruebas enfocadas de cada archivo. Antes de iniciar la revisión RDD, se
+aplicará el flujo configurado de `lint-staged` al conjunto previsto hasta obtener una segunda ejecución sin cambios.
+Después se ejecutará, como mínimo:
 
 ```bash
 pnpm test
@@ -319,10 +309,12 @@ pnpm lint:md
 pnpm build
 ```
 
-Prettier debe ejecutarse sobre cada Markdown editado antes de `markdownlint-cli2`. No debe
-utilizarse un formateo global que modifique archivos ajenos al alcance.
+Prettier debe ejecutarse sobre cada Markdown editado antes de `markdownlint-cli2`. No debe utilizarse un formateo global
+que modifique archivos ajenos al alcance.
 
 ## Riesgos y mitigaciones
+
+<!-- markdownlint-disable MD013 -->
 
 | Riesgo                                               | Mitigación                                                                                 |
 | ---------------------------------------------------- | ------------------------------------------------------------------------------------------ |
@@ -337,6 +329,8 @@ utilizarse un formateo global que modifique archivos ajenos al alcance.
 | Fijar códigos alrededor de textos de NestJS          | Definir códigos propios estables y probar independencia del mensaje del framework.         |
 | Crear endpoints de diagnóstico en producción         | Mantener fixtures de error exclusivamente dentro del módulo E2E.                           |
 | Divergir entre documentación e implementación        | Actualizar owners primero y cerrar el baseline solo después de verificar.                  |
+
+<!-- markdownlint-enable MD013 -->
 
 ## Criterios de aceptación
 
@@ -355,16 +349,13 @@ utilizarse un formateo global que modifique archivos ajenos al alcance.
 - [ ] Los fallos inesperados generan diagnóstico interno seguro, estructurado y correlacionado.
 - [ ] Los errores esperados no generan ruido de diagnóstico inesperado.
 - [ ] Las pruebas cubren `404`, `429`, un error esperado y un error desconocido.
-- [ ] El registro del filtro no altera health checks, throttling, CORS, versioning ni logs
-      terminales.
+- [ ] El registro del filtro no altera health checks, throttling, CORS, versioning ni logs terminales.
 - [ ] Producción y E2E utilizan el mismo registro transversal.
-- [ ] Prettier, lint de TypeScript y Markdown, pruebas unitarias, E2E y build finalizan
-      correctamente.
+- [ ] Prettier, lint de TypeScript y Markdown, pruebas unitarias, E2E y build finalizan correctamente.
 - [ ] Los documentos owner y ambas listas del baseline contienen evidencia sincronizada.
 
 ## Siguiente paso
 
-Una vez completada OB-10, implementar **OB-08 — Request validation** para hacer converger sus
-errores controlados en este boundary. OB-09 podrá reutilizar la misma traducción interna para fallos
-de contratos de salida. OB-07 deberá documentar los códigos y schemas públicos resultantes sin
-duplicar su ownership.
+Una vez completada OB-10, implementar **OB-08 — Request validation** para hacer converger sus errores controlados en
+este boundary. OB-09 podrá reutilizar la misma traducción interna para fallos de contratos de salida. OB-07 deberá
+documentar los códigos y schemas públicos resultantes sin duplicar su ownership.

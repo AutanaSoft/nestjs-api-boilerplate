@@ -1,8 +1,8 @@
 # Plan para separar la configuración por namespaces
 
-Este plan divide la configuración monolítica actual en cuatro namespaces cohesivos: `app`, `http`,
-`cors` y `rateLimit`. La migración conservará las variables de entorno existentes, la validación
-temprana con Zod, la inyección tipada de `@nestjs/config` y el comportamiento HTTP observable.
+Este plan divide la configuración monolítica actual en cuatro namespaces cohesivos: `app`, `http`, `cors` y `rateLimit`.
+La migración conservará las variables de entorno existentes, la validación temprana con Zod, la inyección tipada de
+`@nestjs/config` y el comportamiento HTTP observable.
 
 ## Resultado esperado
 
@@ -18,10 +18,12 @@ src/config/
 └── rate-limit.config.spec.ts
 ```
 
-Cada namespace será propietario de sus entradas externas, valores predeterminados, normalización,
-valores derivados, validación y tipo final de solo lectura.
+Cada namespace será propietario de sus entradas externas, valores predeterminados, normalización, valores derivados,
+validación y tipo final de solo lectura.
 
 ## Alcance acordado
+
+<!-- markdownlint-disable MD013 -->
 
 | Namespace   | Responsabilidad                                       | Variables de entorno                                     |
 | ----------- | ----------------------------------------------------- | -------------------------------------------------------- |
@@ -30,18 +32,20 @@ valores derivados, validación y tipo final de solo lectura.
 | `cors`      | Política CORS completa                                | `CORS_ORIGINS`, `CORS_MAX_AGE_SECONDS`                   |
 | `rateLimit` | Límites globales de solicitudes para NestJS Throttler | `THROTTLE_TTL_SECONDS`, `THROTTLE_LIMIT`                 |
 
+<!-- markdownlint-enable MD013 -->
+
 ## Decisiones confirmadas
 
 - `APP_NAME`, `APP_DESCRIPTION` y `APP_VERSION` serán overrides opcionales.
 - Sus defaults serán `NestJS 12 API`, la descripción actual de `package.json` y `0.0.1`.
 - Los overrides vacíos serán inválidos y detendrán el startup.
-- `APP_VERSION` representa la versión del software; `API_VERSION` se añadirá cuando se implemente el
-  versionado HTTP y permanece fuera de este cambio.
+- `APP_VERSION` representa la versión del software; `API_VERSION` se añadirá cuando se implemente el versionado HTTP y
+  permanece fuera de este cambio.
 - CORS permitirá `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS` y `QUERY`.
 - CORS aceptará los headers `Accept`, `Authorization` y `Content-Type`.
 - CORS no expondrá headers adicionales inicialmente.
-- `CORS_MAX_AGE_SECONDS` tendrá default `600` y aceptará enteros entre `0` y `86400`; el valor `0`
-  desactivará el caché de preflight.
+- `CORS_MAX_AGE_SECONDS` tendrá default `600` y aceptará enteros entre `0` y `86400`; el valor `0` desactivará el caché
+  de preflight.
 
 ## Diseño de los namespaces
 
@@ -63,17 +67,15 @@ Decisiones confirmadas:
 
 - `name` representa el nombre humano de la aplicación, no el identificador npm.
 - `APP_NAME` tendrá el default `NestJS 12 API`.
-- `APP_DESCRIPTION` tendrá el default
-  `A secure NestJS 12 API boilerplate for TypeScript applications.`.
+- `APP_DESCRIPTION` tendrá el default `A secure NestJS 12 API boilerplate for TypeScript applications.`.
 - `APP_VERSION` tendrá el default `0.0.1`.
 - Los tres valores admitirán overrides no vacíos mediante variables de entorno.
 - `APP_VERSION` no se utilizará para versionar rutas HTTP.
 - El namespace construirá y validará todos sus metadatos antes de exponerlos.
 - El contrato será de solo lectura.
 
-Los defaults de description y version reflejarán inicialmente `package.json`, pero permanecerán
-explícitos en el configuration boundary. El nombre técnico `package.json#name` continuará siendo
-independiente del nombre humano.
+Los defaults de description y version reflejarán inicialmente `package.json`, pero permanecerán explícitos en el
+configuration boundary. El nombre técnico `package.json#name` continuará siendo independiente del nombre humano.
 
 ### Configuración HTTP
 
@@ -115,8 +117,7 @@ Solo serán configurables mediante el entorno:
 - `CORS_ORIGINS`;
 - `CORS_MAX_AGE_SECONDS`.
 
-El resto representará una política estable definida y validada dentro del namespace. Se mantendrán
-estas decisiones:
+El resto representará una política estable definida y validada dentro del namespace. Se mantendrán estas decisiones:
 
 - `methods` será `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS` y `QUERY`.
 - `allowedHeaders` será `Accept`, `Authorization` y `Content-Type`.
@@ -128,13 +129,12 @@ estas decisiones:
 - `CORS_ORIGINS` será obligatorio y no vacío en producción.
 - Fuera de producción, el origen predeterminado continuará siendo `http://localhost:3000`.
 - Solo se permitirán orígenes HTTP y HTTPS.
-- Se rechazarán wildcards, credenciales en la URL, paths distintos de `/`, query strings y
-  fragments.
+- Se rechazarán wildcards, credenciales en la URL, paths distintos de `/`, query strings y fragments.
 - Los valores serán recortados y normalizados mediante `URL.origin`.
 - Se rechazarán entradas vacías y orígenes duplicados, incluso después de normalizarlos.
 
-La regla que hace obligatorio `CORS_ORIGINS` en producción seguirá siendo responsabilidad de CORS.
-Su diseño deberá evitar que los consumidores repitan esta validación.
+La regla que hace obligatorio `CORS_ORIGINS` en producción seguirá siendo responsabilidad de CORS. Su diseño deberá
+evitar que los consumidores repitan esta validación.
 
 ### Configuración de rate limiting
 
@@ -160,8 +160,7 @@ Se conservarán estas reglas:
 - Límite predeterminado de `100` solicitudes por ventana.
 - Ambos valores deben ser enteros positivos.
 - La factory convertirá segundos a milisegundos antes de exponer `ttlMs`.
-- Los límites particulares de endpoints permanecerán cerca de sus propietarios y no se añadirán al
-  entorno global.
+- Los límites particulares de endpoints permanecerán cerca de sus propietarios y no se añadirán al entorno global.
 - El almacenamiento seguirá siendo local y en memoria, con contadores independientes por réplica.
 
 ## Patrón común de implementación
@@ -172,13 +171,12 @@ Cada archivo de configuración deberá:
 2. Definir el schema de su configuración final.
 3. Exportar un tipo final de solo lectura.
 4. Exportar una factory nombrada que construya el namespace completo.
-5. Aplicar defaults, overrides explícitos, normalización, valores derivados y validación final, en
-   ese orden.
+5. Aplicar defaults, overrides explícitos, normalización, valores derivados y validación final, en ese orden.
 6. Registrar la factory mediante `registerAs` con un nombre corto y estable.
 7. Exportar por defecto el namespace registrado.
 
-Los consumidores conocidos usarán `config.KEY` y `ConfigType<typeof config>`. No se incorporará
-`ConfigService` ni se realizarán búsquedas mediante rutas string.
+Los consumidores conocidos usarán `config.KEY` y `ConfigType<typeof config>`. No se incorporará `ConfigService` ni se
+realizarán búsquedas mediante rutas string.
 
 ## Fases de implementación
 
@@ -186,11 +184,11 @@ Los consumidores conocidos usarán `config.KEY` y `ConfigType<typeof config>`. N
 
 1. Traducir las decisiones confirmadas a pruebas fallidas antes de crear las factories.
 2. Confirmar que cada input tiene default, formato, rango y política de valores vacíos definidos.
-3. Verificar mediante pruebas que las opciones CORS explícitas producen el contrato esperado sin
-   depender de defaults implícitos del middleware.
+3. Verificar mediante pruebas que las opciones CORS explícitas producen el contrato esperado sin depender de defaults
+   implícitos del middleware.
 
-Criterio de salida: las pruebas representan todos los contratos acordados y fallan por la ausencia
-de la implementación nueva.
+Criterio de salida: las pruebas representan todos los contratos acordados y fallan por la ausencia de la implementación
+nueva.
 
 ### Fase 2: separar `app` y `http`
 
@@ -211,8 +209,7 @@ Criterio de salida: `httpConfig` no contiene metadatos, CORS ni rate limiting.
 5. Actualizar `src/app.setup.ts` para recibir contratos `HttpConfig` y `CorsConfig` separados.
 6. Actualizar sus pruebas para verificar todas las opciones enviadas a `enableCors`.
 
-Criterio de salida: ninguna propiedad CORS permanece en `httpConfig` y el comportamiento de
-preflight se conserva.
+Criterio de salida: ninguna propiedad CORS permanece en `httpConfig` y el comportamiento de preflight se conserva.
 
 ### Fase 4: extraer rate limiting
 
@@ -226,17 +223,13 @@ Criterio de salida: NestJS Throttler no depende de `httpConfig`.
 
 ### Fase 5: actualizar composición y bootstrap
 
-1. Registrar `appConfig`, `httpConfig`, `corsConfig` y `rateLimitConfig` en
-   `ConfigModule.forRoot({ load })`.
+1. Registrar `appConfig`, `httpConfig`, `corsConfig` y `rateLimitConfig` en `ConfigModule.forRoot({ load })`.
 2. Actualizar `src/main.ts` para resolver únicamente los namespaces requeridos.
-3. Actualizar `test/support/create-e2e-application.ts` para reproducir el mismo ensamblaje que
-   producción.
-4. Adaptar las pruebas del helper E2E sin hacerlas dependientes de un orden innecesario de
-   resolución de tokens.
+3. Actualizar `test/support/create-e2e-application.ts` para reproducir el mismo ensamblaje que producción.
+4. Adaptar las pruebas del helper E2E sin hacerlas dependientes de un orden innecesario de resolución de tokens.
 5. Confirmar que ningún consumidor acceda directamente a `process.env`.
 
-Criterio de salida: producción y E2E construyen la aplicación con los mismos namespaces y la misma
-función de setup.
+Criterio de salida: producción y E2E construyen la aplicación con los mismos namespaces y la misma función de setup.
 
 ### Fase 6: triangular el comportamiento
 
@@ -246,8 +239,7 @@ Ejecutar las pruebas E2E y confirmar que:
 - Helmet conserva sus headers.
 - Los orígenes CORS permitidos y denegados conservan su comportamiento.
 - El preflight continúa respondiendo con `204`.
-- El límite configurado continúa produciendo la secuencia esperada `200`, `200`, `429` en el
-  escenario controlado.
+- El límite configurado continúa produciendo la secuencia esperada `200`, `200`, `429` en el escenario controlado.
 - `Access-Control-Max-Age` coincide con el contrato acordado.
 
 Criterio de salida: la reorganización interna no produce regresiones HTTP.
@@ -255,14 +247,14 @@ Criterio de salida: la reorganización interna no produce regresiones HTTP.
 ### Fase 7: actualizar documentación y entorno
 
 1. Actualizar `docs/architecture/configuration.md` con los cuatro namespaces y sus propietarios.
-2. Actualizar `docs/configuration/http-security.md` con los namespaces `http`, `cors` y `rateLimit`,
-   sus variables, defaults y restricciones.
+2. Actualizar `docs/configuration/http-security.md` con los namespaces `http`, `cors` y `rateLimit`, sus variables,
+   defaults y restricciones.
 3. Actualizar `docs/testing/e2e-testing.md` únicamente si cambia su descripción del ensamblaje.
 4. Revisar `.env.example` y añadir solo las variables operativas acordadas.
 5. Eliminar referencias documentales al antiguo objeto monolítico.
 
-Criterio de salida: la arquitectura conserva las reglas generales y la documentación operativa posee
-los valores concretos.
+Criterio de salida: la arquitectura conserva las reglas generales y la documentación operativa posee los valores
+concretos.
 
 ## Archivos previstos
 
@@ -297,6 +289,8 @@ los valores concretos.
 
 ## Riesgos y mitigaciones
 
+<!-- markdownlint-disable MD013 -->
+
 | Riesgo                                               | Mitigación                                                            |
 | ---------------------------------------------------- | --------------------------------------------------------------------- |
 | Perder la regla CORS de producción                   | Mantener una prueba específica para ausencia de `CORS_ORIGINS`        |
@@ -308,6 +302,8 @@ los valores concretos.
 | Desalinear defaults respecto de `package.json`       | Actualizar defaults y package metadata en la misma unidad de trabajo  |
 | Introducir configuración operativa innecesaria       | Exponer solo las variables de entorno acordadas                       |
 | Romper tipos readonly al llamar APIs de Nest/Express | Realizar una copia localizada en el adapter, solo si el tipo lo exige |
+
+<!-- markdownlint-enable MD013 -->
 
 ## Criterios de aceptación
 
@@ -331,8 +327,7 @@ los valores concretos.
 - [ ] La configuración inválida continúa deteniendo el startup.
 - [ ] No quedan referencias al shape monolítico anterior.
 - [ ] Producción y E2E usan la misma configuración de setup.
-- [ ] No cambian rutas, payloads, status codes ni políticas HTTP existentes fuera del contrato CORS
-      acordado.
+- [ ] No cambian rutas, payloads, status codes ni políticas HTTP existentes fuera del contrato CORS acordado.
 - [ ] Pruebas unitarias, E2E, lint, formato y build finalizan correctamente.
 - [ ] La documentación arquitectónica y operativa queda actualizada.
 
