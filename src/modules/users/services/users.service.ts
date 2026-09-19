@@ -4,7 +4,7 @@ import type { ListUsersResponseInput } from '../contracts/list-users-response.sc
 import type { CreateUserRequest } from '../contracts/create-user-request.schema.js';
 import type { UpdateUserRequest } from '../contracts/update-user-request.schema.js';
 import type { User } from '../contracts/user.schema.js';
-import { decodeListUsersCursor, encodeListUsersCursor } from '../list-users-cursor.codec.js';
+import { decodeListUsersCursor, encodeListUsersCursor } from '../codecs/list-users-cursor.codec.js';
 import { UserNotFoundError } from '../users.errors.js';
 import { USERS_REPOSITORY } from '../repositories/users.repository.js';
 import type { UsersRepository } from '../repositories/users.repository.js';

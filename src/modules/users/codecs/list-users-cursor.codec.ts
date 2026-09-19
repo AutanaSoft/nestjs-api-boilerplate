@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { z } from 'zod';
-import type { ListUsersRequest } from './contracts/list-users-request.schema.js';
+import type { ListUsersRequest } from '../contracts/list-users-request.schema.js';
 
 export type ListUsersCursorContext = Pick<ListUsersRequest, 'sort' | 'direction'>;
 export type ListUsersCursorPosition =
