@@ -46,9 +46,7 @@ export function buildOpenApiConfig(environment: OpenApiEnvironment = process.env
   return openapiConfigSchema.parse({
     enabled: parsedEnvironment.OPENAPI_ENABLED === 'true',
     docsRoute:
-      parsedEnvironment.OPENAPI_DOCS_ROUTE === undefined
-        ? 'docs'
-        : parsedEnvironment.OPENAPI_DOCS_ROUTE.trim(),
+      parsedEnvironment.OPENAPI_DOCS_ROUTE === undefined ? 'docs' : parsedEnvironment.OPENAPI_DOCS_ROUTE.trim(),
     documentRoute:
       parsedEnvironment.OPENAPI_DOCUMENT_ROUTE === undefined
         ? 'openapi.json'

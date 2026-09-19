@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  buildOpenApiConfig,
-  openapiConfigSchema,
-  type OpenApiEnvironment,
-} from './openapi.config.js';
+import { buildOpenApiConfig, openapiConfigSchema, type OpenApiEnvironment } from './openapi.config.js';
 
 describe('buildOpenApiConfig', () => {
   it('disables OpenAPI and uses the documented routes by default', () => {
@@ -62,10 +58,8 @@ describe('buildOpenApiConfig', () => {
     const config = buildOpenApiConfig({ OPENAPI_ENABLED: 'true' });
 
     expect(openapiConfigSchema['~standard'].validate(config)).toEqual({ value: config });
-    expect(openapiConfigSchema['~standard'].validate({ ...config, enabled: 'true' })).toMatchObject(
-      {
-        issues: expect.any(Array),
-      },
-    );
+    expect(openapiConfigSchema['~standard'].validate({ ...config, enabled: 'true' })).toMatchObject({
+      issues: expect.any(Array),
+    });
   });
 });

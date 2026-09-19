@@ -34,8 +34,7 @@ export type ApiEnvironment = z.input<typeof apiEnvironmentSchema>;
 
 export function buildApiConfig(environment: ApiEnvironment = process.env): ApiConfig {
   const parsedEnvironment = apiEnvironmentSchema.parse(environment);
-  const globalPrefix =
-    parsedEnvironment.API_GLOBAL_PREFIX === undefined ? 'api' : parsedEnvironment.API_GLOBAL_PREFIX;
+  const globalPrefix = parsedEnvironment.API_GLOBAL_PREFIX === undefined ? 'api' : parsedEnvironment.API_GLOBAL_PREFIX;
 
   return apiConfigSchema.parse({ globalPrefix });
 }

@@ -12,12 +12,10 @@ const queryUsersOptionsSchema = listUsersRequestObjectSchema
     message: 'after and before are mutually exclusive.',
   });
 
-export const queryUsersRequestSchema = queryUsersOptionsSchema.transform(
-  ({ criteria, ...options }) => ({
-    ...options,
-    email: criteria.email,
-  }),
-);
+export const queryUsersRequestSchema = queryUsersOptionsSchema.transform(({ criteria, ...options }) => ({
+  ...options,
+  email: criteria.email,
+}));
 
 export const queryUsersUrlQuerySchema = z.strictObject({});
 

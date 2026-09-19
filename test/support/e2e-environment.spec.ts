@@ -106,9 +106,7 @@ describe('createE2EEnvironment', () => {
       }),
     ).rejects.toSatisfy(
       (error: unknown) =>
-        error instanceof AggregateError &&
-        error.errors[0] === scenarioFailure &&
-        error.errors[1] === cleanupFailure,
+        error instanceof AggregateError && error.errors[0] === scenarioFailure && error.errors[1] === cleanupFailure,
     );
     expect(databases[0]?.dispose).toHaveBeenCalledOnce();
     expect(application.close).toHaveBeenCalledOnce();

@@ -27,19 +27,17 @@ describe('ValidationModule', () => {
   it('throws a controlled BadRequestException without schema issues for invalid input', async () => {
     const pipe = resolveValidationPipe();
 
-    await expect(pipe.transform({ value: 42 }, bodyMetadata)).rejects.toSatisfy(
-      (error: unknown) => {
-        if (!(error instanceof BadRequestException) || error.getStatus() !== 400) {
-          return false;
-        }
+    await expect(pipe.transform({ value: 42 }, bodyMetadata)).rejects.toSatisfy((error: unknown) => {
+      if (!(error instanceof BadRequestException) || error.getStatus() !== 400) {
+        return false;
+      }
 
-        expect(error.getResponse()).toEqual({
-          message: 'Bad Request',
-          statusCode: 400,
-        });
-        return true;
-      },
-    );
+      expect(error.getResponse()).toEqual({
+        message: 'Bad Request',
+        statusCode: 400,
+      });
+      return true;
+    });
   });
 
   it('bypasses input without schema metadata', async () => {
@@ -61,8 +59,7 @@ describe('AppModule', () => {
 function resolveValidationPipe(): {
   transform(value: unknown, metadata: ArgumentMetadata): Promise<unknown>;
 } {
-  const providers: unknown[] =
-    Reflect.getMetadata(MODULE_METADATA.PROVIDERS, ValidationModule) ?? [];
+  const providers: unknown[] = Reflect.getMetadata(MODULE_METADATA.PROVIDERS, ValidationModule) ?? [];
   const appPipeProviders = providers.filter(
     (
       provider,

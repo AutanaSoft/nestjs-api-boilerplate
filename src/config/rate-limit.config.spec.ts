@@ -38,9 +38,7 @@ describe('buildRateLimitConfig', () => {
     const config = buildRateLimitConfig({});
 
     expect(rateLimitConfigSchema['~standard'].validate(config)).toEqual({ value: config });
-    expect(
-      rateLimitConfigSchema['~standard'].validate({ global: { ttlMs: 0, limit: 100 } }),
-    ).toMatchObject({
+    expect(rateLimitConfigSchema['~standard'].validate({ global: { ttlMs: 0, limit: 100 } })).toMatchObject({
       issues: expect.any(Array),
     });
   });

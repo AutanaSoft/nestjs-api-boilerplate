@@ -39,10 +39,7 @@ export async function runE2EScenario(
     await context.app.close();
   } catch (cleanupError: unknown) {
     if (scenarioFailed) {
-      throw new AggregateError(
-        [scenarioError, cleanupError],
-        'E2E scenario and application cleanup failed',
-      );
+      throw new AggregateError([scenarioError, cleanupError], 'E2E scenario and application cleanup failed');
     }
 
     throw cleanupError;

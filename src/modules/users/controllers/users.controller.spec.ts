@@ -2,10 +2,7 @@ import { ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
 import { describe, expect, it, vi } from 'vitest';
 import type { ApiConfig } from '../../../config/api.config.js';
 import { createUserRequestSchema } from '../contracts/create-user-request.schema.js';
-import {
-  queryUsersRequestSchema,
-  queryUsersUrlQuerySchema,
-} from '../contracts/query-users-request.schema.js';
+import { queryUsersRequestSchema, queryUsersUrlQuerySchema } from '../contracts/query-users-request.schema.js';
 import { updateUserRequestSchema } from '../contracts/update-user-request.schema.js';
 import { userSchema } from '../contracts/user.schema.js';
 import { UsersController } from './users.controller.js';

@@ -6,11 +6,7 @@ import type { UpdateUserRequest } from '../contracts/update-user-request.schema.
 import { userSchema } from '../contracts/user.schema.js';
 import type { User } from '../contracts/user.schema.js';
 import { UserEmailConflictError } from '../users.errors.js';
-import type {
-  ListUsersRepositoryQuery,
-  ListUsersRepositoryResult,
-  UsersRepository,
-} from './users.repository.js';
+import type { ListUsersRepositoryQuery, ListUsersRepositoryResult, UsersRepository } from './users.repository.js';
 
 const userSelect = {
   id: true,
@@ -54,18 +50,12 @@ export class PrismaUsersRepository implements UsersRepository {
 
     const [previous, next] = await Promise.all([
       this.prisma.user.findFirst({
-        where: combineWhere(
-          request.email,
-          seekWhere(request.sort, invert(request.direction), data[0]),
-        ),
+        where: combineWhere(request.email, seekWhere(request.sort, invert(request.direction), data[0])),
         orderBy: orderBy(request.sort, invert(request.direction)),
         select: { id: true },
       }),
       this.prisma.user.findFirst({
-        where: combineWhere(
-          request.email,
-          seekWhere(request.sort, request.direction, data.at(-1)!),
-        ),
+        where: combineWhere(request.email, seekWhere(request.sort, request.direction, data.at(-1)!)),
         orderBy: orderBy(request.sort, request.direction),
         select: { id: true },
       }),
@@ -79,8 +69,7 @@ export class PrismaUsersRepository implements UsersRepository {
       const user: PrismaUser = await this.prisma.user.create({ data, select: userSelect });
       return userSchema.parse(user);
     } catch (error: unknown) {
-      if (isUniqueEmailViolation(error))
-        throw new UserEmailConflictError(data.email, { cause: error });
+      if (isUniqueEmailViolation(error)) throw new UserEmailConflictError(data.email, { cause: error });
       throw error;
     }
   }
@@ -95,8 +84,7 @@ export class PrismaUsersRepository implements UsersRepository {
       return userSchema.parse(user);
     } catch (error: unknown) {
       if (isRecordNotFound(error)) return null;
-      if (isUniqueEmailViolation(error))
-        throw new UserEmailConflictError(data.email ?? '', { cause: error });
+      if (isUniqueEmailViolation(error)) throw new UserEmailConflictError(data.email ?? '', { cause: error });
       throw error;
     }
   }
@@ -112,20 +100,14 @@ export class PrismaUsersRepository implements UsersRepository {
   }
 }
 
-function combineWhere(
-  email: string | undefined,
-  boundary: Prisma.UserWhereInput | undefined,
-): Prisma.UserWhereInput {
+function combineWhere(email: string | undefined, boundary: Prisma.UserWhereInput | undefined): Prisma.UserWhereInput {
   const filters: Prisma.UserWhereInput[] = [];
   if (email !== undefined) filters.push({ email });
   if (boundary !== undefined) filters.push(boundary);
   return filters.length === 0 ? {} : { AND: filters };
 }
 
-function orderBy(
-  sort: 'createdAt' | 'displayName',
-  direction: Direction,
-): Prisma.UserOrderByWithRelationInput[] {
+function orderBy(sort: 'createdAt' | 'displayName', direction: Direction): Prisma.UserOrderByWithRelationInput[] {
   return [{ [sort]: direction }, { id: direction }];
 }
 

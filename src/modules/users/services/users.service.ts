@@ -24,8 +24,7 @@ export class UsersService {
       request.after === undefined ? (request.before === undefined ? undefined : 'before') : 'after';
     const cursorValue = request.after ?? request.before;
     const context = { sort: request.sort, direction: request.direction };
-    const cursor =
-      cursorValue === undefined ? undefined : decodeListUsersCursor(cursorValue, context);
+    const cursor = cursorValue === undefined ? undefined : decodeListUsersCursor(cursorValue, context);
     const result = await this.usersRepository.list({ request, cursor, cursorDirection });
 
     if (result.data.length === 0) {

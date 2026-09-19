@@ -30,10 +30,7 @@ export async function createE2EEnvironment(): Promise<E2EEnvironment> {
         await database.dispose();
       } catch (cleanupError: unknown) {
         if (scenarioError !== undefined) {
-          throw new AggregateError(
-            [scenarioError, cleanupError],
-            'E2E scenario and database cleanup failed',
-          );
+          throw new AggregateError([scenarioError, cleanupError], 'E2E scenario and database cleanup failed');
         }
 
         throw cleanupError;

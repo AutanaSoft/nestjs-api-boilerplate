@@ -55,8 +55,7 @@ describe('HealthController', () => {
         getHandler: () => HealthController.prototype[method],
       } as unknown as ExecutionContext;
       const next: CallHandler = {
-        handle: () =>
-          of({ status: 'ok', info: {}, error: {}, details: {}, internalOnly: 'do-not-expose' }),
+        handle: () => of({ status: 'ok', info: {}, error: {}, details: {}, internalOnly: 'do-not-expose' }),
       };
 
       await expect(lastValueFrom(interceptor.intercept(context, next))).resolves.toEqual({

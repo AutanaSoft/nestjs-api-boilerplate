@@ -69,23 +69,20 @@ describe('setupOpenApi', () => {
     ['docsRoute', 'api'],
     ['documentRoute', 'api/v1/health/live'],
     ['documentRoute', 'api'],
-  ] as const)(
-    'rejects a %s that overlaps a published API path before route registration',
-    (key, route) => {
-      vi.mocked(SwaggerModule.createDocument).mockReturnValueOnce({
-        paths: { '/api/v1/health/live': {} },
-      } as never);
+  ] as const)('rejects a %s that overlaps a published API path before route registration', (key, route) => {
+    vi.mocked(SwaggerModule.createDocument).mockReturnValueOnce({
+      paths: { '/api/v1/health/live': {} },
+    } as never);
 
-      expect(() =>
-        setupOpenApi(app, appConfig, {
-          enabled: true,
-          docsRoute: key === 'docsRoute' ? route : 'docs',
-          documentRoute: key === 'documentRoute' ? route : 'openapi.json',
-        }),
-      ).toThrow('OpenAPI routes must not overlap published API paths.');
-      expect(SwaggerModule.setup).not.toHaveBeenCalled();
-    },
-  );
+    expect(() =>
+      setupOpenApi(app, appConfig, {
+        enabled: true,
+        docsRoute: key === 'docsRoute' ? route : 'docs',
+        documentRoute: key === 'documentRoute' ? route : 'openapi.json',
+      }),
+    ).toThrow('OpenAPI routes must not overlap published API paths.');
+    expect(SwaggerModule.setup).not.toHaveBeenCalled();
+  });
 
   it('converts nested OpenAPI 3.0 nullable schemas to OpenAPI 3.2 unions', () => {
     vi.mocked(SwaggerModule.createDocument).mockReturnValueOnce({
@@ -197,16 +194,11 @@ describe('setupOpenApi', () => {
       }),
       expect.objectContaining({ include: expect.any(Array) }),
     );
-    expect(SwaggerModule.setup).toHaveBeenCalledWith(
-      'docs',
-      app,
-      expect.objectContaining({ openapi: '3.2.0' }),
-      {
-        useGlobalPrefix: false,
-        jsonDocumentUrl: 'openapi.json',
-        raw: ['json'],
-      },
-    );
+    expect(SwaggerModule.setup).toHaveBeenCalledWith('docs', app, expect.objectContaining({ openapi: '3.2.0' }), {
+      useGlobalPrefix: false,
+      jsonDocumentUrl: 'openapi.json',
+      raw: ['json'],
+    });
   });
 
   it('generates only canonical public health operations with stable paths and schemas', async () => {
@@ -229,8 +221,7 @@ describe('setupOpenApi', () => {
       setupOpenApi(documentApp, appConfig, buildOpenApiConfig({ OPENAPI_ENABLED: 'true' }));
       await documentApp.init();
 
-      const document = vi.mocked(SwaggerModule.setup).mock.calls[0]?.[2] as
-        OpenAPIObject | undefined;
+      const document = vi.mocked(SwaggerModule.setup).mock.calls[0]?.[2] as OpenAPIObject | undefined;
       expect(document?.info).toMatchObject({
         title: appConfig.name,
         description: appConfig.description,
@@ -245,13 +236,8 @@ describe('setupOpenApi', () => {
         '/api/v1/users',
         '/api/v1/users/{userId}',
       ]);
-      const healthOperations = ['/api/v1/health/live', '/api/v1/health/ready'].map(
-        (path) => paths[path]?.get,
-      );
-      expect(healthOperations.map((operation) => operation?.operationId)).toEqual([
-        'healthLive',
-        'healthReady',
-      ]);
+      const healthOperations = ['/api/v1/health/live', '/api/v1/health/ready'].map((path) => paths[path]?.get);
+      expect(healthOperations.map((operation) => operation?.operationId)).toEqual(['healthLive', 'healthReady']);
 
       for (const operation of healthOperations) {
         expect(operation).toBeDefined();
@@ -330,14 +316,7 @@ describe('setupOpenApi', () => {
           },
         }),
       );
-      expect(Object.keys(updateUser?.responses ?? {})).toEqual([
-        '200',
-        '400',
-        '404',
-        '409',
-        '429',
-        '500',
-      ]);
+      expect(Object.keys(updateUser?.responses ?? {})).toEqual(['200', '400', '404', '409', '429', '500']);
       expect(updateUser?.responses?.['200']).toEqual(
         expect.objectContaining({
           content: {
@@ -366,9 +345,7 @@ describe('setupOpenApi', () => {
         },
       ]);
       expect(Object.keys(deleteUser?.responses ?? {})).toEqual(['204', '400', '404', '429', '500']);
-      expect(deleteUser?.responses?.['204']).toEqual(
-        expect.objectContaining({ description: expect.any(String) }),
-      );
+      expect(deleteUser?.responses?.['204']).toEqual(expect.objectContaining({ description: expect.any(String) }));
       expect(deleteUser?.responses?.['204']).not.toHaveProperty('content');
       for (const status of ['400', '404', '429', '500']) {
         expect(deleteUser?.responses?.[status]).toEqual(
@@ -517,9 +494,7 @@ describe('setupOpenApi', () => {
         );
       }
       expect(JSON.stringify(document)).not.toContain('"nullable":');
-      expect(JSON.stringify(document)).not.toMatch(
-        /NotFound|__test|rate.limit|serializ|validat|error.handling/i,
-      );
+      expect(JSON.stringify(document)).not.toMatch(/NotFound|__test|rate.limit|serializ|validat|error.handling/i);
     } finally {
       await documentApp.close();
     }
@@ -543,8 +518,7 @@ describe('setupOpenApi', () => {
       );
       await documentApp.init();
 
-      const document = vi.mocked(SwaggerModule.setup).mock.calls[0]?.[2] as
-        OpenAPIObject | undefined;
+      const document = vi.mocked(SwaggerModule.setup).mock.calls[0]?.[2] as OpenAPIObject | undefined;
       expect(document?.openapi).toBe('3.2.0');
       expect(Object.keys(document?.paths ?? {})).toEqual([
         '/v1/health/live',

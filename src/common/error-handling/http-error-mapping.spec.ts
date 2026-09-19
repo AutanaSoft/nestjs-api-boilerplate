@@ -56,22 +56,18 @@ describe('mapErrorToResponse', () => {
   const requestId = 'f5eb2c44-618c-4ea4-90f5-4c32a6d306c4';
 
   it('maps local ApplicationError variants through the public catalogue', () => {
-    expect(
-      mapErrorToResponse(new ResourceNotFoundError({ resourceId: 'resource-123' }), requestId),
-    ).toEqual({
+    expect(mapErrorToResponse(new ResourceNotFoundError({ resourceId: 'resource-123' }), requestId)).toEqual({
       statusCode: 404,
       code: 'RESOURCE_NOT_FOUND',
       message: 'The requested resource was not found.',
       requestId,
     });
-    expect(mapErrorToResponse(new ConflictError({ conflictingField: 'email' }), requestId)).toEqual(
-      {
-        statusCode: 409,
-        code: 'CONFLICT',
-        message: 'The request conflicts with the current resource state.',
-        requestId,
-      },
-    );
+    expect(mapErrorToResponse(new ConflictError({ conflictingField: 'email' }), requestId)).toEqual({
+      statusCode: 409,
+      code: 'CONFLICT',
+      message: 'The request conflicts with the current resource state.',
+      requestId,
+    });
   });
 
   it('maps ResponseContractViolation to the safe internal fallback without details', () => {
@@ -163,19 +159,16 @@ describe('mapErrorToResponse HttpException allowlist', () => {
     [HttpStatus.NOT_FOUND, 'ROUTE_NOT_FOUND', 'The requested route was not found.'],
     [HttpStatus.CONFLICT, 'CONFLICT', 'The request conflicts with the current resource state.'],
     [HttpStatus.TOO_MANY_REQUESTS, 'RATE_LIMIT_EXCEEDED', 'Too many requests.'],
-  ] as const)(
-    'maps approved status %i to its safe public descriptor',
-    (statusCode, code, message) => {
-      const error = new HttpException('untrusted framework message', statusCode);
+  ] as const)('maps approved status %i to its safe public descriptor', (statusCode, code, message) => {
+    const error = new HttpException('untrusted framework message', statusCode);
 
-      expect(mapErrorToResponse(error, requestId)).toEqual({
-        statusCode,
-        code,
-        message,
-        requestId,
-      });
-    },
-  );
+    expect(mapErrorToResponse(error, requestId)).toEqual({
+      statusCode,
+      code,
+      message,
+      requestId,
+    });
+  });
 
   it('rebuilds a response independently from a string body', () => {
     const body = 'database password leaked';
@@ -241,12 +234,7 @@ describe('mapErrorToResponse HttpException allowlist', () => {
       }
     }
 
-    expect(
-      mapErrorToResponse(
-        new ThrowingStatusHttpException('untrusted framework message', 400),
-        requestId,
-      ),
-    ).toEqual({
+    expect(mapErrorToResponse(new ThrowingStatusHttpException('untrusted framework message', 400), requestId)).toEqual({
       statusCode: 500,
       code: 'INTERNAL_SERVER_ERROR',
       message: 'An unexpected error occurred.',
@@ -261,17 +249,14 @@ describe('mapErrorToResponse HttpException allowlist', () => {
       }
     }
 
-    expect(
-      mapErrorToResponse(
-        new PrototypeStatusHttpException('untrusted framework message', 400),
+    expect(mapErrorToResponse(new PrototypeStatusHttpException('untrusted framework message', 400), requestId)).toEqual(
+      {
+        statusCode: 500,
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'An unexpected error occurred.',
         requestId,
-      ),
-    ).toEqual({
-      statusCode: 500,
-      code: 'INTERNAL_SERVER_ERROR',
-      message: 'An unexpected error occurred.',
-      requestId,
-    });
+      },
+    );
   });
 
   it('falls back safely when a real HttpException subclass returns a numeric string status at runtime', () => {
@@ -282,10 +267,7 @@ describe('mapErrorToResponse HttpException allowlist', () => {
     }
 
     expect(
-      mapErrorToResponse(
-        new NumericStringStatusHttpException('untrusted framework message', 400),
-        requestId,
-      ),
+      mapErrorToResponse(new NumericStringStatusHttpException('untrusted framework message', 400), requestId),
     ).toEqual({
       statusCode: 500,
       code: 'INTERNAL_SERVER_ERROR',

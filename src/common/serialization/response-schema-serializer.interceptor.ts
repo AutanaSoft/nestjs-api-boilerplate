@@ -4,9 +4,7 @@ import { ResponseContractViolation } from './response-contract-violation.js';
 
 type StandardSchema = NonNullable<StandardSchemaSerializerInterceptorOptions['schema']>;
 type StandardSchemaValidateOptions = StandardSchemaSerializerInterceptorOptions['validateOptions'];
-type SerializedResponse = Awaited<
-  ReturnType<StandardSchemaSerializerInterceptor['transformToPlain']>
->;
+type SerializedResponse = Awaited<ReturnType<StandardSchemaSerializerInterceptor['transformToPlain']>>;
 
 /** Applies declared response schemas and classifies only serialization-boundary failures. */
 @Injectable()

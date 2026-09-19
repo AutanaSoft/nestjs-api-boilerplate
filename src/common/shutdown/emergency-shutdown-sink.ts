@@ -11,9 +11,7 @@ export type ShutdownFailureMetadata = Readonly<{
 /** Writes terminal shutdown events without relying on asynchronous infrastructure. */
 @Injectable()
 export class EmergencyShutdownSink {
-  constructor(
-    @Optional() private readonly writeSync: (fd: number, data: string) => unknown = writeToStderr,
-  ) {}
+  constructor(@Optional() private readonly writeSync: (fd: number, data: string) => unknown = writeToStderr) {}
 
   writeTimedOut(metadata: ShutdownFailureMetadata): void {
     this.write('lifecycle.shutdown.timed_out', metadata);

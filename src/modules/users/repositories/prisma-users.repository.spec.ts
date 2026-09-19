@@ -111,10 +111,7 @@ describe('PrismaUsersRepository', () => {
     });
 
     const forward = {
-      OR: [
-        { createdAt: { gt: user.createdAt } },
-        { createdAt: user.createdAt, id: { gt: user.id } },
-      ],
+      OR: [{ createdAt: { gt: user.createdAt } }, { createdAt: user.createdAt, id: { gt: user.id } }],
     };
     expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -130,10 +127,7 @@ describe('PrismaUsersRepository', () => {
           AND: [
             { email: user.email },
             {
-              OR: [
-                { createdAt: { lt: user.createdAt } },
-                { createdAt: user.createdAt, id: { lt: user.id } },
-              ],
+              OR: [{ createdAt: { lt: user.createdAt } }, { createdAt: user.createdAt, id: { lt: user.id } }],
             },
           ],
         },
@@ -240,12 +234,7 @@ describe('PrismaUsersRepository', () => {
       code: 'P2025',
       clientVersion: '7.10.0',
     });
-    const repository = createRepository(
-      vi.fn(),
-      vi.fn(),
-      vi.fn(),
-      vi.fn().mockRejectedValue(missing),
-    );
+    const repository = createRepository(vi.fn(), vi.fn(), vi.fn(), vi.fn().mockRejectedValue(missing));
 
     await expect(repository.delete(user.id)).resolves.toBeNull();
   });

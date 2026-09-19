@@ -28,9 +28,7 @@ import { RequestContextService } from '../context/request-context.service.js';
 const DEVELOPMENT_LOG_LEVELS = ['verbose', 'debug', 'log', 'warn', 'error', 'fatal'] as const;
 const PRODUCTION_LOG_LEVELS = ['log', 'warn', 'error', 'fatal'] as const;
 
-export function buildConsoleLoggerOptions(
-  nodeEnv: ConfigType<typeof appConfig>['nodeEnv'],
-): ConsoleLoggerOptions {
+export function buildConsoleLoggerOptions(nodeEnv: ConfigType<typeof appConfig>['nodeEnv']): ConsoleLoggerOptions {
   const isProduction = nodeEnv === 'production';
 
   return {

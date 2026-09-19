@@ -69,9 +69,7 @@ describe('HttpExceptionFilter', () => {
     );
 
     const requestId = getRequestId(response);
-    expect(requestId).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
-    );
+    expect(requestId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
     expect(response.setHeader).toHaveBeenCalledWith(REQUEST_ID_HEADER, requestId);
     expect(response.json).toHaveBeenCalledWith({
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -166,31 +164,25 @@ describe('HttpExceptionFilter', () => {
     [{ path: '/private#details' }, '/private'],
     [{ path: '' }, UNMATCHED_ROUTE],
     [{ path: '/widgets/:id' }, '/widgets/:id'],
-  ])(
-    'uses the normalized route or unmatched fallback for unexpected errors: %o',
-    (route, expectedRoute) => {
-      const context = new RequestContextService();
-      const logger = createLogger();
-      const response = createResponse();
-      const filter = new HttpExceptionFilter(context, logger);
+  ])('uses the normalized route or unmatched fallback for unexpected errors: %o', (route, expectedRoute) => {
+    const context = new RequestContextService();
+    const logger = createLogger();
+    const response = createResponse();
+    const filter = new HttpExceptionFilter(context, logger);
 
-      filter.catch(
-        { body: { token: 'secret-token' }, message: 'database password leaked' },
-        createHost(
-          { method: 'DELETE', route, originalUrl: '/private?accessToken=secret' },
-          response,
-        ),
-      );
+    filter.catch(
+      { body: { token: 'secret-token' }, message: 'database password leaked' },
+      createHost({ method: 'DELETE', route, originalUrl: '/private?accessToken=secret' }, response),
+    );
 
-      expect(logger.logUnexpectedHttpError).toHaveBeenCalledExactlyOnceWith({
-        requestId: getRequestId(response),
-        requestIdFallback: true,
-        method: 'DELETE',
-        route: expectedRoute,
-        errorType: 'UNKNOWN_ERROR',
-      });
-    },
-  );
+    expect(logger.logUnexpectedHttpError).toHaveBeenCalledExactlyOnceWith({
+      requestId: getRequestId(response),
+      requestIdFallback: true,
+      method: 'DELETE',
+      route: expectedRoute,
+      errorType: 'UNKNOWN_ERROR',
+    });
+  });
 
   it('does not leak request or error diagnostics through the response or unexpected-error log', () => {
     const context = new RequestContextService();

@@ -39,9 +39,7 @@ describe('RequestCorrelationMiddleware', () => {
     middleware.use({ get: vi.fn((_header: 'X-Request-Id') => requestId) }, response, vi.fn());
 
     const generatedRequestId = response.setHeader.mock.calls[0]?.[1];
-    expect(generatedRequestId).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
-    );
+    expect(generatedRequestId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
     expect(generatedRequestId).not.toBe(requestId);
   });
 });

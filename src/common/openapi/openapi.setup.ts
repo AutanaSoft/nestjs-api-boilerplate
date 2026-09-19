@@ -6,11 +6,7 @@ import type { OpenApiConfig } from '../../config/openapi.config.js';
 import { HealthModule } from '../../modules/health/health.module.js';
 import { UsersModule } from '../../modules/users/users.module.js';
 
-export function setupOpenApi(
-  app: INestApplication,
-  appConfig: AppConfig,
-  openapiConfig: OpenApiConfig,
-): void {
+export function setupOpenApi(app: INestApplication, appConfig: AppConfig, openapiConfig: OpenApiConfig): void {
   if (!openapiConfig.enabled) {
     return;
   }
@@ -27,9 +23,7 @@ export function setupOpenApi(
   );
   convertNullableSchemasToOpenApi32Unions(document);
   document.openapi = '3.2.0';
-  const configuredRoutes = [openapiConfig.docsRoute, openapiConfig.documentRoute].map(
-    (route) => `/${route}`,
-  );
+  const configuredRoutes = [openapiConfig.docsRoute, openapiConfig.documentRoute].map((route) => `/${route}`);
   deduplicateOperationParameters(document);
   const publishedPaths = Object.keys(document.paths ?? {});
 
@@ -109,13 +103,7 @@ function isStringArray(value: unknown): value is string[] {
 
 function deduplicateOperationParameters(document: OpenApi32Document): void {
   for (const pathItem of Object.values(document.paths ?? {})) {
-    for (const operation of [
-      pathItem.get,
-      pathItem.post,
-      pathItem.patch,
-      pathItem.delete,
-      pathItem.query,
-    ]) {
+    for (const operation of [pathItem.get, pathItem.post, pathItem.patch, pathItem.delete, pathItem.query]) {
       if (operation?.parameters === undefined) continue;
 
       const parameters = new Map<string, (typeof operation.parameters)[number]>();

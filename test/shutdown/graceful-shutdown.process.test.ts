@@ -22,10 +22,7 @@ function withDeadline<T>(promise: Promise<T>, operation: string): Promise<T> {
   return Promise.race([
     promise,
     new Promise<T>((_, reject) => {
-      timeout = setTimeout(
-        () => reject(new Error(`${operation} exceeded its deadline`)),
-        HARNESS_DEADLINE_MS,
-      );
+      timeout = setTimeout(() => reject(new Error(`${operation} exceeded its deadline`)), HARNESS_DEADLINE_MS);
     }),
   ]).finally(() => {
     if (timeout !== undefined) {
@@ -62,9 +59,7 @@ function spawnApplication(port: number, shutdownTimeoutMs?: number): ChildHandle
     env: {
       NODE_ENV: 'development',
       PORT: String(port),
-      ...(shutdownTimeoutMs === undefined
-        ? {}
-        : { SHUTDOWN_TIMEOUT_MS: String(shutdownTimeoutMs) }),
+      ...(shutdownTimeoutMs === undefined ? {} : { SHUTDOWN_TIMEOUT_MS: String(shutdownTimeoutMs) }),
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });

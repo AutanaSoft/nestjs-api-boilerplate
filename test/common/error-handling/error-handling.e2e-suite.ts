@@ -13,11 +13,7 @@ type ErrorContract = Readonly<{
   message: string;
 }>;
 
-function expectErrorContract(
-  response: request.Response,
-  expected: ErrorContract,
-  requestId: string,
-): void {
+function expectErrorContract(response: request.Response, expected: ErrorContract, requestId: string): void {
   expect(response.body).toEqual({ ...expected, requestId });
   expect(response.headers['x-request-id']).toBe(requestId);
   expect(response.body).not.toHaveProperty('details');
@@ -133,9 +129,7 @@ export function registerErrorHandlingE2ESuite(registration: E2ESuiteRegistration
         await request(app.getHttpServer()).get('/api/v1/__test/rate-limit').expect(200);
         await request(app.getHttpServer()).get('/api/v1/__test/rate-limit').expect(200);
         await request(app.getHttpServer()).get('/api/v1/__test/rate-limit').expect(429);
-        await request(app.getHttpServer())
-          .get('/api/v1/__test/errors/application-error')
-          .expect(404);
+        await request(app.getHttpServer()).get('/api/v1/__test/errors/application-error').expect(404);
         await request(app.getHttpServer()).get('/api/v1/__test/errors/unknown-error').expect(500);
 
         expect(logUnexpectedHttpError).toHaveBeenCalledTimes(1);

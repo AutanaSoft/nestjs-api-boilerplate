@@ -36,9 +36,7 @@ describe('list users cursor codec', () => {
   it.each([
     'not-base64!',
     Buffer.from('{"v":2}', 'utf8').toString('base64url'),
-    Buffer.from('{"v":1,"email":null,"sort":"createdAt","direction":"desc"}', 'utf8').toString(
-      'base64url',
-    ),
+    Buffer.from('{"v":1,"email":null,"sort":"createdAt","direction":"desc"}', 'utf8').toString('base64url'),
     'a'.repeat(1025),
   ])('rejects malformed or unsupported cursors', (cursor) => {
     expect(() => decodeListUsersCursor(cursor, context)).toThrow();

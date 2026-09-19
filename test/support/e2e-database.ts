@@ -29,9 +29,7 @@ export function parseE2EDatabaseAdminUrl(value: string | undefined): URL {
     url.pathname !== '/postgres' ||
     url.search !== ''
   ) {
-    throw new Error(
-      'E2E_DATABASE_ADMIN_URL must target the loopback PostgreSQL maintenance database',
-    );
+    throw new Error('E2E_DATABASE_ADMIN_URL must target the loopback PostgreSQL maintenance database');
   }
 
   return url;
@@ -68,15 +66,11 @@ export async function createE2EDatabase(): Promise<E2EDatabase> {
 export async function applyE2EDatabaseMigrations(databaseUrl: string): Promise<void> {
   const prismaCli = resolve(process.cwd(), 'node_modules/prisma/build/index.js');
   const exitCode = await new Promise<number | null>((resolveExit, reject) => {
-    const child = spawn(
-      process.execPath,
-      [prismaCli, 'migrate', 'deploy', '--config', 'prisma.config.ts'],
-      {
-        cwd: process.cwd(),
-        env: { ...process.env, DATABASE_URL: databaseUrl },
-        stdio: 'ignore',
-      },
-    );
+    const child = spawn(process.execPath, [prismaCli, 'migrate', 'deploy', '--config', 'prisma.config.ts'], {
+      cwd: process.cwd(),
+      env: { ...process.env, DATABASE_URL: databaseUrl },
+      stdio: 'ignore',
+    });
 
     child.once('error', reject);
     child.once('exit', resolveExit);

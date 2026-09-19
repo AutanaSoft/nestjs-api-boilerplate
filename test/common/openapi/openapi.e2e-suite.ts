@@ -66,9 +66,7 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
           expect(docs.headers['access-control-allow-origin']).toBe('https://allowed.example');
           expect(docs.headers['content-security-policy']).toContain("default-src 'self'");
           expect(docs.headers['content-security-policy']).toContain("script-src 'self'");
-          expect(docs.headers['content-security-policy']).toContain(
-            "style-src 'self' https: 'unsafe-inline'",
-          );
+          expect(docs.headers['content-security-policy']).toContain("style-src 'self' https: 'unsafe-inline'");
           expect(docs.headers['content-security-policy']).toContain("img-src 'self' data:");
 
           expect(document.body.openapi).toBe('3.2.0');
@@ -128,14 +126,7 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
           expect(updateUser.requestBody.content['application/json'].schema).toEqual(
             toOpenApiSchema(updateUserRequestSchema, 'input'),
           );
-          expect(Object.keys(updateUser.responses)).toEqual([
-            '200',
-            '400',
-            '404',
-            '409',
-            '429',
-            '500',
-          ]);
+          expect(Object.keys(updateUser.responses)).toEqual(['200', '400', '404', '409', '429', '500']);
           expect(updateUser.responses['200'].content['application/json'].schema).toEqual(
             toOpenApiSchema(userResponseSchema, 'output'),
           );
@@ -156,9 +147,7 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
             },
           ]);
           expect(Object.keys(deleteUser.responses)).toEqual(['204', '400', '404', '429', '500']);
-          expect(deleteUser.responses['204']).toEqual(
-            expect.objectContaining({ description: expect.any(String) }),
-          );
+          expect(deleteUser.responses['204']).toEqual(expect.objectContaining({ description: expect.any(String) }));
           expect(deleteUser.responses['204'].content).toBeUndefined();
           for (const status of ['400', '404', '429', '500']) {
             expect(deleteUser.responses[status].content['application/json'].schema).toEqual(
@@ -268,9 +257,7 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
           }
 
           expect(JSON.stringify(document.body)).not.toContain('"nullable":');
-          expect(JSON.stringify(document.body)).not.toMatch(
-            /NotFound|__test|rate.limit|serializ|validat/i,
-          );
+          expect(JSON.stringify(document.body)).not.toMatch(/NotFound|__test|rate.limit|serializ|validat/i);
 
           for (const path of [
             '/openapi.yaml',

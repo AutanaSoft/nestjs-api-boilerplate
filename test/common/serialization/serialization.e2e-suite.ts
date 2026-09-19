@@ -19,9 +19,7 @@ export function registerSerializationE2ESuite(registration: E2ESuiteRegistration
   describe('Response serialization (e2e)', () => {
     it('projects public fields and applies the declared schema transformation', async () => {
       await registration.runScenario(async ({ app }) => {
-        const response = await request(app.getHttpServer())
-          .get('/api/v1/__test/serialization/valid')
-          .expect(200);
+        const response = await request(app.getHttpServer()).get('/api/v1/__test/serialization/valid').expect(200);
 
         expect(response.body).toEqual({ publicName: 'PUBLIC: internal-name' });
         expect(response.body).not.toHaveProperty('internalSecret');
@@ -31,9 +29,7 @@ export function registerSerializationE2ESuite(registration: E2ESuiteRegistration
 
     it('keeps an undecorated E2E response in native passthrough mode', async () => {
       await registration.runScenario(async ({ app }) => {
-        const response = await request(app.getHttpServer())
-          .get('/api/v1/__test/serialization/passthrough')
-          .expect(200);
+        const response = await request(app.getHttpServer()).get('/api/v1/__test/serialization/passthrough').expect(200);
 
         expect(response.body).toEqual({ internalName: 'passthrough-value' });
       });

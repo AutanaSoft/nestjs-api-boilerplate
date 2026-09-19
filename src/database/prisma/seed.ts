@@ -16,11 +16,7 @@ export type SeedDependencies = Readonly<{
 }>;
 
 export function parseSeedEnvironment(args: readonly string[]): typeof DEVELOPMENT_SEED_ENVIRONMENT {
-  if (
-    args.length !== 2 ||
-    args[0] !== '--environment' ||
-    args[1] !== DEVELOPMENT_SEED_ENVIRONMENT
-  ) {
+  if (args.length !== 2 || args[0] !== '--environment' || args[1] !== DEVELOPMENT_SEED_ENVIRONMENT) {
     throw new Error('Seed requires the explicit --environment development argument');
   }
 
@@ -64,8 +60,7 @@ export async function main(
   await runSeed(args, environment);
 }
 
-const isMainModule =
-  process.argv[1] !== undefined && fileURLToPath(import.meta.url) === resolve(process.argv[1]);
+const isMainModule = process.argv[1] !== undefined && fileURLToPath(import.meta.url) === resolve(process.argv[1]);
 
 if (isMainModule) {
   void main().catch(() => {

@@ -18,9 +18,7 @@ export const databaseConfigSchema = z.object({
 export type DatabaseConfig = Readonly<z.output<typeof databaseConfigSchema>>;
 export type DatabaseEnvironment = z.input<typeof databaseEnvironmentSchema>;
 
-export function buildDatabaseConfig(
-  environment: Partial<DatabaseEnvironment> = process.env,
-): DatabaseConfig {
+export function buildDatabaseConfig(environment: Partial<DatabaseEnvironment> = process.env): DatabaseConfig {
   const parsedEnvironment = databaseEnvironmentSchema.parse(environment);
 
   return databaseConfigSchema.parse({ url: parsedEnvironment.DATABASE_URL });

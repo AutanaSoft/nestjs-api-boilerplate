@@ -114,9 +114,7 @@ describe('UsersService', () => {
     };
     const service = new UsersService(repository);
 
-    await expect(
-      service.create({ email: user.email, displayName: user.displayName }),
-    ).resolves.toEqual(user);
+    await expect(service.create({ email: user.email, displayName: user.displayName })).resolves.toEqual(user);
     expect(create).toHaveBeenCalledWith({
       email: user.email,
       displayName: user.displayName,
@@ -147,9 +145,7 @@ describe('UsersService', () => {
     };
     const service = new UsersService(repository);
 
-    await expect(service.update(user.id, { email: user.email })).rejects.toBeInstanceOf(
-      UserNotFoundError,
-    );
+    await expect(service.update(user.id, { email: user.email })).rejects.toBeInstanceOf(UserNotFoundError);
   });
 
   it('deletes users through the feature repository port', async () => {

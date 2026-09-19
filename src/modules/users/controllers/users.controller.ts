@@ -37,10 +37,7 @@ import { createUserRequestSchema } from '../contracts/create-user-request.schema
 import { listUsersRequestSchema } from '../contracts/list-users-request.schema.js';
 import type { ListUsersRequest } from '../contracts/list-users-request.schema.js';
 import { listUsersResponseSchema } from '../contracts/list-users-response.schema.js';
-import {
-  queryUsersRequestSchema,
-  queryUsersUrlQuerySchema,
-} from '../contracts/query-users-request.schema.js';
+import { queryUsersRequestSchema, queryUsersUrlQuerySchema } from '../contracts/query-users-request.schema.js';
 import type { QueryUsersRequest } from '../contracts/query-users-request.schema.js';
 import type { CreateUserRequest } from '../contracts/create-user-request.schema.js';
 import { updateUserRequestSchema } from '../contracts/update-user-request.schema.js';

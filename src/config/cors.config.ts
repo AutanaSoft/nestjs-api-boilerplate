@@ -78,9 +78,7 @@ export function buildCorsConfig(environment: CorsEnvironment = process.env): Cor
   }
 
   return corsConfigSchema.parse({
-    origins: parseCorsOrigins(
-      corsOriginsValue === undefined ? DEFAULT_CORS_ORIGIN : corsOriginsValue,
-    ),
+    origins: parseCorsOrigins(corsOriginsValue === undefined ? DEFAULT_CORS_ORIGIN : corsOriginsValue),
     methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'QUERY'],
     allowedHeaders: ['Accept', 'Authorization', 'Content-Type', 'X-Request-Id'],
     exposedHeaders: ['X-Request-Id'],

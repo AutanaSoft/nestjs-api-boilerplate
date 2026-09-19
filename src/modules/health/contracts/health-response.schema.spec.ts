@@ -13,12 +13,9 @@ describe('healthResponseSchema', () => {
     expect(healthResponseSchema.parse(response)).toEqual(response);
   });
 
-  it.each(['error', 'ok', 'degraded', 'shutting_down'])(
-    'accepts the %s Terminus top-level status',
-    (status) => {
-      expect(healthResponseSchema.parse({ status, details: {} })).toEqual({ status, details: {} });
-    },
-  );
+  it.each(['error', 'ok', 'degraded', 'shutting_down'])('accepts the %s Terminus top-level status', (status) => {
+    expect(healthResponseSchema.parse({ status, details: {} })).toEqual({ status, details: {} });
+  });
 
   it('allows omitted info and error while requiring details', () => {
     expect(

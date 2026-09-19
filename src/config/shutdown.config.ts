@@ -12,9 +12,7 @@ export const shutdownConfigSchema = z.object({
 export type ShutdownConfig = Readonly<z.output<typeof shutdownConfigSchema>>;
 export type ShutdownEnvironment = z.input<typeof shutdownEnvironmentSchema>;
 
-export function buildShutdownConfig(
-  environment: ShutdownEnvironment = process.env,
-): ShutdownConfig {
+export function buildShutdownConfig(environment: ShutdownEnvironment = process.env): ShutdownConfig {
   const parsedEnvironment = shutdownEnvironmentSchema.parse(environment);
 
   return shutdownConfigSchema.parse({ timeoutMs: parsedEnvironment.SHUTDOWN_TIMEOUT_MS });

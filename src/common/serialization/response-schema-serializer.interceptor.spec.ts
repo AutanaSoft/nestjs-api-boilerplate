@@ -39,9 +39,7 @@ describe('ResponseSchemaSerializerInterceptor', () => {
     });
 
     await expect(
-      lastValueFrom(
-        createInterceptor({ schema }).intercept(createContext(), callHandler({ id: 'abc' })),
-      ),
+      lastValueFrom(createInterceptor({ schema }).intercept(createContext(), callHandler({ id: 'abc' }))),
     ).resolves.toEqual({ id: 'ABC' });
   });
 
@@ -78,9 +76,7 @@ describe('ResponseSchemaSerializerInterceptor', () => {
     const schema = z.object({ id: z.string() });
 
     const error = await getError(
-      lastValueFrom(
-        createInterceptor({ schema }).intercept(createContext(), callHandler(rejectedValue)),
-      ),
+      lastValueFrom(createInterceptor({ schema }).intercept(createContext(), callHandler(rejectedValue))),
     );
 
     expect(error).toBeInstanceOf(ResponseContractViolation);
@@ -107,9 +103,7 @@ describe('ResponseSchemaSerializerInterceptor', () => {
     };
 
     const error = await getError(
-      lastValueFrom(
-        createInterceptor({ schema }).intercept(createContext(), callHandler({ id: 'value' })),
-      ),
+      lastValueFrom(createInterceptor({ schema }).intercept(createContext(), callHandler({ id: 'value' }))),
     );
 
     expect(error).toBeInstanceOf(ResponseContractViolation);
@@ -130,9 +124,7 @@ describe('ResponseSchemaSerializerInterceptor', () => {
     };
 
     const error = await getError(
-      lastValueFrom(
-        createInterceptor({ schema }).intercept(createContext(), callHandler({ id: 'value' })),
-      ),
+      lastValueFrom(createInterceptor({ schema }).intercept(createContext(), callHandler({ id: 'value' }))),
     );
 
     expect(error).toBeInstanceOf(ResponseContractViolation);
@@ -159,9 +151,9 @@ describe('ResponseSchemaSerializerInterceptor', () => {
   it('passes through an exact value when no schema is declared', async () => {
     const response = { internalValue: 'unchanged' };
 
-    await expect(
-      lastValueFrom(createInterceptor().intercept(createContext(), callHandler(response))),
-    ).resolves.toBe(response);
+    await expect(lastValueFrom(createInterceptor().intercept(createContext(), callHandler(response)))).resolves.toBe(
+      response,
+    );
   });
 
   it('passes through StreamableFile responses', async () => {
@@ -169,24 +161,17 @@ describe('ResponseSchemaSerializerInterceptor', () => {
     const schema = z.object({ id: z.string() });
 
     await expect(
-      lastValueFrom(
-        createInterceptor({ schema }).intercept(createContext(), callHandler(response)),
-      ),
+      lastValueFrom(createInterceptor({ schema }).intercept(createContext(), callHandler(response))),
     ).resolves.toBe(response);
   });
 
-  it.each([null, undefined, 'value', 42, true])(
-    'preserves primitive and null response %j',
-    async (response) => {
-      const schema = z.object({ id: z.string() });
+  it.each([null, undefined, 'value', 42, true])('preserves primitive and null response %j', async (response) => {
+    const schema = z.object({ id: z.string() });
 
-      await expect(
-        lastValueFrom(
-          createInterceptor({ schema }).intercept(createContext(), callHandler(response)),
-        ),
-      ).resolves.toBe(response);
-    },
-  );
+    await expect(
+      lastValueFrom(createInterceptor({ schema }).intercept(createContext(), callHandler(response))),
+    ).resolves.toBe(response);
+  });
 
   it('preserves handler-originated observable errors', async () => {
     const handlerError = new Error('handler failed');

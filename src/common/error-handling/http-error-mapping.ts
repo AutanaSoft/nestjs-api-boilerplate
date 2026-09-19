@@ -81,8 +81,7 @@ function getHttpExceptionHttpDescriptor(error: HttpException): HttpErrorDescript
   try {
     const statusCode: unknown = error.getStatus();
 
-    return typeof statusCode === 'number' &&
-      hasOwnProperty(httpExceptionHttpDescriptors, statusCode)
+    return typeof statusCode === 'number' && hasOwnProperty(httpExceptionHttpDescriptors, statusCode)
       ? httpExceptionHttpDescriptors[statusCode]
       : unknownErrorHttpDescriptor;
   } catch {

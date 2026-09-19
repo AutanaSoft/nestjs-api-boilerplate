@@ -33,8 +33,7 @@ class SerializationTestApplicationModule {}
 
 describe('SerializationModule', () => {
   it('registers one DI-resolved global ResponseSchemaSerializerInterceptor', () => {
-    const providers: unknown[] =
-      Reflect.getMetadata(MODULE_METADATA.PROVIDERS, SerializationModule) ?? [];
+    const providers: unknown[] = Reflect.getMetadata(MODULE_METADATA.PROVIDERS, SerializationModule) ?? [];
     const appInterceptorProviders = providers.filter(
       (
         provider,
@@ -54,9 +53,7 @@ describe('SerializationModule', () => {
       inject: [Reflector],
       useFactory: expect.any(Function),
     });
-    expect(appInterceptorProviders[0].useFactory(new Reflector())).toBeInstanceOf(
-      ResponseSchemaSerializerInterceptor,
-    );
+    expect(appInterceptorProviders[0].useFactory(new Reflector())).toBeInstanceOf(ResponseSchemaSerializerInterceptor);
   });
 
   it('transforms decorated handlers and passes through undecorated handlers in a Nest application', async () => {

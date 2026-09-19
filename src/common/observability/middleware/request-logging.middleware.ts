@@ -15,10 +15,7 @@ type RequestLoggingResponse = {
 };
 
 @Injectable()
-export class HttpRequestLoggingMiddleware implements NestMiddleware<
-  RequestLoggingRequest,
-  RequestLoggingResponse
-> {
+export class HttpRequestLoggingMiddleware implements NestMiddleware<RequestLoggingRequest, RequestLoggingResponse> {
   constructor(
     private readonly requestContext: RequestContextService,
     @Inject(APP_LOGGER) private readonly logger: ApplicationLogger,

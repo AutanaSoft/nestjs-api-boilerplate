@@ -1,11 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { DatabaseConfig } from '../../config/database.config.js';
-import {
-  assertSeedNodeEnvironment,
-  parseSeedEnvironment,
-  runSeed,
-  type SeedClient,
-} from './seed.js';
+import { assertSeedNodeEnvironment, parseSeedEnvironment, runSeed, type SeedClient } from './seed.js';
 import { runFeatureSeeds } from './seeds/index.js';
 
 const developmentEnvironment = {
@@ -31,9 +26,7 @@ describe('parseSeedEnvironment', () => {
 
 describe('assertSeedNodeEnvironment', () => {
   it.each(['production', 'test'])('rejects NODE_ENV=%s', (nodeEnvironment) => {
-    expect(() => assertSeedNodeEnvironment(nodeEnvironment)).toThrow(
-      'not allowed in production or test environments',
-    );
+    expect(() => assertSeedNodeEnvironment(nodeEnvironment)).toThrow('not allowed in production or test environments');
   });
 
   it('allows development and an unset NODE_ENV', () => {
@@ -43,23 +36,20 @@ describe('assertSeedNodeEnvironment', () => {
 });
 
 describe('runSeed', () => {
-  it.each(['production', 'test'])(
-    'does not create a client for NODE_ENV=%s',
-    async (nodeEnvironment) => {
-      const createClient = vi.fn((_database: DatabaseConfig): SeedClient => {
-        throw new Error('client creation should not be reached');
-      });
+  it.each(['production', 'test'])('does not create a client for NODE_ENV=%s', async (nodeEnvironment) => {
+    const createClient = vi.fn((_database: DatabaseConfig): SeedClient => {
+      throw new Error('client creation should not be reached');
+    });
 
-      await expect(
-        runSeed(
-          ['--environment', 'development'],
-          { ...developmentEnvironment, NODE_ENV: nodeEnvironment },
-          { createClient },
-        ),
-      ).rejects.toThrow('not allowed in production or test environments');
-      expect(createClient).not.toHaveBeenCalled();
-    },
-  );
+    await expect(
+      runSeed(
+        ['--environment', 'development'],
+        { ...developmentEnvironment, NODE_ENV: nodeEnvironment },
+        { createClient },
+      ),
+    ).rejects.toThrow('not allowed in production or test environments');
+    expect(createClient).not.toHaveBeenCalled();
+  });
 
   it('disconnects the client after the ordered seeds complete', async () => {
     const client = {

@@ -21,10 +21,7 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
     it('creates a normalized public user with system-generated fields and a resource Location', async () => {
       await registration.runScenario(async ({ app }) => {
         const payload = createPayload();
-        const response = await request(app.getHttpServer())
-          .post('/api/v1/users')
-          .send(payload)
-          .expect(201);
+        const response = await request(app.getHttpServer()).post('/api/v1/users').send(payload).expect(201);
 
         expect(response.headers.location).toBe(`/api/v1/users/${response.body.id}`);
         expect(response.headers['x-request-id']).toMatch(UUID_V4);
@@ -43,13 +40,8 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
     it('retrieves a public user by canonical UUIDv4', async () => {
       await registration.runScenario(async ({ app }) => {
         const payload = createPayload();
-        const created = await request(app.getHttpServer())
-          .post('/api/v1/users')
-          .send(payload)
-          .expect(201);
-        const response = await request(app.getHttpServer())
-          .get(`/api/v1/users/${created.body.id}`)
-          .expect(200);
+        const created = await request(app.getHttpServer()).post('/api/v1/users').send(payload).expect(201);
+        const response = await request(app.getHttpServer()).get(`/api/v1/users/${created.body.id}`).expect(200);
 
         expect(response.body).toEqual({
           id: created.body.id,
@@ -65,9 +57,7 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
 
     it('rejects a non-canonical user ID with the shared 400 contract', async () => {
       await registration.runScenario(async ({ app }) => {
-        const response = await request(app.getHttpServer())
-          .get('/api/v1/users/not-a-uuid')
-          .expect(400);
+        const response = await request(app.getHttpServer()).get('/api/v1/users/not-a-uuid').expect(400);
 
         expect(response.body).toMatchObject({
           statusCode: 400,
@@ -117,10 +107,7 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
       { ...createPayload(), updatedAt: '2026-01-01T00:00:00.000Z' },
     ])('rejects invalid or client-managed input %#', async (payload) => {
       await registration.runScenario(async ({ app }) => {
-        const response = await request(app.getHttpServer())
-          .post('/api/v1/users')
-          .send(payload)
-          .expect(400);
+        const response = await request(app.getHttpServer()).post('/api/v1/users').send(payload).expect(400);
 
         expect(response.body).toMatchObject({
           statusCode: 400,
@@ -143,10 +130,7 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
 
     it('lists exact normalized-email matches and rejects unsupported query shapes', async () => {
       await registration.runScenario(async ({ app }) => {
-        const first = await request(app.getHttpServer())
-          .post('/api/v1/users')
-          .send(createPayload())
-          .expect(201);
+        const first = await request(app.getHttpServer()).post('/api/v1/users').send(createPayload()).expect(201);
         await request(app.getHttpServer()).post('/api/v1/users').send(createPayload()).expect(201);
 
         const filtered = await request(app.getHttpServer())
@@ -161,13 +145,7 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
           hasPreviousPage: false,
         });
 
-        for (const query of [
-          'displayName=Ada',
-          'limit=0',
-          'sort=email',
-          'after=a&before=b',
-          'limit=1&limit=2',
-        ]) {
+        for (const query of ['displayName=Ada', 'limit=0', 'sort=email', 'after=a&before=b', 'limit=1&limit=2']) {
           await request(app.getHttpServer()).get(`/api/v1/users?${query}`).expect(400);
         }
       }, listScenarioOptions);
@@ -176,12 +154,7 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
     it('paginates every public sort order deterministically and serializes only public rows', async () => {
       await registration.runScenario(async ({ app }) => {
         const created = [];
-        for (const displayName of [
-          'Ada Lovelace',
-          'Ada Lovelace',
-          'Ada Lovelace',
-          'Grace Hopper',
-        ]) {
+        for (const displayName of ['Ada Lovelace', 'Ada Lovelace', 'Ada Lovelace', 'Grace Hopper']) {
           const response = await request(app.getHttpServer())
             .post('/api/v1/users')
             .send({ ...createPayload(), displayName })
@@ -203,9 +176,8 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
             .get(`/api/v1/users?sort=${sort}&direction=${direction}&limit=25`)
             .expect(200);
           expect(page.body.data).toHaveLength(4);
-          const values = page.body.data.map(
-            (user: { createdAt: string; displayName: string; id: string }) =>
-              sort === 'createdAt' ? user.createdAt : user.displayName,
+          const values = page.body.data.map((user: { createdAt: string; displayName: string; id: string }) =>
+            sort === 'createdAt' ? user.createdAt : user.displayName,
           );
           const expected = [...values].sort((left, right) =>
             direction === 'asc' ? left.localeCompare(right) : right.localeCompare(left),
@@ -235,9 +207,7 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
         });
 
         const intermediate = await request(app.getHttpServer())
-          .get(
-            `/api/v1/users?sort=displayName&direction=asc&limit=1&after=${first.body.pageInfo.nextCursor}`,
-          )
+          .get(`/api/v1/users?sort=displayName&direction=asc&limit=1&after=${first.body.pageInfo.nextCursor}`)
           .expect(200);
         expect(intermediate.body.data[0].id).toBe(tiedIds[1]);
         expect(intermediate.body.pageInfo).toEqual({
@@ -255,14 +225,10 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
         expect(backward.body).toEqual(first.body);
 
         const third = await request(app.getHttpServer())
-          .get(
-            `/api/v1/users?sort=displayName&direction=asc&limit=1&after=${intermediate.body.pageInfo.nextCursor}`,
-          )
+          .get(`/api/v1/users?sort=displayName&direction=asc&limit=1&after=${intermediate.body.pageInfo.nextCursor}`)
           .expect(200);
         const last = await request(app.getHttpServer())
-          .get(
-            `/api/v1/users?sort=displayName&direction=asc&limit=1&after=${third.body.pageInfo.nextCursor}`,
-          )
+          .get(`/api/v1/users?sort=displayName&direction=asc&limit=1&after=${third.body.pageInfo.nextCursor}`)
           .expect(200);
         expect(last.body.data[0].displayName).toBe('Grace Hopper');
         expect(last.body.pageInfo).toEqual({
@@ -272,9 +238,7 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
           previousCursor: expect.any(String),
         });
 
-        const empty = await request(app.getHttpServer())
-          .get('/api/v1/users?email=nobody@example.com')
-          .expect(200);
+        const empty = await request(app.getHttpServer()).get('/api/v1/users?email=nobody@example.com').expect(200);
         expect(empty.body).toEqual({
           data: [],
           pageInfo: {
@@ -289,10 +253,7 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
 
     it('rejects malformed, oversized, context-mismatched, and repeated list query values', async () => {
       await registration.runScenario(async ({ app }) => {
-        const created = await request(app.getHttpServer())
-          .post('/api/v1/users')
-          .send(createPayload())
-          .expect(201);
+        const created = await request(app.getHttpServer()).post('/api/v1/users').send(createPayload()).expect(201);
         await request(app.getHttpServer()).post('/api/v1/users').send(createPayload()).expect(201);
         const page = await request(app.getHttpServer()).get('/api/v1/users?limit=1').expect(200);
         const cursor = page.body.pageInfo.nextCursor;
@@ -354,22 +315,15 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
     it('normalizes exact email criteria and is safe and idempotent', async () => {
       await registration.runScenario(async ({ app }) => {
         const payload = createPayload();
-        const created = await request(app.getHttpServer())
-          .post('/api/v1/users')
-          .send(payload)
-          .expect(201);
+        const created = await request(app.getHttpServer()).post('/api/v1/users').send(payload).expect(201);
         const body = {
           criteria: { email: ` ${created.body.email.toUpperCase()} ` },
           sort: 'displayName',
           direction: 'asc',
           limit: 1,
         };
-        const first = await new Test(app.getHttpServer(), 'QUERY', '/api/v1/users')
-          .send(body)
-          .expect(200);
-        const repeated = await new Test(app.getHttpServer(), 'QUERY', '/api/v1/users')
-          .send(body)
-          .expect(200);
+        const first = await new Test(app.getHttpServer(), 'QUERY', '/api/v1/users').send(body).expect(200);
+        const repeated = await new Test(app.getHttpServer(), 'QUERY', '/api/v1/users').send(body).expect(200);
 
         expect(first.headers['x-request-id']).toMatch(UUID_V4);
         expect(first.body).toEqual(repeated.body);
@@ -399,24 +353,15 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
 
     it('accepts cross-filter cursors and rejects invalid bodies, legacy cursors, and URL query parameters', async () => {
       await registration.runScenario(async ({ app }) => {
-        const created = await request(app.getHttpServer())
-          .post('/api/v1/users')
-          .send(createPayload())
-          .expect(201);
+        const created = await request(app.getHttpServer()).post('/api/v1/users').send(createPayload()).expect(201);
         await request(app.getHttpServer()).post('/api/v1/users').send(createPayload()).expect(201);
-        const listPage = await request(app.getHttpServer())
-          .get('/api/v1/users?limit=1')
-          .expect(200);
+        const listPage = await request(app.getHttpServer()).get('/api/v1/users?limit=1').expect(200);
         const crossFilterCursor = listPage.body.pageInfo.nextCursor;
         const valid = { criteria: { email: created.body.email } };
         const crossFilter = await new Test(app.getHttpServer(), 'QUERY', '/api/v1/users')
           .send({ ...valid, after: crossFilterCursor })
           .expect(200);
-        expect(
-          crossFilter.body.data.every(
-            (user: { email: string }) => user.email === created.body.email,
-          ),
-        ).toBe(true);
+        expect(crossFilter.body.data.every((user: { email: string }) => user.email === created.body.email)).toBe(true);
 
         const legacyCursor = Buffer.from(
           JSON.stringify({
@@ -448,9 +393,7 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
           await new Test(app.getHttpServer(), 'QUERY', '/api/v1/users').send(body).expect(400);
         }
 
-        await new Test(app.getHttpServer(), 'QUERY', '/api/v1/users?limit=1')
-          .send(valid)
-          .expect(400);
+        await new Test(app.getHttpServer(), 'QUERY', '/api/v1/users?limit=1').send(valid).expect(400);
       }, queryScenarioOptions);
     });
   });
@@ -467,10 +410,7 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
 
     it('updates supplied normalized fields and preserves omitted and system-managed fields', async () => {
       await registration.runScenario(async ({ app }) => {
-        const created = await request(app.getHttpServer())
-          .post('/api/v1/users')
-          .send(createPayload())
-          .expect(201);
+        const created = await request(app.getHttpServer()).post('/api/v1/users').send(createPayload()).expect(201);
         const response = await request(app.getHttpServer())
           .patch(`/api/v1/users/${created.body.id}`)
           .send({ email: ' Ada.Byron@Example.COM ' })
@@ -489,10 +429,7 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
 
     it('returns a public user without advancing updatedAt for a no-op update', async () => {
       await registration.runScenario(async ({ app }) => {
-        const created = await request(app.getHttpServer())
-          .post('/api/v1/users')
-          .send(createPayload())
-          .expect(201);
+        const created = await request(app.getHttpServer()).post('/api/v1/users').send(createPayload()).expect(201);
         const response = await request(app.getHttpServer())
           .patch(`/api/v1/users/${created.body.id}`)
           .send({ displayName: created.body.displayName })
@@ -510,10 +447,7 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
       ['123e4567-e89b-42d3-a456-426614174001', { email: 'not-an-email' }],
     ])('rejects invalid path or body input %#', async (userId, body) => {
       await registration.runScenario(async ({ app }) => {
-        const response = await request(app.getHttpServer())
-          .patch(`/api/v1/users/${userId}`)
-          .send(body)
-          .expect(400);
+        const response = await request(app.getHttpServer()).patch(`/api/v1/users/${userId}`).send(body).expect(400);
 
         expect(response.body).toMatchObject({
           statusCode: 400,
@@ -530,14 +464,8 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
           .send({ displayName: 'Ada Byron' })
           .expect(404);
 
-        const first = await request(app.getHttpServer())
-          .post('/api/v1/users')
-          .send(createPayload())
-          .expect(201);
-        const second = await request(app.getHttpServer())
-          .post('/api/v1/users')
-          .send(createPayload())
-          .expect(201);
+        const first = await request(app.getHttpServer()).post('/api/v1/users').send(createPayload()).expect(201);
+        const second = await request(app.getHttpServer()).post('/api/v1/users').send(createPayload()).expect(201);
         const response = await request(app.getHttpServer())
           .patch(`/api/v1/users/${first.body.id}`)
           .send({ email: ` ${second.body.email.toUpperCase()} ` })
@@ -565,20 +493,13 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
 
     it('physically deletes a user with an empty 204 response and no longer retrieves it', async () => {
       await registration.runScenario(async ({ app }) => {
-        const created = await request(app.getHttpServer())
-          .post('/api/v1/users')
-          .send(createPayload())
-          .expect(201);
-        const response = await request(app.getHttpServer())
-          .delete(`/api/v1/users/${created.body.id}`)
-          .expect(204);
+        const created = await request(app.getHttpServer()).post('/api/v1/users').send(createPayload()).expect(201);
+        const response = await request(app.getHttpServer()).delete(`/api/v1/users/${created.body.id}`).expect(204);
 
         expect(response.text).toBe('');
         expect(response.headers['x-request-id']).toMatch(UUID_V4);
 
-        const fetched = await request(app.getHttpServer())
-          .get(`/api/v1/users/${created.body.id}`)
-          .expect(404);
+        const fetched = await request(app.getHttpServer()).get(`/api/v1/users/${created.body.id}`).expect(404);
         expect(fetched.body).toEqual({
           statusCode: 404,
           code: 'RESOURCE_NOT_FOUND',
@@ -614,14 +535,9 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
           requestId: expect.stringMatching(UUID_V4),
         });
 
-        const created = await request(app.getHttpServer())
-          .post('/api/v1/users')
-          .send(createPayload())
-          .expect(201);
+        const created = await request(app.getHttpServer()).post('/api/v1/users').send(createPayload()).expect(201);
         await request(app.getHttpServer()).delete(`/api/v1/users/${created.body.id}`).expect(204);
-        const repeated = await request(app.getHttpServer())
-          .delete(`/api/v1/users/${created.body.id}`)
-          .expect(404);
+        const repeated = await request(app.getHttpServer()).delete(`/api/v1/users/${created.body.id}`).expect(404);
 
         expect(repeated.body).toEqual({
           statusCode: 404,

@@ -18,9 +18,7 @@ export type RateLimitConfig = Readonly<{
 }>;
 export type RateLimitEnvironment = z.input<typeof rateLimitEnvironmentSchema>;
 
-export function buildRateLimitConfig(
-  environment: RateLimitEnvironment = process.env,
-): RateLimitConfig {
+export function buildRateLimitConfig(environment: RateLimitEnvironment = process.env): RateLimitConfig {
   const parsedEnvironment = rateLimitEnvironmentSchema.parse(environment);
 
   return rateLimitConfigSchema.parse({

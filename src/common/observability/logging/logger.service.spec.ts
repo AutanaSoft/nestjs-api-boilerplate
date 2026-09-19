@@ -20,11 +20,7 @@ describe('StructuredLoggerService', () => {
       verbose: vi.fn(),
       fatal: vi.fn(),
     } satisfies ConsoleLoggerMethods;
-    const logger = new StructuredLoggerService(
-      context,
-      appConfigFactory({ NODE_ENV: 'test' }),
-      consoleLogger,
-    );
+    const logger = new StructuredLoggerService(context, appConfigFactory({ NODE_ENV: 'test' }), consoleLogger);
     const metadataWithSensitiveFields = {
       method: 'GET',
       route: '/health/:probe',
@@ -58,11 +54,7 @@ describe('StructuredLoggerService', () => {
       verbose: vi.fn(),
       fatal: vi.fn(),
     } satisfies ConsoleLoggerMethods;
-    const logger = new StructuredLoggerService(
-      context,
-      appConfigFactory({ NODE_ENV: 'test' }),
-      consoleLogger,
-    );
+    const logger = new StructuredLoggerService(context, appConfigFactory({ NODE_ENV: 'test' }), consoleLogger);
     const metadataWithSensitiveFields = {
       requestId: '123e4567-e89b-42d3-a456-426614174000',
       requestIdFallback: false,
@@ -100,11 +92,7 @@ describe('StructuredLoggerService', () => {
       verbose: vi.fn(),
       fatal: vi.fn(),
     } satisfies ConsoleLoggerMethods;
-    const logger = new StructuredLoggerService(
-      context,
-      appConfigFactory({ NODE_ENV: 'test' }),
-      consoleLogger,
-    );
+    const logger = new StructuredLoggerService(context, appConfigFactory({ NODE_ENV: 'test' }), consoleLogger);
 
     logger.logUnexpectedHttpError({
       requestId: '123e4567-e89b-42d3-a456-426614174001',
@@ -133,11 +121,7 @@ describe('StructuredLoggerService', () => {
       verbose: vi.fn(),
       fatal: vi.fn(),
     } satisfies ConsoleLoggerMethods;
-    const logger = new StructuredLoggerService(
-      context,
-      appConfigFactory({ NODE_ENV: 'test' }),
-      consoleLogger,
-    );
+    const logger = new StructuredLoggerService(context, appConfigFactory({ NODE_ENV: 'test' }), consoleLogger);
     const metadataWithUnexpectedFields = {
       serverUrl: 'http://127.0.0.1:3000',
       apiBasePath: '/api/v1',
@@ -165,11 +149,7 @@ describe('StructuredLoggerService', () => {
       verbose: vi.fn(),
       fatal: vi.fn(),
     } satisfies ConsoleLoggerMethods;
-    const logger = new StructuredLoggerService(
-      context,
-      appConfigFactory({ NODE_ENV: 'test' }),
-      consoleLogger,
-    );
+    const logger = new StructuredLoggerService(context, appConfigFactory({ NODE_ENV: 'test' }), consoleLogger);
 
     logger.logShutdownStarted({ signal: 'SIGTERM', timeoutMs: 10_000, token: 'secret' });
     logger.logShutdownCompleted({ signal: 'SIGTERM', durationMs: 42, stack: 'sensitive' });
@@ -231,16 +211,8 @@ describe('EmergencyShutdownSink', () => {
     sink.writeTimedOut({ signal: 'SIGINT', timeoutMs: 250 });
     sink.writeFailed({ signal: 'SIGTERM', timeoutMs: 500, error: new Error('secret') });
 
-    expect(writeSync).toHaveBeenNthCalledWith(
-      1,
-      2,
-      'lifecycle.shutdown.timed_out signal=SIGINT timeoutMs=250\n',
-    );
-    expect(writeSync).toHaveBeenNthCalledWith(
-      2,
-      2,
-      'shutdown.failed signal=SIGTERM timeoutMs=500\n',
-    );
+    expect(writeSync).toHaveBeenNthCalledWith(1, 2, 'lifecycle.shutdown.timed_out signal=SIGINT timeoutMs=250\n');
+    expect(writeSync).toHaveBeenNthCalledWith(2, 2, 'shutdown.failed signal=SIGTERM timeoutMs=500\n');
 
     const failingSink = new EmergencyShutdownSink(() => {
       throw new Error('unavailable');

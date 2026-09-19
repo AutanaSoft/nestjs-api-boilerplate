@@ -51,9 +51,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 }
 
 function getUnexpectedErrorType(exception: unknown): string {
-  return exception instanceof ResponseContractViolation
-    ? RESPONSE_CONTRACT_VIOLATION
-    : UNKNOWN_ERROR;
+  return exception instanceof ResponseContractViolation ? RESPONSE_CONTRACT_VIOLATION : UNKNOWN_ERROR;
 }
 
 function getRoute(route: unknown): string {

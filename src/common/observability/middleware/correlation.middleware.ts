@@ -16,10 +16,7 @@ type CorrelationResponse = {
 };
 
 @Injectable()
-export class RequestCorrelationMiddleware implements NestMiddleware<
-  CorrelationRequest,
-  CorrelationResponse
-> {
+export class RequestCorrelationMiddleware implements NestMiddleware<CorrelationRequest, CorrelationResponse> {
   constructor(private readonly requestContext: RequestContextService) {}
 
   use(request: CorrelationRequest, response: CorrelationResponse, next: NextFunction): void {

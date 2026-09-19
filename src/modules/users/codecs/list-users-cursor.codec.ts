@@ -17,10 +17,7 @@ const cursorSchema = z.strictObject({
   }),
 });
 
-export function encodeListUsersCursor(
-  context: ListUsersCursorContext,
-  position: ListUsersCursorPosition,
-): string {
+export function encodeListUsersCursor(context: ListUsersCursorContext, position: ListUsersCursorPosition): string {
   const value = {
     v: 1,
     sort: context.sort,
@@ -34,10 +31,7 @@ export function encodeListUsersCursor(
   return Buffer.from(JSON.stringify(value), 'utf8').toString('base64url');
 }
 
-export function decodeListUsersCursor(
-  cursor: string,
-  context: ListUsersCursorContext,
-): ListUsersCursorPosition {
+export function decodeListUsersCursor(cursor: string, context: ListUsersCursorContext): ListUsersCursorPosition {
   if (cursor.length > 1024 || !/^[A-Za-z0-9_-]+$/.test(cursor)) {
     throw new BadRequestException();
   }
@@ -50,27 +44,15 @@ export function decodeListUsersCursor(
   }
 
   const parsed = cursorSchema.safeParse(decoded);
-  if (
-    !parsed.success ||
-    parsed.data.sort !== context.sort ||
-    parsed.data.direction !== context.direction
-  ) {
+  if (!parsed.success || parsed.data.sort !== context.sort || parsed.data.direction !== context.direction) {
     throw new BadRequestException();
   }
 
   const position = parsed.data.position;
-  if (
-    context.sort === 'createdAt' &&
-    position.createdAt !== undefined &&
-    position.displayName === undefined
-  ) {
+  if (context.sort === 'createdAt' && position.createdAt !== undefined && position.displayName === undefined) {
     return { id: position.id, createdAt: new Date(position.createdAt) };
   }
-  if (
-    context.sort === 'displayName' &&
-    position.displayName !== undefined &&
-    position.createdAt === undefined
-  ) {
+  if (context.sort === 'displayName' && position.displayName !== undefined && position.createdAt === undefined) {
     return { id: position.id, displayName: position.displayName };
   }
 

@@ -17,18 +17,15 @@ const HEALTH_CHECK_RESPONSE = {
 
 export function registerHealthE2ESuite(registration: E2ESuiteRegistration): void {
   describe('HealthController (e2e)', () => {
-    it.each(DEFAULT_HEALTH_PATHS)(
-      '%s returns the Terminus contract with Helmet headers',
-      async (path) => {
-        await registration.runScenario(async ({ app }) => {
-          const response = await request(app.getHttpServer()).get(path).expect(200);
+    it.each(DEFAULT_HEALTH_PATHS)('%s returns the Terminus contract with Helmet headers', async (path) => {
+      await registration.runScenario(async ({ app }) => {
+        const response = await request(app.getHttpServer()).get(path).expect(200);
 
-          expect(response.body).toEqual(HEALTH_CHECK_RESPONSE);
-          expect(response.headers['x-content-type-options']).toBe('nosniff');
-          expect(response.headers['x-frame-options']).toBe('SAMEORIGIN');
-        });
-      },
-    );
+        expect(response.body).toEqual(HEALTH_CHECK_RESPONSE);
+        expect(response.headers['x-content-type-options']).toBe('nosniff');
+        expect(response.headers['x-frame-options']).toBe('SAMEORIGIN');
+      });
+    });
 
     it('allows configured CORS origins and denies unconfigured origins', async () => {
       await registration.runScenario(async ({ app }) => {
@@ -57,12 +54,8 @@ export function registerHealthE2ESuite(registration: E2ESuiteRegistration): void
           .expect(204);
 
         expect(response.headers['access-control-allow-origin']).toBe('https://allowed.example');
-        expect(response.headers['access-control-allow-methods']).toBe(
-          'GET,HEAD,POST,PUT,PATCH,DELETE,OPTIONS,QUERY',
-        );
-        expect(response.headers['access-control-allow-headers']).toBe(
-          'Accept,Authorization,Content-Type,X-Request-Id',
-        );
+        expect(response.headers['access-control-allow-methods']).toBe('GET,HEAD,POST,PUT,PATCH,DELETE,OPTIONS,QUERY');
+        expect(response.headers['access-control-allow-headers']).toBe('Accept,Authorization,Content-Type,X-Request-Id');
         expect(response.headers['access-control-max-age']).toBe('600');
         expect(response.headers['access-control-expose-headers']).toBe('X-Request-Id');
       });
@@ -103,10 +96,7 @@ export function registerHealthE2ESuite(registration: E2ESuiteRegistration): void
 
     it('isolates concurrent correlation IDs', async () => {
       await registration.runScenario(async ({ app }) => {
-        const requestIds = [
-          '123e4567-e89b-42d3-a456-426614174000',
-          '223e4567-e89b-42d3-a456-426614174000',
-        ];
+        const requestIds = ['123e4567-e89b-42d3-a456-426614174000', '223e4567-e89b-42d3-a456-426614174000'];
         const client = request.agent(app.getHttpServer());
         const responses = await Promise.all(
           requestIds.map(async (requestId) =>
@@ -128,14 +118,10 @@ export function registerHealthE2ESuite(registration: E2ESuiteRegistration): void
           .get('/api/v1/health/live?accessToken=secret')
           .set('X-Request-Id', requestId)
           .expect(200);
-        const missing = await request(app.getHttpServer())
-          .get('/not-found?accessToken=secret')
-          .expect(404);
+        const missing = await request(app.getHttpServer()).get('/not-found?accessToken=secret').expect(404);
         await request(app.getHttpServer()).get('/api/v1/__test/rate-limit').expect(200);
         await request(app.getHttpServer()).get('/api/v1/__test/rate-limit').expect(200);
-        const limited = await request(app.getHttpServer())
-          .get('/api/v1/__test/rate-limit')
-          .expect(429);
+        const limited = await request(app.getHttpServer()).get('/api/v1/__test/rate-limit').expect(429);
         const preflight = await request(app.getHttpServer())
           .options('/api/v1/health/live')
           .set('Origin', 'https://allowed.example')
@@ -220,23 +206,17 @@ export function registerHealthE2ESuite(registration: E2ESuiteRegistration): void
       );
     });
 
-    it.each(['/health/live', '/health/ready'])(
-      '%s does not expose the removed route',
-      async (path) => {
-        await registration.runScenario(async ({ app }) => {
-          await request(app.getHttpServer()).get(path).expect(404);
-        });
-      },
-    );
+    it.each(['/health/live', '/health/ready'])('%s does not expose the removed route', async (path) => {
+      await registration.runScenario(async ({ app }) => {
+        await request(app.getHttpServer()).get(path).expect(404);
+      });
+    });
 
-    it.each(UNPREFIXED_HEALTH_PATHS)(
-      '%s is not exposed when the default prefix is active',
-      async (path) => {
-        await registration.runScenario(async ({ app }) => {
-          await request(app.getHttpServer()).get(path).expect(404);
-        });
-      },
-    );
+    it.each(UNPREFIXED_HEALTH_PATHS)('%s is not exposed when the default prefix is active', async (path) => {
+      await registration.runScenario(async ({ app }) => {
+        await request(app.getHttpServer()).get(path).expect(404);
+      });
+    });
 
     it('does not expose an unimplemented V2 route', async () => {
       await registration.runScenario(async ({ app }) => {

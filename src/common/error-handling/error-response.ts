@@ -7,6 +7,4 @@ export const errorResponseSchema = z.object({
   requestId: z.string(),
 });
 
-export type ErrorResponse<TDetails = never> = Readonly<
-  z.output<typeof errorResponseSchema> & { details?: TDetails }
->;
+export type ErrorResponse<TDetails = never> = Readonly<z.output<typeof errorResponseSchema> & { details?: TDetails }>;

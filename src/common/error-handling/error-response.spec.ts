@@ -16,9 +16,7 @@ describe('ErrorResponse', () => {
     } satisfies ErrorResponse;
 
     expect(errorResponseSchema.parse(response)).toEqual(response);
-    expect(errorResponseSchema.parse({ ...response, details: { internal: true } })).toEqual(
-      response,
-    );
+    expect(errorResponseSchema.parse({ ...response, details: { internal: true } })).toEqual(response);
     expectTypeOf<ErrorResponse>().toMatchTypeOf<typeof response>();
   });
 

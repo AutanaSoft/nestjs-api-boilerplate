@@ -3,9 +3,9 @@ import { parseE2EDatabaseAdminUrl } from './e2e-database.js';
 
 describe('parseE2EDatabaseAdminUrl', () => {
   it('accepts a loopback PostgreSQL maintenance database URL', () => {
-    expect(
-      parseE2EDatabaseAdminUrl('postgresql://postgres:postgres@127.0.0.1:5432/postgres'),
-    ).toEqual(new URL('postgresql://postgres:postgres@127.0.0.1:5432/postgres'));
+    expect(parseE2EDatabaseAdminUrl('postgresql://postgres:postgres@127.0.0.1:5432/postgres')).toEqual(
+      new URL('postgresql://postgres:postgres@127.0.0.1:5432/postgres'),
+    );
   });
 
   it.each([

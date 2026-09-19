@@ -30,9 +30,7 @@ export type CreateE2EApplicationOptions = Readonly<{
   rateLimitConfig?: RateLimitConfig;
 }>;
 
-export async function createE2EApplication(
-  options: CreateE2EApplicationOptions = {},
-): Promise<E2EContext> {
+export async function createE2EApplication(options: CreateE2EApplicationOptions = {}): Promise<E2EContext> {
   let app: INestApplication | undefined;
 
   try {
@@ -89,10 +87,7 @@ export async function createE2EApplication(
     try {
       await app.close();
     } catch (cleanupError: unknown) {
-      throw new AggregateError(
-        [error, cleanupError],
-        'E2E application bootstrap and cleanup failed',
-      );
+      throw new AggregateError([error, cleanupError], 'E2E application bootstrap and cleanup failed');
     }
 
     throw error;

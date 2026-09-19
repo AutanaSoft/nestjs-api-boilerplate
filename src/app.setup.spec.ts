@@ -91,12 +91,7 @@ describe('setupApplication', () => {
       enableVersioning: vi.fn(),
     } as unknown as INestApplication;
 
-    setupApplication(
-      app,
-      buildHttpConfig({}),
-      buildCorsConfig({}),
-      buildApiConfig({ API_GLOBAL_PREFIX: '' }),
-    );
+    setupApplication(app, buildHttpConfig({}), buildCorsConfig({}), buildApiConfig({ API_GLOBAL_PREFIX: '' }));
 
     expect(setGlobalPrefix).not.toHaveBeenCalled();
   });

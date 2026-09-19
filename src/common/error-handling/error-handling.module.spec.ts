@@ -49,14 +49,10 @@ describe('ErrorHandlingModule', () => {
   });
 
   it('declares exactly one APP_FILTER provider using HttpExceptionFilter', () => {
-    const providers: unknown[] =
-      Reflect.getMetadata(MODULE_METADATA.PROVIDERS, ErrorHandlingModule) ?? [];
+    const providers: unknown[] = Reflect.getMetadata(MODULE_METADATA.PROVIDERS, ErrorHandlingModule) ?? [];
     const appFilterProviders = providers.filter(
       (provider): provider is { provide: unknown } =>
-        typeof provider === 'object' &&
-        provider !== null &&
-        'provide' in provider &&
-        provider.provide === APP_FILTER,
+        typeof provider === 'object' && provider !== null && 'provide' in provider && provider.provide === APP_FILTER,
     );
 
     expect(appFilterProviders).toHaveLength(1);

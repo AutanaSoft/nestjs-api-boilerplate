@@ -18,44 +18,33 @@ function createCoordinator() {
     kill: vi.fn(),
     exit: vi.fn(),
   };
-  const coordinator = new ShutdownCoordinatorService(
-    { timeoutMs: 100 },
-    logger,
-    emergencySink,
-    runtime,
-    () => 20,
-  );
+  const coordinator = new ShutdownCoordinatorService({ timeoutMs: 100 }, logger, emergencySink, runtime, () => 20);
 
   return { coordinator, emergencySink, logger, runtime };
 }
 
 describe('ShutdownCoordinatorService', () => {
-  it.each(['SIGTERM', 'SIGINT'] as const)(
-    'closes once and re-emits the winning %s signal',
-    async (signal) => {
-      const { coordinator, logger, runtime } = createCoordinator();
-      const app = { close: vi.fn().mockResolvedValue(undefined) };
+  it.each(['SIGTERM', 'SIGINT'] as const)('closes once and re-emits the winning %s signal', async (signal) => {
+    const { coordinator, logger, runtime } = createCoordinator();
+    const app = { close: vi.fn().mockResolvedValue(undefined) };
 
-      coordinator.install(app);
-      const listener = runtime.on.mock.calls.find(
-        ([registeredSignal]) => registeredSignal === signal,
-      )?.[1];
-      listener();
-      await Promise.resolve();
+    coordinator.install(app);
+    const listener = runtime.on.mock.calls.find(([registeredSignal]) => registeredSignal === signal)?.[1];
+    listener();
+    await Promise.resolve();
 
-      expect(app.close).toHaveBeenCalledExactlyOnceWith(signal);
-      expect(logger.logShutdownStarted).toHaveBeenCalledExactlyOnceWith({
-        signal,
-        timeoutMs: 100,
-      });
-      expect(logger.logShutdownCompleted).toHaveBeenCalledExactlyOnceWith({
-        signal,
-        durationMs: 0,
-      });
-      expect(runtime.off).toHaveBeenCalledTimes(2);
-      expect(runtime.kill).toHaveBeenCalledExactlyOnceWith(123, signal);
-    },
-  );
+    expect(app.close).toHaveBeenCalledExactlyOnceWith(signal);
+    expect(logger.logShutdownStarted).toHaveBeenCalledExactlyOnceWith({
+      signal,
+      timeoutMs: 100,
+    });
+    expect(logger.logShutdownCompleted).toHaveBeenCalledExactlyOnceWith({
+      signal,
+      durationMs: 0,
+    });
+    expect(runtime.off).toHaveBeenCalledTimes(2);
+    expect(runtime.kill).toHaveBeenCalledExactlyOnceWith(123, signal);
+  });
 
   it('keeps the first signal, forces timeout once, and ignores late close completion', async () => {
     vi.useFakeTimers();
