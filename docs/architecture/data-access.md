@@ -64,6 +64,14 @@ Los Application Services no deben inyectar Prisma Client directamente.
 El Prisma Schema define el persistence model y permanece separado de los contratos de aplicación y
 transporte.
 
+Los assets de Prisma se ubican bajo `src/database/prisma/`: `schema.prisma` contiene el generator y
+datasource, los modelos viven en `models/` y el migration history en `migrations/`. El cliente
+generado permanece en `src/database/generated/` y no debe editarse manualmente.
+
+El modelo Prisma `User` conserva sus nombres camelCase para la API de la aplicación y utiliza
+mappings explícitos hacia los identificadores snake_case de PostgreSQL (`users`, `display_name`,
+`created_at` y `updated_at`).
+
 Los cambios de schema deben versionarse mediante Prisma Migrate.
 
 El migration history forma parte del repositorio y debe mantenerse junto con los cambios que lo

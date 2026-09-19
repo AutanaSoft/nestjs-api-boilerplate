@@ -1,0 +1,11 @@
+model User {
+  id          String   @id(map: "users_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email       String   @unique(map: "users_email_key")
+  displayName String   @map("display_name")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@index([createdAt, id], map: "users_created_at_id_idx")
+  @@index([displayName, id], map: "users_display_name_id_idx")
+  @@map("users")
+}

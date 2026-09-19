@@ -19,7 +19,7 @@ const config: runtime.GetPrismaClientConfig = {
   engineVersion: '0edf323efd1d98336f3f0a68684b56f689b900d3',
   activeProvider: 'postgresql',
   inlineSchema:
-    'generator client {\n  provider     = "prisma-client"\n  output       = "../src/database/generated"\n  moduleFormat = "esm"\n}\n\ndatasource db {\n  provider = "postgresql"\n}\n\nmodel User {\n  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid\n  email       String   @unique\n  displayName String\n  createdAt   DateTime @default(now()) @db.Timestamptz(6)\n  updatedAt   DateTime @default(now()) @db.Timestamptz(6)\n}\n',
+    'model User {\n  id          String   @id(map: "users_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid\n  email       String   @unique(map: "users_email_key")\n  displayName String   @map("display_name")\n  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)\n  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)\n\n  @@index([createdAt, id], map: "users_created_at_id_idx")\n  @@index([displayName, id], map: "users_display_name_id_idx")\n  @@map("users")\n}\n\ngenerator client {\n  provider     = "prisma-client"\n  output       = "../generated"\n  moduleFormat = "esm"\n}\n\ndatasource db {\n  provider = "postgresql"\n}\n',
   runtimeDataModel: {
     models: {},
     enums: {},
@@ -32,7 +32,7 @@ const config: runtime.GetPrismaClientConfig = {
 };
 
 config.runtimeDataModel = JSON.parse(
-  '{"models":{"User":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"email","kind":"scalar","type":"String"},{"name":"displayName","kind":"scalar","type":"String"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"}],"dbName":null,"schema":null}},"enums":{},"types":{}}',
+  '{"models":{"User":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"email","kind":"scalar","type":"String"},{"name":"displayName","kind":"scalar","type":"String","dbName":"display_name"},{"name":"createdAt","kind":"scalar","type":"DateTime","dbName":"created_at"},{"name":"updatedAt","kind":"scalar","type":"DateTime","dbName":"updated_at"}],"dbName":"users","schema":null}},"enums":{},"types":{}}',
 );
 config.parameterizationSchema = {
   strings: JSON.parse(

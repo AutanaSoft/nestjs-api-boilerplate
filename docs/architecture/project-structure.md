@@ -100,6 +100,13 @@ Las ubicaciones principales son:
 
 ```text
 src/database/
+├── generated/              # Prisma Client generado
+├── prisma/
+│   ├── models/             # Modelos de persistencia
+│   ├── migrations/         # Historial versionado
+│   └── schema.prisma       # Generator y datasource
+├── database.module.ts
+└── prisma.service.ts
 src/config/
 src/common/
 ```

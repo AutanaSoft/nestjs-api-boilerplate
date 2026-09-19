@@ -9,15 +9,18 @@ committed migrations.
 `postgresql://` or `postgres://` protocol. The value is a secret: provide it through deployment
 configuration and never log or commit it.
 
-Prisma CLI commands use `prisma.config.ts`, which resolves the same `DATABASE_URL`:
+Prisma CLI commands use the root `prisma.config.ts`, which loads `.env`, resolves the same
+`DATABASE_URL`, and discovers the multifile schema and migrations under `src/database/prisma/`:
 
 ```bash
 pnpm prisma:generate
 pnpm prisma:migrate:deploy
 ```
 
-`prisma/schema.prisma` defines only the database provider and generated-client output. Persistent
-models and their migrations are owned by the Feature that introduces them.
+`src/database/prisma/schema.prisma` defines only the database provider and generated-client output.
+Persistent models are split into `src/database/prisma/models/`, and versioned migrations live in
+`src/database/prisma/migrations/`. Persistent models and their migrations are owned by the Feature
+that introduces them.
 
 ## End-to-end database lifecycle
 

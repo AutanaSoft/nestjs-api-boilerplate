@@ -124,10 +124,10 @@ draining requiere un contrato de deployment posterior.
 
 La suite E2E usa PostgreSQL 16 y Prisma reales. `E2E_DATABASE_ADMIN_URL` debe referir únicamente a
 la base de mantenimiento `postgres` de una instancia loopback. Antes de cada escenario, el harness
-crea una base con nombre impredecible, aplica las migrations versionadas mediante
-`prisma migrate deploy` y construye el `AppModule` real con su `databaseConfig` tipado. Al
-finalizar, cierra la aplicación —incluido el lifecycle de Prisma— y elimina la base temporal con
-`DROP DATABASE ... WITH (FORCE)`.
+crea una base con nombre impredecible, aplica las migrations versionadas de
+`src/database/prisma/migrations/` mediante `prisma migrate deploy` y construye el `AppModule` real
+con su `databaseConfig` tipado. Al finalizar, cierra la aplicación —incluido el lifecycle de Prisma—
+y elimina la base temporal con `DROP DATABASE ... WITH (FORCE)`.
 
 El workflow CI provisiona PostgreSQL 16 y entrega esa URL administrativa. La ejecución local debe
 proporcionar una instancia compatible; el harness rechaza URLs remotas o que no señalen `postgres`.
