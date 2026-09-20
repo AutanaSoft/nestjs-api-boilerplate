@@ -26,10 +26,10 @@ Set `API_GLOBAL_PREFIX` to an explicit empty value to publish the same probes un
 
 ## Prerequisites
 
-- Node.js 24 (the version used by CI)
+- Node.js 26 (the version used by CI)
 - pnpm 12.4.2 (declared by `packageManager` in `package.json`)
 
-Node.js 24 may not include Corepack. Install and enable it to activate the repository's canonical package-manager
+Node.js 26 may not include Corepack. Install and enable it to activate the repository's canonical package-manager
 version declared in `package.json`:
 
 ```bash

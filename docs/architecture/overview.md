@@ -23,7 +23,7 @@ Los requisitos funcionales de Features concretos no pertenecen a este documento.
 La arquitectura parte de las siguientes restricciones:
 
 - NestJS 12 y TypeScript como plataforma de aplicación;
-- Node.js 24 como runtime soportado;
+- Node.js 26 como runtime soportado;
 - pnpm como package manager del proyecto;
 - aplicación HTTP modular basada en el sistema de Modules y Providers de NestJS.
 
