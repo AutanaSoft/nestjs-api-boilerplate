@@ -33,7 +33,10 @@ describe('bootstrap', () => {
 
     await bootstrap();
 
-    expect(NestFactory.create).toHaveBeenCalledExactlyOnceWith(AppModule, { bufferLogs: true });
+    expect(NestFactory.create).toHaveBeenCalledExactlyOnceWith(AppModule, {
+      bufferLogs: true,
+      forceCloseConnections: true,
+    });
     expect(app.flushLogs).not.toHaveBeenCalled();
   });
 

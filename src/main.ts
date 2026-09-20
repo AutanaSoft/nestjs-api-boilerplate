@@ -15,7 +15,8 @@ import openapiConfig from './config/openapi.config.js';
 type CreateApplication = () => Promise<INestApplication>;
 
 export async function bootstrap(
-  createApplication: CreateApplication = () => NestFactory.create(AppModule, { bufferLogs: true }),
+  createApplication: CreateApplication = () =>
+    NestFactory.create(AppModule, { bufferLogs: true, forceCloseConnections: true }),
 ): Promise<void> {
   let app: INestApplication | undefined;
 
