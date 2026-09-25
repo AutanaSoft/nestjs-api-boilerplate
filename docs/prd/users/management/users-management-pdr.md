@@ -111,60 +111,73 @@ assign or modify the identifier or timestamps.
 
 ## 6. Acceptance criteria
 
-- [ ] A consumer can create a user only with a required email that is trimmed, lowercased, and validated before
+- [x] A consumer can create a user only with a required email that is trimmed, lowercased, and validated before
       persistence.
-- [ ] A consumer can create a user only with a required display name containing 2–30 Unicode letters and internal spaces
+- [x] A consumer can create a user only with a required display name containing 2–30 Unicode letters and internal spaces
       after trimming surrounding whitespace.
-- [ ] A successful creation returns `201 Created`, the public user representation, and a `Location` header identifying
+- [x] A successful creation returns `201 Created`, the public user representation, and a `Location` header identifying
       the new resource.
-- [ ] A successful creation assigns a UUIDv4 and both timestamps through the system and returns only the approved public
+- [x] A successful creation assigns a UUIDv4 and both timestamps through the system and returns only the approved public
       user representation.
-- [ ] A successful update changes `updatedAt` without changing `createdAt`.
-- [ ] Client input cannot assign or modify `id`, `createdAt`, or `updatedAt`.
-- [ ] Creating a user that violates the approved uniqueness rule returns `409 CONFLICT`.
-- [ ] A consumer can retrieve an existing user by its public identifier.
-- [ ] Retrieving a nonexistent user returns `404 RESOURCE_NOT_FOUND`.
-- [ ] A consumer can filter `GET /users` by exact normalized email.
-- [ ] `GET /users` rejects unsupported filters, including `displayName` and date filters in the initial contract.
-- [ ] User listing defaults to `createdAt desc`.
-- [ ] A consumer can sort user listings by `createdAt` or `displayName` in ascending or descending order.
-- [ ] User listing rejects unsupported sort fields, including `email` and `updatedAt`.
-- [ ] Every user-listing order uses `id` as an internal deterministic tie-breaker.
-- [ ] User listing uses opaque versioned base64url cursors, deterministic ordering, a default limit of 25, and a maximum
+- [x] A successful update changes `updatedAt` without changing `createdAt`.
+- [x] Client input cannot assign or modify `id`, `createdAt`, or `updatedAt`.
+- [x] Creating a user that violates the approved uniqueness rule returns `409 CONFLICT`.
+- [x] A consumer can retrieve an existing user by its public identifier.
+- [x] Retrieving a nonexistent user returns `404 RESOURCE_NOT_FOUND`.
+- [x] A consumer can filter `GET /users` by exact normalized email.
+- [x] `GET /users` rejects unsupported filters, including `displayName` and date filters in the initial contract.
+- [x] User listing defaults to `createdAt desc`.
+- [x] A consumer can sort user listings by `createdAt` or `displayName` in ascending or descending order.
+- [x] User listing rejects unsupported sort fields, including `email` and `updatedAt`.
+- [x] Every user-listing order uses `id` as an internal deterministic tie-breaker.
+- [x] User listing uses opaque versioned base64url cursors, deterministic ordering, a default limit of 25, and a maximum
       limit of 250. Cursor v1 contains only `v`, `sort`, `direction`, and `position`, with no raw filter values. Cursors
       bind sort and direction; clients should reuse them with the same filtering, while cross-email-filter reuse remains
       accepted by design and the repository applies the current request email filter. This privacy tradeoff omits email
       from the token and therefore does not provide email compatibility verification or authenticity. Legacy v1 cursors
       containing `email` are rejected. Malformed, incompatible, unknown, repeated, array, or otherwise unsupported query
       input returns `400`.
-- [ ] User listing accepts mutually exclusive `after` and `before` cursors, and returns `{ data,     pageInfo }`
+- [x] User listing accepts mutually exclusive `after` and `before` cursors, and returns `{ data,     pageInfo }`
       according to the shared pagination contract. Page flags and cursors describe only actual adjacent rows; an empty
       page has both flags `false` and both cursors `null`.
-- [ ] Successful singular and collection `GET` operations return `200 OK` with their corresponding public
+- [x] Successful singular and collection `GET` operations return `200 OK` with their corresponding public
       representation.
-- [ ] Conventional `GET` remains the default supported operation for retrieving the user collection.
-- [ ] A consumer can experimentally query by exact normalized email through structured `QUERY`.
-- [ ] Experimental `QUERY` requires the strict body
+- [x] Conventional `GET` remains the default supported operation for retrieving the user collection.
+- [x] A consumer can experimentally query by exact normalized email through structured `QUERY`.
+- [x] Experimental `QUERY` requires the strict body
       `{ criteria: { email }, sort?, direction?, limit?, after?, before? }`, rejects URL query parameters, and rejects
       missing, null, array, and unknown body fields.
-- [ ] Experimental `QUERY` rejects `displayName` and accepts no filter fields or operators beyond those available
+- [x] Experimental `QUERY` rejects `displayName` and accepts no filter fields or operators beyond those available
       through conventional `GET`.
-- [ ] Experimental `QUERY` returns `200 OK` and uses the same paginated collection, pagination, and sorting contracts as
+- [x] Experimental `QUERY` returns `200 OK` and uses the same paginated collection, pagination, and sorting contracts as
       conventional `GET`.
-- [ ] Repeating the same structured query against unchanged data produces equivalent results without modifying user
+- [x] Repeating the same structured query against unchanged data produces equivalent results without modifying user
       data.
-- [ ] A successful partial update returns `200 OK` with the updated public user representation.
-- [ ] A partial update changes only supplied mutable fields and leaves omitted fields unchanged.
-- [ ] A partial update rejects `null` for `email` and `displayName`.
-- [ ] A partial update rejects client attempts to change `id`, `createdAt`, or `updatedAt`.
-- [ ] A successful deletion returns `204 No Content` without a response body.
-- [ ] A consumer can physically delete a user, after which retrieving that identifier returns `404 RESOURCE_NOT_FOUND`.
-- [ ] The initial user model contains no `deletedAt` field or restoration behavior.
-- [ ] Until authentication is introduced, all operations in this PDR are usable without credentials.
+- [x] A successful partial update returns `200 OK` with the updated public user representation.
+- [x] A partial update changes only supplied mutable fields and leaves omitted fields unchanged.
+- [x] A partial update rejects `null` for `email` and `displayName`.
+- [x] A partial update rejects client attempts to change `id`, `createdAt`, or `updatedAt`.
+- [x] A successful deletion returns `204 No Content` without a response body.
+- [x] A consumer can physically delete a user, after which retrieving that identifier returns `404 RESOURCE_NOT_FOUND`.
+- [x] The initial user model contains no `deletedAt` field or restoration behavior.
+- [x] Until authentication is introduced, all operations in this PDR are usable without credentials.
 - [ ] When `AuthModule` is introduced, every Users management operation requires authentication and explicit
       authorization, while registration is owned by `AuthModule`.
-- [ ] Every successful response includes `X-Request-Id` according to the shared HTTP contract.
-- [ ] Public responses and errors conform to the repository's shared HTTP contracts.
+- [x] Every successful response includes `X-Request-Id` according to the shared HTTP contract.
+- [x] Public responses and errors conform to the repository's shared HTTP contracts.
+
+### Initial-scope verification (2026-09-25)
+
+The initial unauthenticated Users scope meets the criteria checked above. Evidence: `src/modules/users/` and
+`test/modules/users/create-user.e2e-suite.ts`; 109 focused unit tests (10 files) and 59 real-database E2E tests (1 entry
+file) passed using direct local Vitest, and Prisma schema validation passed after declaring the CLI's `dotenv`
+dependency. The E2E run exercised HTTP after applying migrations to isolated PostgreSQL databases.
+
+Coverage is representative rather than one HTTP assertion per variation: required-field omission, unsupported date
+filters and `updatedAt` sorting, acceptance of limit 250, `null` for each mutable update field, and the request-ID
+header on every successful route are supported by strict schemas or shared middleware plus related unit and HTTP tests,
+not all by dedicated E2E cases. The future `AuthModule` transition remains unchecked; it is not part of this initial
+release and must be verified when that module is implemented.
 
 ## 7. Considered decisions
 

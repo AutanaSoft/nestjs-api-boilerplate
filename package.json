@@ -71,6 +71,7 @@
     "@types/pg": "^8.23.1",
     "@types/supertest": "^7.2.1",
     "@vitest/coverage-v8": "^5.0.1",
+    "dotenv": "17.4.2",
     "husky": "^9.1.7",
     "lint-staged": "^17.5.1",
     "markdownlint-cli2": "^0.23.2",
