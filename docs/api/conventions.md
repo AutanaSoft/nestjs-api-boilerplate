@@ -24,6 +24,11 @@ Utilice:
 
 Evite rutas centradas innecesariamente en acciones o detalles internos.
 
+Como excepción limitada a las acciones del flujo Auth, se permiten las rutas `POST /api/v1/auth/sign-up`,
+`POST /api/v1/auth/sign-in`, `POST /api/v1/auth/sign-out`, `POST /api/v1/auth/refresh` y
+`POST /api/v1/auth/change-password`. Consulte `../prd/auth/authentication/authentication-pdr.md` para el comportamiento
+del producto; las demás rutas mantienen las reglas generales de recursos.
+
 Los recursos anidados deben utilizarse únicamente cuando la relación con el recurso padre forme parte relevante del
 contexto público.
 

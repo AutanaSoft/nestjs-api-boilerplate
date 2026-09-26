@@ -3,10 +3,10 @@ title: 'Provide foundational user management'
 module: users
 area: management
 slug: users-management
-version: '1.1'
+version: '1.3'
 status: approved
 date_created: '2026-09-17'
-last_updated: '2026-09-17'
+last_updated: '2026-09-25'
 owner: users
 tags:
   - users
@@ -47,10 +47,10 @@ users through a stable public contract.
 - Return only the approved public user representation.
 - Define observable validation, not-found, and uniqueness-conflict behavior.
 
-### Out of scope
+### Out of scope (initial unauthenticated scope)
 
 - Registration, login, logout, credentials, password hashes, tokens, and sessions.
-- Authentication Guards, authenticated principals, Roles, Permissions, and Policies.
+- Authentication Guards, authenticated principals, Roles, Permissions, and Policies in the initial scope.
 - Access-control rules for user management operations.
 - Usernames, phone numbers, profile data, or other attributes without an approved requirement.
 - Direct persistence access by future authentication capabilities.
@@ -93,9 +93,19 @@ users through a stable public contract.
 - **Successful responses:** Creation returns `201 Created`, the created user, and `Location`; reads and partial updates
   return `200 OK` with their user or paginated collection representation; deletion returns `204 No Content` without a
   body. Every response includes `X-Request-Id` through the shared HTTP contract.
-- **Authentication transition:** When `AuthModule` is implemented, every Users management operation requires
-  authentication and explicit authorization. Registration belongs to `AuthModule`; no administrative Users operation
-  remains public.
+- **Authentication transition:** The current CRUD contract remains temporarily unauthenticated. When `AuthModule` is
+  implemented, every Users management operation requires authentication and explicit authorization. Registration belongs
+  to Auth; no administrative Users operation remains public. Admin-only `POST /api/v1/users` then requires an initial
+  password for a new user with role `user`, who must change it at first sign-in. Each account has exactly one
+  initial-version role: `user` or `admin`; the initial seeded administrator has role `admin`. Users owns hashing and
+  persistent credential state; the hash is never public. Admin-only `PATCH /api/v1/users/:userId` accepts optional
+  `role: 'user' | 'admin'` alongside optional profile fields, with explicit policy checks preventing demotion or
+  deletion of the last active administrator. Auth coordinates promotion revocation of all target sessions and new
+  sign-in, demotion taking effect on the next request without ending the session, and immediate revocation of all
+  sessions on admin deletion. Self-profile `GET /api/v1/users/me` returns exactly `id`, `email`, `displayName`,
+  `createdAt`, `updatedAt`, and `role`, without automatically including future fields. `PATCH /api/v1/users/me` allows
+  only a user's own `displayName` update; self updates and public sign-up reject role input. The general public user
+  representation retains its approved five fields and does not gain role or password hashes.
 
 The approved initial public model is `id`, `email`, `displayName`, `createdAt`, and `updatedAt`. Client input cannot
 assign or modify the identifier or timestamps.
@@ -162,7 +172,19 @@ assign or modify the identifier or timestamps.
 - [x] The initial user model contains no `deletedAt` field or restoration behavior.
 - [x] Until authentication is introduced, all operations in this PDR are usable without credentials.
 - [ ] When `AuthModule` is introduced, every Users management operation requires authentication and explicit
-      authorization, while registration is owned by `AuthModule`.
+      authorization, while public sign-up is owned by `AuthModule`.
+- [ ] Admin-only `POST /api/v1/users` requires an initial password at new user creation, persists only its hash, and
+      creates an ordinary user required to change that password at first sign-in; no public response exposes the hash.
+- [ ] Each account has exactly one initial-version role, `user` or `admin`; admin creation starts with role `user` and
+      the initial seed administrator has role `admin`. Admin-only `PATCH /api/v1/users/:userId` accepts optional
+      `role: 'user' | 'admin'` with optional profile fields; policy checks prevent demotion or deletion of the last
+      active administrator. Promotion revokes all target sessions and requires new sign-in; demotion retains sessions
+      but takes effect on the next request.
+- [ ] `GET /api/v1/users/me` returns exactly `id`, `email`, `displayName`, `createdAt`, `updatedAt`, and the single
+      `role`, without automatically including future fields. An ordinary user can update only their own `displayName`
+      through `PATCH /api/v1/users/me`; self updates and public sign-up reject role input. General Users public
+      responses retain the approved five fields.
+- [ ] Admin deletion immediately revokes every session of the deleted user.
 - [x] Every successful response includes `X-Request-Id` according to the shared HTTP contract.
 - [x] Public responses and errors conform to the repository's shared HTTP contracts.
 
@@ -218,12 +240,15 @@ release and must be verified when that module is implemented.
 
 ### Rejected decisions
 
-- Implement authentication, credentials, sessions, or authorization as part of this capability.
+- Implement authentication or sessions as part of the initial unauthenticated capability; the approved future transition
+  assigns credential ownership to Users and session orchestration to Auth.
 - Let future authentication behavior access the Users repository directly.
-- Add usernames, phone numbers, Roles, or other user attributes without a product requirement.
+- Add usernames, phone numbers, or other user attributes without a product requirement.
 - Use `POST /users/search` as the preferred structured-query contract.
 - Treat temporary unauthenticated access as a permanent public-access decision.
 
 ### Open questions
 
-None.
+- What remaining request and response details will represent future admin creation and role update while preserving the
+  approved general public user representation?
+- How will last-administrator checks and deletion or promotion session effects remain consistent across Users and Auth?

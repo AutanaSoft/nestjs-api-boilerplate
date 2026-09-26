@@ -64,6 +64,15 @@ Ejemplos:
 
 Los cambios backward-compatible permanecen dentro de la versión existente.
 
+### Excepción limitada durante el desarrollo preestable
+
+Para esta plantilla, mientras `/api/v1` siga en desarrollo preestable y no tenga consumidores de producción de una
+versión pública estable, se permite modificar en la misma `v1` el contrato de Users para exigir contraseña en la
+creación administrativa y proteger sus operaciones con autenticación y autorización. Esta excepción no aprueba por sí
+sola las formas de request o response: requieren una modificación explícita del PDR de Users y del contrato HTTP antes
+de implementarse. Una vez que exista una versión pública estable o consumidores que dependan de ella, vuelve a regir sin
+excepción la regla general de nueva versión para cambios incompatibles.
+
 ## Coexistencia
 
 Una nueva versión puede coexistir temporalmente con versiones anteriores:
@@ -94,7 +103,7 @@ permanece fuera del alcance de este cambio.
 2. Publique cada versión como `/<prefijo-configurado>/vN` o `/vN` cuando el prefijo esté vacío.
 3. Utilice `1` como identificador de la versión inicial, expuesto como `v1` en la URI.
 4. Utilice números enteros para versiones públicas.
-5. Cree una nueva versión únicamente para breaking changes.
+5. Cree una nueva versión para breaking changes, salvo la excepción preestable limitada descrita arriba.
 6. Mantenga cambios compatibles dentro de la versión existente.
 7. Permita coexistencia temporal cuando sea necesaria para migración.
 8. Documente deprecation antes de retirar contratos públicos en uso.

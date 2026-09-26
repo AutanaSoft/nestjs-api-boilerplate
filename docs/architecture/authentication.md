@@ -40,7 +40,14 @@ UsersModule
 
 `AuthModule` consume la API exportada por `UsersModule` y no accede directamente a su persistencia.
 
-`AuthModule` posee el estado específico de autenticación y sesiones.
+`UsersModule` posee el usuario, el hash almacenado y la condición persistente de cambio obligatorio de contraseña.
+También es responsable del hashing, la verificación y el cambio de credenciales mediante una API interna exportada y
+acotada. Un proveedor local de Argon2id pertenece a Users; no se crea un módulo compartido de hashing sin un segundo
+consumidor real. Users no depende de Auth.
+
+`AuthModule` orquesta registro, inicio de sesión, emisión de tokens y sesiones mediante esa API; posee la persistencia
+específica de sesiones. La proyección de respuestas HTTP con Zod debe ser explícita según `serialization.md`: ningún
+hash debe llegar a solicitudes, registros o respuestas aunque un resultado interno contenga otros datos.
 
 Las reglas generales de module ownership se definen en `project-structure.md`.
 
@@ -101,7 +108,8 @@ Las passwords utilizan Argon2id mediante `argon2`.
 
 Las plain-text passwords no deben persistirse.
 
-El módulo propietario del usuario almacena únicamente el password hash necesario para authentication.
+`UsersModule` almacena el hash y ejecuta hashing, verificación y cambio de contraseña. También persiste la condición de
+cambio obligatorio inicial; Auth consume su API sin acceder al repositorio de Users.
 
 ## Request Authentication
 
@@ -110,9 +118,11 @@ Los Endpoints protegidos utilizan un Guard de Access Token.
 El Guard es responsable de:
 
 - validar las credentials;
-- establecer el principal autenticado.
+- consultar mediante la API de Users una proyección mínima y segura del estado actual del usuario;
+- establecer el principal autenticado sin propagar el registro completo ni el hash.
 
-La autorización no pertenece al Guard de autenticación.
+La autorización no pertenece al Guard de autenticación. Las decisiones de acceso utilizan el estado actual del usuario,
+no roles extraídos de las claims del JWT; consulte `authorization.md`.
 
 La estrategia preferida es authentication global con excepciones públicas declaradas explícitamente mediante
 `@Public()`.
@@ -140,15 +150,8 @@ Ambos deben acceder a persistencia mediante las reglas definidas en `data-access
 
 ## Configuración
 
-La configuración específica de Authentication pertenece al boundary de `AuthModule`.
-
-Puede incluir:
-
-- JWT signing key;
-- issuer y audience;
-- Access Token lifetime;
-- Refresh Token lifetime;
-- Argon2 parameters.
+La configuración de JWT, refresh y sesiones pertenece al boundary de `AuthModule`. Incluye la clave de firma, issuer,
+audience y duración de tokens. Los parámetros de Argon2 pertenecen al boundary de credenciales de `UsersModule`.
 
 Su construcción, validación e inyección deben seguir `configuration.md`.
 
@@ -164,5 +167,5 @@ Su construcción, validación e inyección deben seguir `configuration.md`.
 8. Mantenga Authentication y Authorization como responsabilidades separadas.
 9. Exponga la identidad interna mediante `AuthenticatedPrincipal`.
 10. Mantenga `AuthService` independiente de detalles de persistencia y HTTP.
-11. Mantenga configuración y secrets de Authentication bajo su boundary.
+11. Mantenga la configuración JWT y de sesiones en Auth y los parámetros Argon2 en Users.
 12. No utilice Passport como dependencia predeterminada.
