@@ -40,10 +40,9 @@ UsersModule
 
 `AuthModule` consume la API exportada por `UsersModule` y no accede directamente a su persistencia.
 
-`UsersModule` posee el usuario, el hash almacenado y la condición persistente de cambio obligatorio de contraseña.
-También es responsable del hashing, la verificación y el cambio de credenciales mediante una API interna exportada y
-acotada. Un proveedor local de Argon2id pertenece a Users; no se crea un módulo compartido de hashing sin un segundo
-consumidor real. Users no depende de Auth.
+`UsersModule` posee el usuario y el hash almacenado. También es responsable del hashing, la verificación y el cambio de
+credenciales mediante una API interna exportada y acotada. Un proveedor local de Argon2id pertenece a Users; no se crea
+un módulo compartido de hashing sin un segundo consumidor real. Users no depende de Auth.
 
 `AuthModule` orquesta registro, inicio de sesión, emisión de tokens y sesiones mediante esa API; posee la persistencia
 específica de sesiones. La proyección de respuestas HTTP con Zod debe ser explícita según `serialization.md`: ningún
@@ -108,8 +107,8 @@ Las passwords utilizan Argon2id mediante `argon2`.
 
 Las plain-text passwords no deben persistirse.
 
-`UsersModule` almacena el hash y ejecuta hashing, verificación y cambio de contraseña. También persiste la condición de
-cambio obligatorio inicial; Auth consume su API sin acceder al repositorio de Users.
+`UsersModule` almacena el hash y ejecuta hashing, verificación y cambio de contraseña. Auth consume su API sin acceder
+al repositorio de Users.
 
 ## Request Authentication
 

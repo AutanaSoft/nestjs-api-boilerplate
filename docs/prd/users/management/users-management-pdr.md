@@ -17,38 +17,47 @@ tags:
 
 # Introduction
 
-The application needs a first business capability that owns user data and supports basic user management before
-authentication and authorization are introduced. This PDR defines the approved minimum product boundary and its
-transition to protected access.
+The application has an initial, temporarily unauthenticated user-management capability. This PDR preserves that
+historical scope and defines its transition to authenticated reads and owner-only account management.
 
 ## 1. Problem
 
-The application has no business-owned representation or management lifecycle for users. Without that foundation, later
-authentication and authorization capabilities would have no stable user API to depend on and could become coupled
-directly to persistence concerns.
+The initial Users capability exists but is temporarily accessible without credentials and permits Users-owned creation.
+Without a protected, self-service transition, the reusable template would expose cross-account writes and duplicate
+account-creation routes.
 
 ## 2. Goal
 
-Provide a minimum user management capability that creates, retrieves, lists, queries, partially updates, and deletes
-users through a stable public contract.
+Provide user retrieval, listing, structured query, owner-only display-name updates, and owner-only deletion through a
+stable public contract, with public Auth sign-up as the sole account-creation route.
 
 ## 3. Scope
 
 ### In scope
 
-- Create a user.
-- Retrieve a user by public identifier.
+- Retain historical initial-scope user creation as verified past behavior; public Auth sign-up becomes the sole creation
+  route in the future transition, removing `POST /api/v1/users`.
+- Retrieve a user by public identifier or the authenticated user's own profile.
 - List users with cursor pagination and approved simple filters.
 - Experimentally query users with approved structured criteria through a safe and idempotent operation without replacing
   conventional collection retrieval.
-- Partially update an existing user.
-- Delete an existing user according to the approved deletion policy.
-- Expose these operations without authentication during the initial development stage.
-- Return only the approved public user representation; the initial unauthenticated model is historical, and the Auth
-  transition requires the six-field User projection.
+- Let an owner update only their `displayName` through `PATCH /api/v1/users/me` or `PATCH /api/v1/users/:userId`; reject
+  email and role changes after sign-up.
+- Let an owner delete their account through `DELETE /api/v1/users/:userId`; user removal and invalidation of all their
+  sessions complete atomically on commit. Requests begun after commit cannot use previously issued access tokens.
+  `DELETE /api/v1/users/me` is not required.
+- Preserve the initial unauthenticated stage as historical evidence; require authentication for every Users route in the
+  future transition, with all authenticated registered users allowed to read individual users, lists, and `QUERY`.
+- Return only the approved public user representation; the initial unauthenticated five-field model is historical. In
+  the Auth transition, the owner sees six fields including email, while responses about other users omit email.
 - Define observable validation, not-found, and uniqueness-conflict behavior.
 
-### Out of scope (initial unauthenticated scope)
+### Out of scope
+
+- User creation through Users, admin roles or seeds, forced initial passwords, role changes, cross-account writes, and
+  post-sign-up email changes in the future transition.
+
+### Historical initial unauthenticated scope exclusions
 
 - Registration, login, logout, credentials, password hashes, tokens, and sessions.
 - Authentication Guards, authenticated principals, Roles, Permissions, and Policies in the initial scope.
@@ -74,11 +83,16 @@ users through a stable public contract.
 - **Update timestamp:** `updatedAt` is managed by the system when the user changes and exposed in the public
   representation.
 - **Public user representation:** The initial unauthenticated scope used exactly `id`, `email`, `displayName`,
-  `createdAt`, and `updatedAt`. The future Auth transition uses exactly those fields plus current persisted `role` for
-  every response containing a User, including admin `POST`, `GET`, `PATCH`, collection and `QUERY` items, and
-  `/users/me` `GET` and `PATCH`. No password, hash, initial-password condition, or future field appears.
+  `createdAt`, and `updatedAt`. In the future Auth transition, the owner's `GET /users/me`, `GET /users/:userId`, and
+  successful own `PATCH /users/me` or `PATCH /users/:userId` return exactly `id`, `email`, `displayName`, `createdAt`,
+  `updatedAt`, and current persisted `role` (`user`). `GET /users/:userId` for another user returns exactly `id`,
+  `displayName`, `createdAt`, `updatedAt`, and `role`. Each item in `GET /users` and `QUERY` uses the viewer-specific
+  projection: the owner's item includes email; other users' items omit it. The paginated collection shape is unchanged.
+  No password, hash, or future field appears.
 - **Conventional user filters:** `GET` supports exact matching on normalized `email`. `displayName`, dates, and other
-  fields are not searchable in the initial contract.
+  fields are not searchable in the initial contract. Authenticated users can infer whether an email is registered from
+  exact-email `GET` and `QUERY` results, even when another user's response omits the email value. This is an accepted
+  limit of response redaction, not a guarantee of account-existence privacy.
 - **Conventional user sorting:** `GET` defaults to `createdAt desc` and accepts `createdAt` or `displayName` in either
   direction. Every order uses `id` as an internal deterministic tie-breaker.
 - **User listing cursors:** Cursor v1 contains only `v`, `sort`, `direction`, and `position`. It contains no raw filter
@@ -90,37 +104,35 @@ users through a stable public contract.
   Its strict JSON body is `{ criteria: { email }, sort?, direction?, limit?, after?, before? }`; `criteria.email` is
   required, URL query parameters are rejected, and `null`, arrays, and unknown fields are invalid. It uses the same
   pagination and sorting contract as `GET`, adds no new filter fields or operators, and does not replace `GET`.
-- **Partial update:** Only supplied mutable fields are changed. Omitted fields remain unchanged, and `null` is rejected
-  for required fields.
+- **Partial update:** Historically, only supplied mutable fields changed and `null` was rejected for required fields.
+  After the Auth transition, owner-only profile updates accept only a required `displayName`; email and role are
+  immutable after sign-up.
 - **Deletion policy:** Users are physically removed. Deleted users cannot be retrieved or restored, and no `deletedAt`
   field is retained.
-- **Successful responses:** Creation returns `201 Created`, the created user, and `Location`; reads and partial updates
-  return `200 OK` with their user or paginated collection representation; deletion returns `204 No Content` without a
-  body. Every response includes `X-Request-Id` through the shared HTTP contract.
-- **Authentication transition:** The current CRUD contract remains temporarily unauthenticated. When `AuthModule` is
-  implemented, every Users management operation requires authentication and explicit authorization. Registration belongs
-  to Auth; no administrative Users operation remains public. Admin-only `POST /api/v1/users` then requires an initial
-  password for a new user with role `user`, who must change it at first sign-in. Each account has exactly one
-  initial-version role: `user` or `admin`; the initial seeded administrator has role `admin`. Users owns hashing and
-  persistent credential state; the hash is never public. Admin-only `PATCH /api/v1/users/:userId` accepts optional
-  `role: 'user' | 'admin'` alongside optional profile fields, with explicit policy checks preventing demotion or
-  deletion of the last active administrator. Auth coordinates promotion revocation of all target sessions and new
-  sign-in, demotion taking effect on the next request without ending the session, and immediate revocation of all
-  sessions on admin deletion. Self-profile `GET /api/v1/users/me` requires a valid Bearer access token, no `userId` or
-  request body, and returns `200 OK` with exactly `id`, `email`, `displayName`, `createdAt`, `updatedAt`, and the
-  current database role (`user` or `admin`). Both timestamps are UTC ISO 8601 date-time strings. Self-profile
-  `PATCH /api/v1/users/me` requires strict JSON with exactly the mandatory `{ displayName }`, applying existing Users
-  trimming and validation; empty, missing, or additional fields (including `email`, `role`, and `password`) return
-  `400 BAD_REQUEST`. Success returns `200 OK` with the same six-field updated projection. Both routes reject missing or
-  invalid Bearer credentials with `401 UNAUTHORIZED`, and initial-password restricted sessions with
-  `403 PASSWORD_CHANGE_REQUIRED`; responses include `X-Request-Id`. Neither route exposes password hashes or future
-  fields. Public sign-up rejects role input. Every response containing a User, including admin `POST`, `GET`, `PATCH`,
-  collection and `QUERY` items, uses the same exact six-field projection; `role` is current persisted state, not JWT
-  authority. Passwords, hashes, initial-password conditions, and future fields are excluded.
+- **Successful responses:** Historical Users creation returned `201 Created`, the created user, and `Location`. Reads
+  and partial updates return `200 OK` with their user or paginated collection representation; deletion returns
+  `204 No Content` without a body. Every response includes `X-Request-Id` through the shared HTTP contract.
+- **Authentication transition:** The initial CRUD contract is temporarily unauthenticated. When `AuthModule` is
+  implemented, every Users route requires authentication. Public Auth sign-up is the only user-creation route;
+  `POST /api/v1/users` is removed. Every account has exactly one persisted role, `user`, which clients cannot change.
+  All authenticated registered users can read individual users, collections, and structured `QUERY` results.
+  `GET /api/v1/users/me` requires a valid Bearer access token, no `userId` or request body, and returns `200 OK` with
+  exactly `id`, `email`, `displayName`, `createdAt`, `updatedAt`, and persisted `role` (`user`). Both timestamps are UTC
+  ISO 8601 date-time strings. Owner-only `PATCH /api/v1/users/me` requires strict JSON with exactly the mandatory
+  `{ displayName }`, applying existing Users trimming and validation; empty, missing, or additional fields (including
+  `email`, `role`, and `password`) return `400 BAD_REQUEST`. Owner-only `PATCH /api/v1/users/:userId` applies the same
+  display-name-only contract. Success returns `200 OK` with the same six-field updated projection. Missing or invalid
+  Bearer credentials return `401 UNAUTHORIZED`; an existing other user's ID on a write returns `403 FORBIDDEN`. An
+  authenticated request to a nonexistent or already deleted ID returns `404 RESOURCE_NOT_FOUND`. Responses include
+  `X-Request-Id`. Owner-only `DELETE /api/v1/users/:userId` physically removes the user with `204 No Content` and
+  invalidates all their sessions atomically on commit; requests begun after commit cannot use previously issued access
+  tokens and return `401 UNAUTHORIZED` before resource lookup. No `DELETE /api/v1/users/me` route is required. Users
+  owns hashing and persistent credential state through its internal API; hashes never appear in public responses. `role`
+  reflects persisted state, not JWT authority. Public sign-up rejects role input.
 
 The historical initial-scope public model was `id`, `email`, `displayName`, `createdAt`, and `updatedAt`; the future
-Auth transition replaces it with the six-field projection above. Client input cannot assign or modify the identifier or
-timestamps.
+Auth transition adds persisted `role` and projects email only for the viewer's own user. Client input cannot assign or
+modify the identifier or timestamps.
 
 ## 5. Implementation notes
 
@@ -128,10 +140,15 @@ timestamps.
   API.
 - Follow the existing repository conventions for HTTP contracts, pagination, validation, serialization, errors,
   persistence, OpenAPI, and testing rather than redefining them here.
-- Replace the temporary unauthenticated exposure with authentication and explicit authorization when `AuthModule` is
-  introduced.
+- Replace temporary unauthenticated exposure with authenticated read-all and owner-only writes when `AuthModule` is
+  introduced; remove Users creation in favor of Auth sign-up.
 
 ## 6. Acceptance criteria
+
+### Historical initial-scope acceptance (2026-09-25)
+
+The checked criteria below document the implemented, temporarily unauthenticated five-field Users scope. They do not
+assert implementation of the future Auth transition.
 
 - [x] A consumer can create a user only with a required email that is trimmed, lowercased, and validated before
       persistence.
@@ -183,32 +200,39 @@ timestamps.
 - [x] A consumer can physically delete a user, after which retrieving that identifier returns `404 RESOURCE_NOT_FOUND`.
 - [x] The initial user model contains no `deletedAt` field or restoration behavior.
 - [x] Until authentication is introduced, all operations in this PDR are usable without credentials.
-- [ ] When `AuthModule` is introduced, every Users management operation requires authentication and explicit
-      authorization, while public sign-up is owned by `AuthModule`.
-- [ ] Admin-only `POST /api/v1/users` requires an initial password at new user creation, persists only its hash, and
-      creates an ordinary user required to change that password at first sign-in; no public response exposes the hash.
-- [ ] Each account has exactly one initial-version role, `user` or `admin`; admin creation starts with role `user` and
-      the initial seed administrator has role `admin`. Admin-only `PATCH /api/v1/users/:userId` accepts optional
-      `role: 'user' | 'admin'` with optional profile fields; policy checks prevent demotion or deletion of the last
-      active administrator. Promotion revokes all target sessions and requires new sign-in; demotion retains sessions
-      but takes effect on the next request.
-- [ ] `GET /api/v1/users/me` requires a valid Bearer credential and no `userId` or body; `200 OK` returns exactly `id`,
-      `email`, `displayName`, `createdAt`, `updatedAt`, and current database `role` (`user` or `admin`), with UTC ISO
-      8601 timestamps. `PATCH /api/v1/users/me` accepts only mandatory `{ displayName }` under existing Users
-      normalization and validation, returning `200 OK` with the same updated six-field projection. Empty, missing, or
-      extra fields, including `email`, `role`, and `password`, return `400 BAD_REQUEST`. Both routes return
-      `401 UNAUTHORIZED` for missing or invalid Bearer credentials and `403 PASSWORD_CHANGE_REQUIRED` for restricted
-      initial-password sessions, and include `X-Request-Id`. Public sign-up rejects role input.
-- [ ] Every response containing a User, including admin `POST`, `GET`, `PATCH`, collection and `QUERY` items, and
-      `/users/me` `GET` and `PATCH`, returns exactly `id`, `email`, `displayName`, `createdAt`, `updatedAt`, and current
-      persisted `role`, not JWT authority. No password, hash, initial-password condition, or future field is exposed.
-- [ ] Admin deletion immediately revokes every session of the deleted user.
 - [x] Every successful response includes `X-Request-Id` according to the shared HTTP contract.
 - [x] Public responses and errors conform to the repository's shared HTTP contracts.
 
+### Future Auth transition (not yet implemented)
+
+- [ ] Public Auth sign-up is the sole creation route; `POST /api/v1/users` is removed. No administrator creation,
+      production seed, or forced initial-password state is required. Sign-up rejects role input.
+- [ ] Every Users route requires authentication. All authenticated registered users can read individual users via `GET`,
+      list users, and use structured `QUERY`, retaining the existing filtering, sorting, and cursor behavior.
+- [ ] Each account has exactly one persisted role, `user`, not JWT authority. The owner's `GET /users/me`,
+      `GET /users/:userId`, and successful own `PATCH /users/me` or `PATCH /users/:userId` return exactly `id`, `email`,
+      `displayName`, `createdAt`, `updatedAt`, and `role`. `GET /users/:userId` for another user returns exactly `id`,
+      `displayName`, `createdAt`, `updatedAt`, and `role`. Each `GET /users` and `QUERY` item is projected by viewer:
+      the owner's item includes email, and other users' items omit it. The pagination shape remains unchanged; no
+      password, hash, or future field is exposed.
+- [ ] `GET /api/v1/users/me` requires a valid Bearer credential and no `userId` or body; `200 OK` returns the six-field
+      User projection with UTC ISO 8601 timestamps. Missing or invalid Bearer credentials return `401 UNAUTHORIZED`;
+      responses include `X-Request-Id`.
+- [ ] Only the owner can update `displayName` through `PATCH /api/v1/users/me` or `PATCH /api/v1/users/:userId`. Both
+      accept only strict JSON `{ displayName }` with mandatory, normalized and validated display name, and return
+      `200 OK` with the six-field User projection. Empty, missing, or extra fields, including `email`, `role`, and
+      `password`, return `400 BAD_REQUEST`. Email and role cannot change after sign-up. An existing other user's ID on a
+      write returns `403 FORBIDDEN`; an authenticated request to a nonexistent or already deleted ID returns
+      `404 RESOURCE_NOT_FOUND`. Missing or invalid Bearer credentials return `401 UNAUTHORIZED`.
+- [ ] Only the owner can physically delete their account through `DELETE /api/v1/users/:userId`, returning
+      `204 No Content`; user removal and invalidation of all their sessions complete atomically on commit. An
+      authenticated DELETE for a nonexistent or already deleted ID returns `404 RESOURCE_NOT_FOUND`; an existing other
+      user's ID returns `403 FORBIDDEN`. Missing or invalid Bearer credentials, including a former owner's access token
+      after deletion, return `401 UNAUTHORIZED` before resource lookup. `DELETE /api/v1/users/me` is not required.
+
 ### Initial-scope verification (2026-09-25)
 
-The initial unauthenticated Users scope meets the criteria checked above under its historical five-field model; checked
+The initial unauthenticated Users scope meets the historical criteria checked above under its five-field model; checked
 criteria do not assert that the future six-field Auth transition has been implemented. Evidence: `src/modules/users/`
 and `test/modules/users/create-user.e2e-suite.ts`; 109 focused unit tests (10 files) and 59 real-database E2E tests (1
 entry file) passed using direct local Vitest, and Prisma schema validation passed after declaring the CLI's `dotenv`
@@ -240,15 +264,15 @@ release and must be verified when that module is implemented.
 - Default conventional `GET` ordering to `createdAt desc`; allow `createdAt` and `displayName` in both directions, with
   `id` following the selected direction as the internal deterministic tie-breaker. Apply the shared pagination rules in
   `docs/api/pagination.md` rather than duplicating their general contract here.
-- Apply partial updates only to supplied mutable fields, leave omitted fields unchanged, and reject `null` for `email`
-  and `displayName`.
+- Historically, apply partial updates only to supplied mutable fields, leave omitted fields unchanged, and reject `null`
+  for `email` and `displayName`; after Auth, update only the owner's required `displayName`.
 - Keep Users cursor v1 private by omission rather than hashing or signing filter values: encode only version, sort,
   direction, and position; bind sort and direction; accept cross-email-filter reuse; apply the current request email
   filter in the repository; and reject old email-bearing v1 cursors through strict schema validation.
-- Return `201` with user and `Location` for creation, `200` with public representations for reads and updates, and `204`
-  without a body for deletion; include `X-Request-Id` on every response.
-- Require authentication and explicit authorization for every Users management operation when `AuthModule` is
-  implemented; keep registration under `AuthModule`.
+- Historically return `201` with user and `Location` for Users creation; retain `200` for reads and updates and `204`
+  without a body for deletion, with `X-Request-Id` on every response.
+- Require authentication for every Users route when `AuthModule` is implemented; permit all authenticated registered
+  users to read, owner-only display-name changes and deletion, and creation only through public Auth sign-up.
 
 ### Considered options
 
@@ -259,8 +283,9 @@ release and must be verified when that module is implemented.
 
 ### Rejected decisions
 
-- Implement authentication or sessions as part of the initial unauthenticated capability; the approved future transition
-  assigns credential ownership to Users and session orchestration to Auth.
+- Implement authentication or sessions as part of the historical initial unauthenticated capability; the approved future
+  transition assigns credential ownership to Users and session orchestration to Auth.
+- Keep Users creation, administrative roles, role changes, seeds, or forced initial passwords after Auth is introduced.
 - Let future authentication behavior access the Users repository directly.
 - Add usernames, phone numbers, or other user attributes without a product requirement.
 - Use `POST /users/search` as the preferred structured-query contract.
@@ -268,6 +293,4 @@ release and must be verified when that module is implemented.
 
 ### Open questions
 
-- What remaining request details will represent future admin creation and role update? The six-field User response is
-  settled.
-- How will last-administrator checks and deletion or promotion session effects remain consistent across Users and Auth?
+- How will Users and Auth coordinate owner removal and invalidation of every session atomically on commit?
