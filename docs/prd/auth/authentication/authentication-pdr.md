@@ -3,10 +3,10 @@ title: 'Provide foundational authentication and user access control'
 module: auth
 area: authentication
 slug: authentication
-version: '1.8'
-status: approved
+version: '1.9'
+status: draft
 date_created: '2026-09-25'
-last_updated: '2026-09-25'
+last_updated: '2026-09-28'
 owner: auth
 tags:
   - auth
@@ -46,23 +46,29 @@ administrator provisioning, and explicit access to user management and personal 
   and `POST /api/v1/auth/change-password`, respectively. These Auth workflow actions are an exception to the general
   plural-resource URI convention.
 - Return tokens in JSON and accept access tokens through the `Authorization: Bearer` header. Sign-in and refresh each
-  return an access token, a refresh token, and their expiration information. Access JWTs expire after 15 minutes by
+  return exactly `accessToken`, `expiresAt`, `refreshToken`, and `refreshExpiresAt`. `expiresAt` is the access-token
+  expiration and `refreshExpiresAt` is the refresh-token expiration; both are absolute UTC ISO 8601 date-time strings.
+  No password-change-required flag appears in either token response or the JWT. Access JWTs expire after 15 minutes by
   default and refresh tokens after 7 days by default; both lifetimes are configurable by environment.
 - Rotate refresh tokens strictly on renewal. Concurrent requests using the same refresh token revoke the affected
   session; clients must serialize refresh requests. Reuse of a rotated refresh token revokes only the affected session
   and requires a new login; other sessions remain active. Sign-out accepts a refresh token in JSON and immediately
-  revokes only that session and its access tokens.
+  revokes only that session and its access tokens. An unknown or already revoked refresh token also returns
+  `204 No Content` without a body, without restoring any session.
 - Require passwords of at least 12 characters without character-class rules. Allow authenticated users to change their
   own password by supplying their current password; a successful change immediately revokes all their sessions,
   including the current one, and requires a new sign-in. An administrator may provide a password only when creating a
   new user; that user must replace the initial password at first sign-in before normal protected access. Administrators
   cannot read, change, or reset an existing user's password. Administrator-created ordinary users and the seeded
-  bootstrap administrator have a persistent, user-owned password-change-required condition for initial passwords. First
-  and repeated sign-in return a JSON flag and restricted tokens/session allowing only change-password, sign-out, and
-  refresh. Refresh remains restricted and never elevates access; repeated sign-in or refresh cannot bypass the
-  requirement. Changing the password clears the condition and revokes all sessions; normal access requires a new
-  sign-in. Failed sign-in returns the same public error for an absent email and an incorrect password; limit failed
-  attempts temporarily to 5 per normalized email in 15 minutes, without permanent account lockout.
+  bootstrap administrator have a persistent, user-owned password-change-required condition for initial passwords. The
+  condition is read from current Users state, not a JWT claim or token-response field. First and repeated sign-in yield
+  sessions restricted to change-password, sign-out, and refresh. A restricted session attempting another protected
+  operation receives `403` with the stable public code `PASSWORD_CHANGE_REQUIRED`; refresh remains restricted and never
+  elevates access. Repeated sign-in or refresh cannot bypass the requirement. Changing the password clears the condition
+  and revokes all sessions; normal access requires a new sign-in. Failed sign-in returns the same public error for an
+  absent email and an incorrect password. For each normalized email, the first five failed attempts in 15 minutes return
+  that same invalid-credentials error; the sixth sign-in attempt within the interval returns `429 RATE_LIMIT_EXCEEDED`,
+  without permanent account lockout.
 - Give administrators full access to user management operations, including granting and revoking administrator status,
   while protecting the last active administrator from demotion or deletion. Each account has exactly one role in this
   initial version: `user` or `admin`. Administrator-created accounts start with role `user`. Admin-only
@@ -121,10 +127,13 @@ administrator provisioning, and explicit access to user management and personal 
   password-change-required condition through a focused internal exported API. Auth orchestrates registration, sign-in,
   tokens and sessions through that API; Users does not depend on Auth, and Auth does not access the Users repository.
   The auth guard loads a minimal current safe user projection through the Users API, never a whole record or hash.
-  Authentication establishes identity; authorization uses current user state rather than trusting JWT roles. Explicit
-  Zod response projection protects the HTTP boundary even when internal results contain additional fields; password
-  hashes must never appear in requests, logs or responses.
-- Define the public HTTP representations under `docs/api/` conventions, and keep concrete runtime settings under
+  Authentication establishes identity; authorization and initial-password restrictions use current user state rather
+  than trusting JWT claims. Explicit Zod response projection protects the HTTP boundary even when internal results
+  contain additional fields; password hashes must never appear in requests, logs or responses. Apply the relevant
+  `nestjs-best-practices` security rules for JWT, Guards, and output safety together with `nestjs-practices`, subject to
+  repository architecture: Passport is not the default authentication strategy.
+- Define the public HTTP representations under `docs/api/` conventions, including the new `PASSWORD_CHANGE_REQUIRED`
+  error code in the shared HTTP error catalog before implementation. Keep concrete runtime settings under
   `docs/configuration/` rather than embedding them in this PDR.
 - The current seed is development-only and creates no users (`docs/configuration/database.md`). Supporting controlled
   production initialization requires an explicit change to that documented policy and its implementation; keep
@@ -143,19 +152,22 @@ administrator provisioning, and explicit access to user management and personal 
 - [ ] `POST /api/v1/auth/sign-up` creates an ordinary user without tokens or automatic sign-in and never grants
       administrator privileges from input or registration order; a duplicate email returns `409 Conflict`, exposing
       registration existence despite the generic invalid-credentials error at sign-in.
-- [ ] A registered user can sign in at `POST /api/v1/auth/sign-in` and receive access and refresh tokens with expiration
-      information in JSON without email verification; absent email and incorrect password produce the same public error.
-- [ ] Passwords require at least 12 characters with no character-class rules; 5 failed sign-in attempts per normalized
-      email in 15 minutes trigger a temporary rate limit without permanent lockout.
+- [ ] A registered user can sign in at `POST /api/v1/auth/sign-in` and receive exactly `accessToken`, `expiresAt`,
+      `refreshToken`, and `refreshExpiresAt` in JSON without email verification. The two expiration fields are absolute
+      UTC ISO 8601 date-time strings; absent email and incorrect password produce the same public error.
+- [ ] Passwords require at least 12 characters with no character-class rules. For each normalized email, the first five
+      failed sign-in attempts within 15 minutes return the same invalid-credentials error; the sixth attempt within that
+      interval returns `429 RATE_LIMIT_EXCEEDED`, without permanent account lockout.
 - [ ] An access token authenticates protected requests through `Authorization: Bearer`; missing or invalid credentials
       are rejected under the public HTTP contract.
 - [ ] Access JWTs expire after 15 minutes by default and refresh tokens after 7 days by default, with both lifetimes
       configurable by environment.
-- [ ] `POST /api/v1/auth/refresh` rotates refresh tokens and returns the new access and refresh tokens with expiration
-      information; reuse, including concurrent requests using the same token, revokes only the affected session,
-      requires login, and leaves other sessions active. Clients serialize refresh requests.
+- [ ] `POST /api/v1/auth/refresh` rotates refresh tokens and returns the same four-field token response with new
+      absolute expiration timestamps; reuse, including concurrent requests using the same token, revokes only the
+      affected session, requires login, and leaves other sessions active. Clients serialize refresh requests.
 - [ ] `POST /api/v1/auth/sign-out` accepts a refresh token in JSON and immediately revokes only that session and its
-      access tokens; a terminated or revoked refresh credential cannot renew it.
+      access tokens. An unknown or already revoked refresh token returns `204 No Content` without a body; neither can
+      renew or reactivate a session.
 - [ ] An administrator can use every existing Users management operation, including granting and revoking admin status
       without demoting or deleting the last active administrator; an ordinary user cannot use those administrative
       operations. Each account has exactly one initial-version role, `user` or `admin`. Administrator-created accounts
@@ -167,11 +179,11 @@ administrator provisioning, and explicit access to user management and personal 
       password; success revokes all their sessions immediately and requires a new sign-in. Administrators cannot read,
       change, or reset existing users' passwords.
 - [ ] An administrator can create a user with an initial password only at `POST /api/v1/users`; that user and the seeded
-      bootstrap administrator receive a persistent password-change-required condition. First and repeated sign-in return
-      a JSON flag and restricted tokens/session allowing only change-password, sign-out, and restricted refresh.
-      Repeated refresh cannot grant normal access. Changing the password clears the condition, revokes all sessions, and
-      requires new sign-in for normal access. Creating a user is the only time an administrator can provide that user's
-      password.
+      bootstrap administrator receive a persistent password-change-required condition. Neither the token response nor
+      the JWT includes this flag. First and repeated sign-in yield sessions permitting only change-password, sign-out,
+      and restricted refresh. Other protected operations return `403 PASSWORD_CHANGE_REQUIRED`; repeated refresh cannot
+      grant normal access. Changing the password clears the condition, revokes all sessions, and requires new sign-in
+      for normal access. Creating a user is the only time an administrator can provide that user's password.
 - [ ] `GET /api/v1/users/me` returns exactly `id`, `email`, `displayName`, `createdAt`, `updatedAt`, and the single
       `role`, without automatically exposing future fields; general Users public responses retain their approved five
       fields. An ordinary user can change only their own `displayName` at `PATCH /api/v1/users/me`, without changing
@@ -193,6 +205,8 @@ administrator provisioning, and explicit access to user management and personal 
 - Public registration is selected for ordinary users; administrator access is provisioned separately.
 - Production-capable initialization seeds are selected over granting the first registrant administrator access.
 - JSON tokens and Bearer access are selected for a client-agnostic REST baseline rather than browser-specific cookies.
+- Absolute UTC token expiration fields and a Users-owned initial-password condition are selected over relative lifetimes
+  or a password-change flag in tokens. Clients discover the restriction through `403 PASSWORD_CHANGE_REQUIRED`.
 
 ### Rejected decisions
 
@@ -204,8 +218,8 @@ administrator provisioning, and explicit access to user management and personal 
 
 ### Open questions
 
-- What public request and response shapes, beyond the approved routes and sign-out input, are needed for the Auth and
-  self-profile operations, including the first-sign-in password-change flow at `POST /api/v1/auth/change-password`?
+- What remaining public request and response shapes, beyond the four-field token response and sign-out behavior defined
+  above, are needed for sign-up, change-password, and self-profile operations?
 - What remaining request and response details should implement admin creation and the approved optional role update on
   existing Users routes? The current contract is unchanged pending implementation; the pre-stable template keeps
   `/api/v1/users` under `docs/api/versioning.md`.

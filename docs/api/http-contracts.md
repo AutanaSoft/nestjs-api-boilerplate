@@ -116,23 +116,26 @@ compartidos:
 
 <!-- markdownlint-disable MD013 -->
 
-| Status | Código                  | Mensaje exacto                                           | Significado público                                               |
-| ------ | ----------------------- | -------------------------------------------------------- | ----------------------------------------------------------------- |
-| `400`  | `BAD_REQUEST`           | `The request is invalid.`                                | El Request no cumple el contrato público.                         |
-| `401`  | `UNAUTHORIZED`          | `Authentication is required.`                            | No se proporcionó una autenticación aceptable.                    |
-| `403`  | `FORBIDDEN`             | `You are not allowed to perform this action.`            | El principal autenticado no puede realizar la acción.             |
-| `404`  | `ROUTE_NOT_FOUND`       | `The requested route was not found.`                     | No existe un handler para la ruta solicitada.                     |
-| `404`  | `RESOURCE_NOT_FOUND`    | `The requested resource was not found.`                  | El recurso solicitado no está disponible.                         |
-| `409`  | `CONFLICT`              | `The request conflicts with the current resource state.` | La operación entra en conflicto con el estado actual del recurso. |
-| `429`  | `RATE_LIMIT_EXCEEDED`   | `Too many requests.`                                     | Se excedió el límite de solicitudes aplicable.                    |
-| `500`  | `INTERNAL_SERVER_ERROR` | `An unexpected error occurred.`                          | Ocurrió un fallo interno o no confiable.                          |
+| Status | Código                     | Mensaje exacto                                           | Significado público                                                                    |
+| ------ | -------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `400`  | `BAD_REQUEST`              | `The request is invalid.`                                | El Request no cumple el contrato público.                                              |
+| `401`  | `UNAUTHORIZED`             | `Authentication is required.`                            | No se proporcionó una autenticación aceptable.                                         |
+| `403`  | `FORBIDDEN`                | `You are not allowed to perform this action.`            | El principal autenticado no puede realizar la acción.                                  |
+| `403`  | `PASSWORD_CHANGE_REQUIRED` | `You must change your password before continuing.`       | La sesión autenticada está restringida por una contraseña inicial pendiente de cambio. |
+| `404`  | `ROUTE_NOT_FOUND`          | `The requested route was not found.`                     | No existe un handler para la ruta solicitada.                                          |
+| `404`  | `RESOURCE_NOT_FOUND`       | `The requested resource was not found.`                  | El recurso solicitado no está disponible.                                              |
+| `409`  | `CONFLICT`                 | `The request conflicts with the current resource state.` | La operación entra en conflicto con el estado actual del recurso.                      |
+| `429`  | `RATE_LIMIT_EXCEEDED`      | `Too many requests.`                                     | Se excedió el límite de solicitudes aplicable.                                         |
+| `500`  | `INTERNAL_SERVER_ERROR`    | `An unexpected error occurred.`                          | Ocurrió un fallo interno o no confiable.                                               |
 
 <!-- markdownlint-enable MD013 -->
 
 `ROUTE_NOT_FOUND` y `RESOURCE_NOT_FOUND` no son intercambiables. Los errores esperados específicos de aplicación deben
 usar su código del catálogo; los fallbacks genéricos no los sustituyen. `UNAUTHORIZED` y `FORBIDDEN` son únicamente
 fallbacks públicos definidos por la semántica HTTP: este catálogo no define mecanismos ni reglas de autenticación o
-autorización de negocio.
+autorización de negocio. `PASSWORD_CHANGE_REQUIRED` es una denegación específica para operaciones protegidas no
+permitidas mientras siga pendiente el cambio de contraseña inicial; el cliente puede identificarla por `code`, no por
+`message`. Las operaciones permitidas durante esa restricción se definen en el PDR de Auth.
 
 Los fallos de contrato de salida siempre usan `500`, `INTERNAL_SERVER_ERROR` y el mensaje exacto del catálogo, sin
 `details`.
