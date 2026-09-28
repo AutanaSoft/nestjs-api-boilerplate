@@ -3,8 +3,8 @@ title: 'Provide foundational user management'
 module: users
 area: management
 slug: users-management
-version: '1.3'
-status: draft
+version: '2.0'
+status: approved
 date_created: '2026-09-17'
 last_updated: '2026-09-28'
 owner: users

@@ -3,8 +3,8 @@ title: 'Provide foundational authentication and user access control'
 module: auth
 area: authentication
 slug: authentication
-version: '1.9'
-status: draft
+version: '2.0'
+status: approved
 date_created: '2026-09-25'
 last_updated: '2026-09-28'
 owner: auth
