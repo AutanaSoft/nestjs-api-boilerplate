@@ -44,7 +44,8 @@ users through a stable public contract.
 - Partially update an existing user.
 - Delete an existing user according to the approved deletion policy.
 - Expose these operations without authentication during the initial development stage.
-- Return only the approved public user representation.
+- Return only the approved public user representation; the initial unauthenticated model is historical, and the Auth
+  transition requires the six-field User projection.
 - Define observable validation, not-found, and uniqueness-conflict behavior.
 
 ### Out of scope (initial unauthenticated scope)
@@ -72,7 +73,10 @@ users through a stable public contract.
   representation.
 - **Update timestamp:** `updatedAt` is managed by the system when the user changes and exposed in the public
   representation.
-- **Public user representation:** The approved set of fields that may be returned to API consumers.
+- **Public user representation:** The initial unauthenticated scope used exactly `id`, `email`, `displayName`,
+  `createdAt`, and `updatedAt`. The future Auth transition uses exactly those fields plus current persisted `role` for
+  every response containing a User, including admin `POST`, `GET`, `PATCH`, collection and `QUERY` items, and
+  `/users/me` `GET` and `PATCH`. No password, hash, initial-password condition, or future field appears.
 - **Conventional user filters:** `GET` supports exact matching on normalized `email`. `displayName`, dates, and other
   fields are not searchable in the initial contract.
 - **Conventional user sorting:** `GET` defaults to `createdAt desc` and accepts `createdAt` or `displayName` in either
@@ -110,10 +114,13 @@ users through a stable public contract.
   `400 BAD_REQUEST`. Success returns `200 OK` with the same six-field updated projection. Both routes reject missing or
   invalid Bearer credentials with `401 UNAUTHORIZED`, and initial-password restricted sessions with
   `403 PASSWORD_CHANGE_REQUIRED`; responses include `X-Request-Id`. Neither route exposes password hashes or future
-  fields. Public sign-up rejects role input. General Users responses retain their approved five fields.
+  fields. Public sign-up rejects role input. Every response containing a User, including admin `POST`, `GET`, `PATCH`,
+  collection and `QUERY` items, uses the same exact six-field projection; `role` is current persisted state, not JWT
+  authority. Passwords, hashes, initial-password conditions, and future fields are excluded.
 
-The approved initial public model is `id`, `email`, `displayName`, `createdAt`, and `updatedAt`. Client input cannot
-assign or modify the identifier or timestamps.
+The historical initial-scope public model was `id`, `email`, `displayName`, `createdAt`, and `updatedAt`; the future
+Auth transition replaces it with the six-field projection above. Client input cannot assign or modify the identifier or
+timestamps.
 
 ## 5. Implementation notes
 
@@ -191,17 +198,20 @@ assign or modify the identifier or timestamps.
       normalization and validation, returning `200 OK` with the same updated six-field projection. Empty, missing, or
       extra fields, including `email`, `role`, and `password`, return `400 BAD_REQUEST`. Both routes return
       `401 UNAUTHORIZED` for missing or invalid Bearer credentials and `403 PASSWORD_CHANGE_REQUIRED` for restricted
-      initial-password sessions, and include `X-Request-Id`. No hash or future fields are exposed; general Users public
-      responses retain the approved five fields. Public sign-up rejects role input.
+      initial-password sessions, and include `X-Request-Id`. Public sign-up rejects role input.
+- [ ] Every response containing a User, including admin `POST`, `GET`, `PATCH`, collection and `QUERY` items, and
+      `/users/me` `GET` and `PATCH`, returns exactly `id`, `email`, `displayName`, `createdAt`, `updatedAt`, and current
+      persisted `role`, not JWT authority. No password, hash, initial-password condition, or future field is exposed.
 - [ ] Admin deletion immediately revokes every session of the deleted user.
 - [x] Every successful response includes `X-Request-Id` according to the shared HTTP contract.
 - [x] Public responses and errors conform to the repository's shared HTTP contracts.
 
 ### Initial-scope verification (2026-09-25)
 
-The initial unauthenticated Users scope meets the criteria checked above. Evidence: `src/modules/users/` and
-`test/modules/users/create-user.e2e-suite.ts`; 109 focused unit tests (10 files) and 59 real-database E2E tests (1 entry
-file) passed using direct local Vitest, and Prisma schema validation passed after declaring the CLI's `dotenv`
+The initial unauthenticated Users scope meets the criteria checked above under its historical five-field model; checked
+criteria do not assert that the future six-field Auth transition has been implemented. Evidence: `src/modules/users/`
+and `test/modules/users/create-user.e2e-suite.ts`; 109 focused unit tests (10 files) and 59 real-database E2E tests (1
+entry file) passed using direct local Vitest, and Prisma schema validation passed after declaring the CLI's `dotenv`
 dependency. The E2E run exercised HTTP after applying migrations to isolated PostgreSQL databases.
 
 Coverage is representative rather than one HTTP assertion per variation: required-field omission, unsupported date
@@ -258,6 +268,6 @@ release and must be verified when that module is implemented.
 
 ### Open questions
 
-- What remaining request and response details will represent future admin creation and role update while preserving the
-  approved general public user representation?
+- What remaining request details will represent future admin creation and role update? The six-field User response is
+  settled.
 - How will last-administrator checks and deletion or promotion session effects remain consistent across Users and Auth?

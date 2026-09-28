@@ -40,20 +40,20 @@ administrator provisioning, and explicit access to user management and personal 
 - Allow public registration of ordinary users without requiring email verification in this version. Sign-up requires
   exactly `email`, `displayName`, and `password`; all three are mandatory, and additional fields, including `role` and
   `confirmPassword`, are rejected. Email and display name follow the existing Users normalization rules; the password is
-  not trimmed and must contain at least 12 characters. Registration does not issue tokens or automatically sign the user
-  in. Successful sign-up returns `201 Created` with exactly `id`, `email`, `displayName`, `createdAt`, and `updatedAt`,
-  without a `Location` header. A duplicate email returns `409 Conflict`. This exposes whether an email is registered,
-  even though sign-in uses the same invalid-credentials error for an absent email and an incorrect password; no email
-  verification or notification is assumed.
+  not trimmed and must contain at least 12 characters. Successful registration automatically signs in the new ordinary
+  user and creates a session. Sign-up returns `201 Created` with only the same four-field token response as sign-in,
+  without a User body or a `Location` header. A duplicate email returns `409 Conflict`. This exposes whether an email is
+  registered, even though sign-in uses the same invalid-credentials error for an absent email and an incorrect password;
+  no email verification or notification is assumed.
 - Expose registration, login, session renewal, logout, and authenticated current-password change through
   `POST /api/v1/auth/sign-up`, `POST /api/v1/auth/sign-in`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/sign-out`,
   and `POST /api/v1/auth/change-password`, respectively. These Auth workflow actions are an exception to the general
   plural-resource URI convention.
-- Return tokens in JSON and accept access tokens through the `Authorization: Bearer` header. Sign-in and refresh each
-  return exactly `accessToken`, `expiresAt`, `refreshToken`, and `refreshExpiresAt`. `expiresAt` is the access-token
-  expiration and `refreshExpiresAt` is the refresh-token expiration; both are absolute UTC ISO 8601 date-time strings.
-  No password-change-required flag appears in either token response or the JWT. Access JWTs expire after 15 minutes by
-  default and refresh tokens after 7 days by default; both lifetimes are configurable by environment.
+- Return tokens in JSON and accept access tokens through the `Authorization: Bearer` header. Sign-up, sign-in, and
+  refresh each return exactly `accessToken`, `expiresAt`, `refreshToken`, and `refreshExpiresAt`. `expiresAt` is the
+  access-token expiration and `refreshExpiresAt` is the refresh-token expiration; both are absolute UTC ISO 8601
+  date-time strings. No password-change-required flag appears in any token response or the JWT. Access JWTs expire after
+  15 minutes by default and refresh tokens after 7 days by default; both lifetimes are configurable by environment.
 - Sign-in at `POST /api/v1/auth/sign-in` requires strict JSON with exactly `{ email, password }`. Normalize email using
   the Users rules; accept a raw, untrimmed, nonempty password without applying the 12-character enrollment minimum.
   Missing, malformed, or extra fields return `400 BAD_REQUEST`. An absent email and a wrong password return identical
@@ -98,7 +98,9 @@ administrator provisioning, and explicit access to user management and personal 
 - Let ordinary users view their own profile at `GET /api/v1/users/me`, returning exactly `id`, `email`, `displayName`,
   `createdAt`, `updatedAt`, and `role`, without automatically exposing future fields. They can update only their own
   `displayName` at `PATCH /api/v1/users/me`; they cannot change their email or access other users' management
-  operations. Existing general Users public responses retain their approved five fields without `role`.
+  operations. Every response containing a User, including admin creation, retrieval, update, collection and `QUERY`
+  items, and `/users/me` reads and updates, uses exactly this six-field projection. `role` reflects current persisted
+  state, not JWT authority; passwords, hashes, the initial-password condition, and future fields are excluded.
 - Require authentication and explicit authorization for every existing Users management operation; no administrative
   Users operation remains public after the transition.
 - Initialize the first administrator through a controlled production-capable application initialization seed. Supply the
@@ -172,11 +174,11 @@ administrator provisioning, and explicit access to user management and personal 
 ## 6. Acceptance criteria
 
 - [ ] `POST /api/v1/auth/sign-up` requires exactly `email`, `displayName`, and an untrimmed password of at least 12
-      characters, rejecting additional fields including `role` and `confirmPassword`. It creates an ordinary user
-      without tokens or automatic sign-in and never grants administrator privileges from input or registration order.
-      Success returns `201 Created` with exactly `id`, `email`, `displayName`, `createdAt`, and `updatedAt`, without
-      `Location`; a duplicate email returns `409 Conflict`, exposing registration existence despite the generic
-      invalid-credentials error at sign-in.
+      characters, rejecting additional fields including `role` and `confirmPassword`. It creates an ordinary user with
+      automatic sign-in and session creation, never granting administrator privileges from input or registration order.
+      Success returns `201 Created` with only `{ accessToken, expiresAt, refreshToken, refreshExpiresAt }`, no User body
+      and no `Location`; expirations are absolute UTC ISO 8601 date-time strings. A duplicate email returns
+      `409 Conflict`, exposing registration existence despite the generic invalid-credentials error at sign-in.
 - [ ] `POST /api/v1/auth/sign-in` accepts only JSON `{ email, password }`: email uses Users normalization and password
       is raw, untrimmed, nonempty, and not subject to the 12-character enrollment minimum. Missing, malformed, or extra
       fields return `400 BAD_REQUEST`. Success returns exactly `accessToken`, `expiresAt`, `refreshToken`, and
@@ -222,9 +224,12 @@ administrator provisioning, and explicit access to user management and personal 
       grant normal access. Changing the password clears the condition, revokes all sessions, and requires new sign-in
       for normal access. Creating a user is the only time an administrator can provide that user's password.
 - [ ] `GET /api/v1/users/me` returns exactly `id`, `email`, `displayName`, `createdAt`, `updatedAt`, and the single
-      `role`, without automatically exposing future fields; general Users public responses retain their approved five
-      fields. An ordinary user can change only their own `displayName` at `PATCH /api/v1/users/me`, without changing
-      email, submitting role input, or changing another user's data. Public sign-up also rejects role input.
+      `role`, without automatically exposing future fields. Every response containing a User, including admin Users
+      `POST`, `GET`, `PATCH`, collection and `QUERY` items, and `/users/me` `GET` and `PATCH`, uses exactly this
+      projection; `role` is current persisted state, not JWT authority. Passwords, hashes, and initial-password
+      conditions are never included. An ordinary user can change only their own `displayName` at
+      `PATCH /api/v1/users/me`, without changing email, submitting role input, or changing another user's data. Public
+      sign-up also rejects role input.
 - [ ] Every Users management operation requires authentication and explicit authorization; unauthenticated and
       authenticated-but-forbidden requests produce the appropriate public failures.
 - [ ] An explicitly executed production initialization seed creates the initial administrator using environment-provided
@@ -255,8 +260,8 @@ administrator provisioning, and explicit access to user management and personal 
 
 ### Open questions
 
-- What remaining request and response details should implement admin creation and the approved optional role update on
-  existing Users routes? The current contract is unchanged pending implementation; the pre-stable template keeps
-  `/api/v1/users` under `docs/api/versioning.md`.
+- What remaining request details should implement admin creation and the approved optional role update on existing Users
+  routes? The six-field User response is settled; the pre-stable template keeps `/api/v1/users` under
+  `docs/api/versioning.md`.
 - How should deletion and role updates coordinate atomically with session invalidation and last-administrator protection
   across Users and Auth?

@@ -62,7 +62,9 @@ La representación OpenAPI de `QUERY` se define en `openapi.md`.
 
 Una creación exitosa utiliza normalmente `201 Created`.
 
-Cuando el recurso creado tenga una URI pública identificable, la Response debe incluir `Location`.
+Cuando el recurso creado tenga una URI pública identificable, la Response debe incluir `Location`, salvo una excepción
+explícita del contrato de la operación. Consulte la excepción de registro Auth en
+`../prd/auth/authentication/authentication-pdr.md`.
 
 ## PUT
 
@@ -155,7 +157,8 @@ La paginación se define en `pagination.md`.
 5. Utilice fallbacks basados en `POST` únicamente por necesidades explícitas de compatibilidad.
 6. Utilice `PUT` para reemplazo completo y `PATCH` para actualización parcial.
 7. Utilice `204 No Content` únicamente sin Response Body.
-8. Incluya `Location` cuando una creación produzca un recurso públicamente direccionable.
+8. Incluya `Location` cuando una creación produzca un recurso públicamente direccionable, salvo una excepción explícita
+   del contrato de la operación (registro Auth: `../prd/auth/authentication/authentication-pdr.md`).
 9. Mantenga Status Codes consistentes con la semántica pública.
 10. Mantenga Error Responses bajo `http-contracts.md`.
 11. No exponga detalles de persistencia mediante la API pública.
