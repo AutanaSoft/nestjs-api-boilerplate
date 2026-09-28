@@ -4,9 +4,9 @@ module: users
 area: management
 slug: users-management
 version: '1.3'
-status: approved
+status: draft
 date_created: '2026-09-17'
-last_updated: '2026-09-25'
+last_updated: '2026-09-28'
 owner: users
 tags:
   - users
@@ -102,10 +102,15 @@ users through a stable public contract.
   `role: 'user' | 'admin'` alongside optional profile fields, with explicit policy checks preventing demotion or
   deletion of the last active administrator. Auth coordinates promotion revocation of all target sessions and new
   sign-in, demotion taking effect on the next request without ending the session, and immediate revocation of all
-  sessions on admin deletion. Self-profile `GET /api/v1/users/me` returns exactly `id`, `email`, `displayName`,
-  `createdAt`, `updatedAt`, and `role`, without automatically including future fields. `PATCH /api/v1/users/me` allows
-  only a user's own `displayName` update; self updates and public sign-up reject role input. The general public user
-  representation retains its approved five fields and does not gain role or password hashes.
+  sessions on admin deletion. Self-profile `GET /api/v1/users/me` requires a valid Bearer access token, no `userId` or
+  request body, and returns `200 OK` with exactly `id`, `email`, `displayName`, `createdAt`, `updatedAt`, and the
+  current database role (`user` or `admin`). Both timestamps are UTC ISO 8601 date-time strings. Self-profile
+  `PATCH /api/v1/users/me` requires strict JSON with exactly the mandatory `{ displayName }`, applying existing Users
+  trimming and validation; empty, missing, or additional fields (including `email`, `role`, and `password`) return
+  `400 BAD_REQUEST`. Success returns `200 OK` with the same six-field updated projection. Both routes reject missing or
+  invalid Bearer credentials with `401 UNAUTHORIZED`, and initial-password restricted sessions with
+  `403 PASSWORD_CHANGE_REQUIRED`; responses include `X-Request-Id`. Neither route exposes password hashes or future
+  fields. Public sign-up rejects role input. General Users responses retain their approved five fields.
 
 The approved initial public model is `id`, `email`, `displayName`, `createdAt`, and `updatedAt`. Client input cannot
 assign or modify the identifier or timestamps.
@@ -180,10 +185,14 @@ assign or modify the identifier or timestamps.
       `role: 'user' | 'admin'` with optional profile fields; policy checks prevent demotion or deletion of the last
       active administrator. Promotion revokes all target sessions and requires new sign-in; demotion retains sessions
       but takes effect on the next request.
-- [ ] `GET /api/v1/users/me` returns exactly `id`, `email`, `displayName`, `createdAt`, `updatedAt`, and the single
-      `role`, without automatically including future fields. An ordinary user can update only their own `displayName`
-      through `PATCH /api/v1/users/me`; self updates and public sign-up reject role input. General Users public
-      responses retain the approved five fields.
+- [ ] `GET /api/v1/users/me` requires a valid Bearer credential and no `userId` or body; `200 OK` returns exactly `id`,
+      `email`, `displayName`, `createdAt`, `updatedAt`, and current database `role` (`user` or `admin`), with UTC ISO
+      8601 timestamps. `PATCH /api/v1/users/me` accepts only mandatory `{ displayName }` under existing Users
+      normalization and validation, returning `200 OK` with the same updated six-field projection. Empty, missing, or
+      extra fields, including `email`, `role`, and `password`, return `400 BAD_REQUEST`. Both routes return
+      `401 UNAUTHORIZED` for missing or invalid Bearer credentials and `403 PASSWORD_CHANGE_REQUIRED` for restricted
+      initial-password sessions, and include `X-Request-Id`. No hash or future fields are exposed; general Users public
+      responses retain the approved five fields. Public sign-up rejects role input.
 - [ ] Admin deletion immediately revokes every session of the deleted user.
 - [x] Every successful response includes `X-Request-Id` according to the shared HTTP contract.
 - [x] Public responses and errors conform to the repository's shared HTTP contracts.

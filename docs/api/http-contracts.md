@@ -116,17 +116,21 @@ compartidos:
 
 <!-- markdownlint-disable MD013 -->
 
-| Status | Código                     | Mensaje exacto                                           | Significado público                                                                    |
-| ------ | -------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `400`  | `BAD_REQUEST`              | `The request is invalid.`                                | El Request no cumple el contrato público.                                              |
-| `401`  | `UNAUTHORIZED`             | `Authentication is required.`                            | No se proporcionó una autenticación aceptable.                                         |
-| `403`  | `FORBIDDEN`                | `You are not allowed to perform this action.`            | El principal autenticado no puede realizar la acción.                                  |
-| `403`  | `PASSWORD_CHANGE_REQUIRED` | `You must change your password before continuing.`       | La sesión autenticada está restringida por una contraseña inicial pendiente de cambio. |
-| `404`  | `ROUTE_NOT_FOUND`          | `The requested route was not found.`                     | No existe un handler para la ruta solicitada.                                          |
-| `404`  | `RESOURCE_NOT_FOUND`       | `The requested resource was not found.`                  | El recurso solicitado no está disponible.                                              |
-| `409`  | `CONFLICT`                 | `The request conflicts with the current resource state.` | La operación entra en conflicto con el estado actual del recurso.                      |
-| `429`  | `RATE_LIMIT_EXCEEDED`      | `Too many requests.`                                     | Se excedió el límite de solicitudes aplicable.                                         |
-| `500`  | `INTERNAL_SERVER_ERROR`    | `An unexpected error occurred.`                          | Ocurrió un fallo interno o no confiable.                                               |
+| Status | Código                       | Mensaje exacto                                            | Significado público                                                                    |
+| ------ | ---------------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `400`  | `BAD_REQUEST`                | `The request is invalid.`                                 | El Request no cumple el contrato público.                                              |
+| `400`  | `PASSWORD_REUSE_NOT_ALLOWED` | `The new password must differ from the current password.` | El cambio de contraseña autenticado intenta reutilizar la contraseña actual.           |
+| `401`  | `UNAUTHORIZED`               | `Authentication is required.`                             | No se proporcionó una autenticación aceptable.                                         |
+| `401`  | `INVALID_CREDENTIALS`        | `Invalid email or password.`                              | El email o la contraseña no se aceptaron, sin indicar cuál falló.                      |
+| `401`  | `INVALID_REFRESH_TOKEN`      | `Invalid refresh token.`                                  | No se aceptó el token de renovación, sin revelar su estado ni reutilización.           |
+| `403`  | `FORBIDDEN`                  | `You are not allowed to perform this action.`             | El principal autenticado no puede realizar la acción.                                  |
+| `403`  | `INVALID_CURRENT_PASSWORD`   | `The current password is incorrect.`                      | La contraseña actual proporcionada para el cambio autenticado es incorrecta.           |
+| `403`  | `PASSWORD_CHANGE_REQUIRED`   | `You must change your password before continuing.`        | La sesión autenticada está restringida por una contraseña inicial pendiente de cambio. |
+| `404`  | `ROUTE_NOT_FOUND`            | `The requested route was not found.`                      | No existe un handler para la ruta solicitada.                                          |
+| `404`  | `RESOURCE_NOT_FOUND`         | `The requested resource was not found.`                   | El recurso solicitado no está disponible.                                              |
+| `409`  | `CONFLICT`                   | `The request conflicts with the current resource state.`  | La operación entra en conflicto con el estado actual del recurso.                      |
+| `429`  | `RATE_LIMIT_EXCEEDED`        | `Too many requests.`                                      | Se excedió el límite de solicitudes aplicable.                                         |
+| `500`  | `INTERNAL_SERVER_ERROR`      | `An unexpected error occurred.`                           | Ocurrió un fallo interno o no confiable.                                               |
 
 <!-- markdownlint-enable MD013 -->
 
@@ -135,7 +139,14 @@ usar su código del catálogo; los fallbacks genéricos no los sustituyen. `UNAU
 fallbacks públicos definidos por la semántica HTTP: este catálogo no define mecanismos ni reglas de autenticación o
 autorización de negocio. `PASSWORD_CHANGE_REQUIRED` es una denegación específica para operaciones protegidas no
 permitidas mientras siga pendiente el cambio de contraseña inicial; el cliente puede identificarla por `code`, no por
-`message`. Las operaciones permitidas durante esa restricción se definen en el PDR de Auth.
+`message`. `INVALID_CREDENTIALS` no distingue entre una cuenta inexistente y una contraseña incorrecta;
+`INVALID_REFRESH_TOKEN` no distingue entre tokens desconocidos, vencidos, revocados, sin sesión o reutilizados. Ninguno
+incluye `details` ni revela presencia de cuenta o reutilización; `UNAUTHORIZED` sigue siendo el fallback genérico para
+credenciales Bearer ausentes o inválidas. Las operaciones permitidas durante esa restricción se definen en el PDR de
+Auth. En el cambio de contraseña autenticado, `INVALID_CURRENT_PASSWORD` requiere una sesión válida y señala una
+contraseña actual incorrecta; `PASSWORD_REUSE_NOT_ALLOWED` señala que la nueva contraseña coincide con la actual. La
+forma de la solicitud y las demás reglas del Feature pertenecen al PDR de Auth. Estas respuestas usan el cuerpo de error
+compartido sin `details` ni secretos.
 
 Los fallos de contrato de salida siempre usan `500`, `INTERNAL_SERVER_ERROR` y el mensaje exacto del catálogo, sin
 `details`.
