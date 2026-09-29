@@ -51,6 +51,8 @@ export const AnyNull = runtime.AnyNull
 
 
 export const ModelName = {
+  Session: 'Session',
+  RefreshDigest: 'RefreshDigest',
   User: 'User'
 } as const
 
@@ -68,6 +70,27 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 } as const)
 
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
+
+
+export const SessionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  createdAt: 'createdAt',
+  expiresAt: 'expiresAt',
+  revokedAt: 'revokedAt'
+} as const
+
+export type SessionScalarFieldEnum = (typeof SessionScalarFieldEnum)[keyof typeof SessionScalarFieldEnum]
+
+
+export const RefreshDigestScalarFieldEnum = {
+  digest: 'digest',
+  sessionId: 'sessionId',
+  expiresAt: 'expiresAt',
+  retiredAt: 'retiredAt'
+} as const
+
+export type RefreshDigestScalarFieldEnum = (typeof RefreshDigestScalarFieldEnum)[keyof typeof RefreshDigestScalarFieldEnum]
 
 
 export const UserScalarFieldEnum = {
@@ -95,4 +118,12 @@ export const QueryMode = {
 } as const
 
 export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
+
+
+export const NullsOrder = {
+  first: 'first',
+  last: 'last'
+} as const
+
+export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
 

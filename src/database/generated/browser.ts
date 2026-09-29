@@ -18,6 +18,16 @@ export { Prisma }
 export * as $Enums from './enums.js'
 export * from './enums.js';
 /**
+ * Model Session
+ * 
+ */
+export type Session = Prisma.SessionModel
+/**
+ * Model RefreshDigest
+ * 
+ */
+export type RefreshDigest = Prisma.RefreshDigestModel
+/**
  * Model User
  * 
  */
