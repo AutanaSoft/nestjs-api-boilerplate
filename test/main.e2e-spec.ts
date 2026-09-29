@@ -4,6 +4,7 @@ import { registerSerializationE2ESuite } from './common/serialization/serializat
 import { registerRequestValidationE2ESuite } from './common/validation/request-validation.e2e-suite.js';
 import { registerSessionStorageE2ESuite } from './modules/auth/session-storage.e2e-suite.js';
 import { registerSignUpE2ESuite } from './modules/auth/sign-up.e2e-suite.js';
+import { registerSignInE2ESuite } from './modules/auth/sign-in.e2e-suite.js';
 import { registerHealthE2ESuite } from './modules/health/health.e2e-suite.js';
 import { registerCreateUserE2ESuite } from './modules/users/create-user.e2e-suite.js';
 import { createE2EEnvironment } from './support/e2e-environment.js';
@@ -27,6 +28,7 @@ const runScenario: RunE2EScenario = async (scenario, options) => {
 registerHealthE2ESuite({ runScenario });
 registerSessionStorageE2ESuite({ runScenario });
 registerSignUpE2ESuite({ runScenario });
+registerSignInE2ESuite({ runScenario });
 registerCreateUserE2ESuite({ runScenario });
 registerOpenApiE2ESuite({ runScenario });
 registerSerializationE2ESuite({ runScenario });

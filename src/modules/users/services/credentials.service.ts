@@ -5,6 +5,10 @@ import { createUserRequestSchema } from '../contracts/create-user-request.schema
 import { CREDENTIALS_REPOSITORY } from '../repositories/credentials.repository.js';
 import type { CredentialsRepository } from '../repositories/credentials.repository.js';
 
+// A fixed Argon2id hash used only to equalize the verification work for absent accounts.
+const dummyPasswordHash =
+  '$argon2id$v=19$m=65536,t=3,p=4$IxQuTyY6ZlXc9BP7Cd34Tw$KPNWXkCvTXLnV18yJCJK2NX5Rhy98iStOgGUWKFKxzQ';
+
 @Injectable()
 export class CredentialsService {
   constructor(@Inject(CREDENTIALS_REPOSITORY) private readonly repository: CredentialsRepository) {}
@@ -29,6 +33,7 @@ export class CredentialsService {
   async verify(email: string, password: string): Promise<string | null> {
     const normalized = createUserRequestSchema.shape.email.parse(email);
     const credentials = await this.repository.findHashByEmail(normalized);
-    return credentials !== null && (await argon2.verify(credentials.passwordHash, password)) ? credentials.id : null;
+    const valid = await argon2.verify(credentials?.passwordHash ?? dummyPasswordHash, password);
+    return credentials !== null && valid ? credentials.id : null;
   }
 }

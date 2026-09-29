@@ -21,6 +21,11 @@ export const applicationErrorHttpDescriptors = Object.freeze({
     code: 'CONFLICT',
     message: 'The request conflicts with the current resource state.',
   }),
+  INVALID_CREDENTIALS: Object.freeze({
+    statusCode: 401,
+    code: 'INVALID_CREDENTIALS',
+    message: 'Invalid email or password.',
+  }),
 }) satisfies Readonly<Record<ApplicationErrorCode, HttpErrorDescriptor>>;
 
 const unknownErrorHttpDescriptor: HttpErrorDescriptor = Object.freeze({

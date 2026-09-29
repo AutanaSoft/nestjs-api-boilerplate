@@ -16,7 +16,13 @@ import type { E2ESuiteRegistration } from '../../support/e2e-context.js';
 
 const HEALTH_OPENAPI_PATHS = ['/api/v1/health/live', '/api/v1/health/ready'];
 const USER_RETRIEVAL_OPENAPI_PATH = '/api/v1/users/{userId}';
-const OPENAPI_PATHS = [...HEALTH_OPENAPI_PATHS, '/api/v1/users', USER_RETRIEVAL_OPENAPI_PATH, '/api/v1/auth/sign-up'];
+const OPENAPI_PATHS = [
+  ...HEALTH_OPENAPI_PATHS,
+  '/api/v1/users',
+  USER_RETRIEVAL_OPENAPI_PATH,
+  '/api/v1/auth/sign-up',
+  '/api/v1/auth/sign-in',
+];
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): void {
@@ -308,6 +314,7 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
             '/v1/users',
             '/v1/users/{userId}',
             '/v1/auth/sign-up',
+            '/v1/auth/sign-in',
           ]);
           await request(app.getHttpServer()).get('/v1/openapi.json').expect(404);
           await request(app.getHttpServer()).get('/api/openapi.json').expect(404);

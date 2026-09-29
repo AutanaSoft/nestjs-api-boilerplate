@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { ApplicationError } from './application-error.js';
 import { applicationErrorHttpDescriptors, mapErrorToResponse } from './http-error-mapping.js';
 import { ResponseContractViolation } from '../serialization/response-contract-violation.js';
+import { InvalidCredentialsError } from '../../modules/auth/auth.errors.js';
 
 type ResourceNotFoundContext = Readonly<{
   resourceId: string;
@@ -46,6 +47,12 @@ describe('applicationErrorHttpDescriptors', () => {
       code: 'CONFLICT',
       message: 'The request conflicts with the current resource state.',
     });
+    expect(applicationErrorHttpDescriptors.INVALID_CREDENTIALS).toEqual({
+      statusCode: 401,
+      code: 'INVALID_CREDENTIALS',
+      message: 'Invalid email or password.',
+    });
+    expect(Object.isFrozen(applicationErrorHttpDescriptors.INVALID_CREDENTIALS)).toBe(true);
     expect(Object.isFrozen(applicationErrorHttpDescriptors)).toBe(true);
     expect(Object.isFrozen(applicationErrorHttpDescriptors.RESOURCE_NOT_FOUND)).toBe(true);
     expect(Object.isFrozen(applicationErrorHttpDescriptors.CONFLICT)).toBe(true);
@@ -66,6 +73,15 @@ describe('mapErrorToResponse', () => {
       statusCode: 409,
       code: 'CONFLICT',
       message: 'The request conflicts with the current resource state.',
+      requestId,
+    });
+  });
+
+  it('maps invalid credentials without leaking details', () => {
+    expect(mapErrorToResponse(new InvalidCredentialsError(), requestId)).toEqual({
+      statusCode: 401,
+      code: 'INVALID_CREDENTIALS',
+      message: 'Invalid email or password.',
       requestId,
     });
   });
