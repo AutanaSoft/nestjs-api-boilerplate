@@ -6,7 +6,7 @@ import { appConfigFactory } from '../../../src/config/app.config.js';
 import { buildApiConfig } from '../../../src/config/api.config.js';
 import { buildOpenApiConfig } from '../../../src/config/openapi.config.js';
 import { healthResponseSchema } from '../../../src/modules/health/contracts/health-response.schema.js';
-import { createUserRequestSchema } from '../../../src/modules/users/contracts/create-user-request.schema.js';
+import { signUpRequestSchema, tokensResponseSchema } from '../../../src/modules/auth/contracts/sign-up.schema.js';
 import { listUsersRequestSchema } from '../../../src/modules/users/contracts/list-users-request.schema.js';
 import { queryUsersRequestSchema } from '../../../src/modules/users/contracts/query-users-request.schema.js';
 import { updateUserRequestSchema } from '../../../src/modules/users/contracts/update-user-request.schema.js';
@@ -16,7 +16,7 @@ import type { E2ESuiteRegistration } from '../../support/e2e-context.js';
 
 const HEALTH_OPENAPI_PATHS = ['/api/v1/health/live', '/api/v1/health/ready'];
 const USER_RETRIEVAL_OPENAPI_PATH = '/api/v1/users/{userId}';
-const OPENAPI_PATHS = [...HEALTH_OPENAPI_PATHS, '/api/v1/users', USER_RETRIEVAL_OPENAPI_PATH];
+const OPENAPI_PATHS = [...HEALTH_OPENAPI_PATHS, '/api/v1/users', USER_RETRIEVAL_OPENAPI_PATH, '/api/v1/auth/sign-up'];
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): void {
@@ -241,17 +241,18 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
             );
           }
 
-          const createUser = document.body.paths['/api/v1/users'].post;
-          expect(createUser.operationId).toBe('createUser');
-          expect(createUser.requestBody.content['application/json'].schema).toEqual(
-            toOpenApiSchema(createUserRequestSchema, 'input'),
+          expect(document.body.paths['/api/v1/users'].post).toBeUndefined();
+          const signUp = document.body.paths['/api/v1/auth/sign-up'].post;
+          expect(signUp.operationId).toBe('signUp');
+          expect(signUp.requestBody.content['application/json'].schema).toEqual(
+            toOpenApiSchema(signUpRequestSchema, 'input'),
           );
-          expect(Object.keys(createUser.responses)).toEqual(['201', '400', '409', '429', '500']);
-          expect(createUser.responses['201'].content['application/json'].schema).toEqual(
-            toOpenApiSchema(userResponseSchema, 'output'),
+          expect(Object.keys(signUp.responses)).toEqual(['201', '400', '409', '429', '500']);
+          expect(signUp.responses['201'].content['application/json'].schema).toEqual(
+            toOpenApiSchema(tokensResponseSchema, 'output'),
           );
           for (const status of ['400', '409', '429', '500']) {
-            expect(createUser.responses[status].content['application/json'].schema).toEqual(
+            expect(signUp.responses[status].content['application/json'].schema).toEqual(
               toOpenApiSchema(errorResponseSchema, 'output'),
             );
           }
@@ -306,6 +307,7 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
             '/v1/health/ready',
             '/v1/users',
             '/v1/users/{userId}',
+            '/v1/auth/sign-up',
           ]);
           await request(app.getHttpServer()).get('/v1/openapi.json').expect(404);
           await request(app.getHttpServer()).get('/api/openapi.json').expect(404);

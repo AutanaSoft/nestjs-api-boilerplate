@@ -4,6 +4,9 @@ CREATE TABLE "users" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "email" TEXT NOT NULL,
     "display_name" TEXT NOT NULL,
+    "password_hash" TEXT NOT NULL,
+    "role" TEXT NOT NULL DEFAULT 'user',
+    CONSTRAINT "users_role_check" CHECK ("role" = 'user'),
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -45,5 +48,5 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER user_updated_at
 BEFORE UPDATE ON "users"
 FOR EACH ROW
-WHEN ((OLD."email", OLD."display_name") IS DISTINCT FROM (NEW."email", NEW."display_name"))
+WHEN ((OLD."email", OLD."display_name", OLD."password_hash") IS DISTINCT FROM (NEW."email", NEW."display_name", NEW."password_hash"))
 EXECUTE FUNCTION set_user_updated_at();

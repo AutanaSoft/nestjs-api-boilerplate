@@ -4,6 +4,7 @@ import type { OpenAPIObject, OperationObject, PathItemObject } from '@nestjs/swa
 import type { AppConfig } from '../../config/app.config.js';
 import type { OpenApiConfig } from '../../config/openapi.config.js';
 import { HealthModule } from '../../modules/health/health.module.js';
+import { AuthModule } from '../../modules/auth/auth.module.js';
 import { UsersModule } from '../../modules/users/users.module.js';
 
 export function setupOpenApi(app: INestApplication, appConfig: AppConfig, openapiConfig: OpenApiConfig): void {
@@ -18,7 +19,7 @@ export function setupOpenApi(app: INestApplication, appConfig: AppConfig, openap
     .build();
   const document = asOpenApi32Document(
     SwaggerModule.createDocument(app, documentConfig, {
-      include: [HealthModule, UsersModule],
+      include: [HealthModule, UsersModule, AuthModule],
     }),
   );
   convertNullableSchemasToOpenApi32Unions(document);

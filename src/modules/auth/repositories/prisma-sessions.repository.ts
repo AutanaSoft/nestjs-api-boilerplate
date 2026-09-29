@@ -1,13 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service.js';
+import type { DatabaseTransaction } from '../../../database/transaction/database-transaction.js';
 import type { SessionRecord, SessionsRepository } from './sessions.repository.js';
 
 @Injectable()
 export class PrismaSessionsRepository implements SessionsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(userId: string, digest: string, expiresAt: Date): Promise<SessionRecord> {
-    return this.prisma.session.create({
+  async create(
+    userId: string,
+    digest: string,
+    expiresAt: Date,
+    transaction?: DatabaseTransaction,
+  ): Promise<SessionRecord> {
+    return (transaction?.client ?? this.prisma).session.create({
       data: { userId, expiresAt, digests: { create: { digest, expiresAt } } },
     });
   }

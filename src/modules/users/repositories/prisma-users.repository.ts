@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '../../../database/generated/client.js';
 import { PrismaService } from '../../../database/prisma.service.js';
-import type { CreateUserRequest } from '../contracts/create-user-request.schema.js';
 import type { UpdateUserRequest } from '../contracts/update-user-request.schema.js';
 import { userSchema } from '../contracts/user.schema.js';
 import type { User } from '../contracts/user.schema.js';
@@ -62,16 +61,6 @@ export class PrismaUsersRepository implements UsersRepository {
     ]);
 
     return { data, hasNextPage: next !== null, hasPreviousPage: previous !== null };
-  }
-
-  async create(data: CreateUserRequest): Promise<User> {
-    try {
-      const user: PrismaUser = await this.prisma.user.create({ data, select: userSelect });
-      return userSchema.parse(user);
-    } catch (error: unknown) {
-      if (isUniqueEmailViolation(error)) throw new UserEmailConflictError(data.email, { cause: error });
-      throw error;
-    }
   }
 
   async update(id: string, data: UpdateUserRequest): Promise<User | null> {

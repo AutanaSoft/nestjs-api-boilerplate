@@ -9,6 +9,7 @@ import { SerializationModule } from './common/serialization/serialization.module
 import { ShutdownModule } from './common/shutdown/shutdown.module.js';
 import { ValidationModule } from './common/validation/validation.module.js';
 import apiConfig from './config/api.config.js';
+import authConfig from './config/auth.config.js';
 import appConfig from './config/app.config.js';
 import corsConfig from './config/cors.config.js';
 import databaseConfig from './config/database.config.js';
@@ -18,6 +19,7 @@ import rateLimitConfig from './config/rate-limit.config.js';
 import shutdownConfig from './config/shutdown.config.js';
 import { DatabaseModule } from './database/database.module.js';
 import { HealthModule } from './modules/health/health.module.js';
+import { AuthModule } from './modules/auth/auth.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 
 @Module({
@@ -27,6 +29,7 @@ import { UsersModule } from './modules/users/users.module.js';
       load: [
         appConfig,
         apiConfig,
+        authConfig,
         httpConfig,
         corsConfig,
         databaseConfig,
@@ -48,6 +51,7 @@ import { UsersModule } from './modules/users/users.module.js';
     DatabaseModule,
     HealthModule,
     UsersModule,
+    AuthModule,
     ObservabilityModule,
     ErrorHandlingModule,
     SerializationModule,

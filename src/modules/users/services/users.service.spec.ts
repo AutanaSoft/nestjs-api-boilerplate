@@ -104,21 +104,9 @@ describe('UsersService', () => {
     });
   });
 
-  it('creates users through the feature repository port', async () => {
-    const create = vi.fn().mockResolvedValue(user);
-    const repository: UsersRepository = {
-      findById: vi.fn(),
-      create,
-      update: vi.fn(),
-      delete: vi.fn(),
-    };
-    const service = new UsersService(repository);
-
-    await expect(service.create({ email: user.email, displayName: user.displayName })).resolves.toEqual(user);
-    expect(create).toHaveBeenCalledWith({
-      email: user.email,
-      displayName: user.displayName,
-    });
+  it('does not retain a passwordless public-creation service method', () => {
+    const service = new UsersService({ findById: vi.fn(), list: vi.fn(), update: vi.fn(), delete: vi.fn() });
+    expect('create' in service).toBe(false);
   });
 
   it('updates users through the feature repository port', async () => {

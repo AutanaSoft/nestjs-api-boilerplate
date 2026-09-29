@@ -4,6 +4,7 @@ import type { PrismaService } from '../../../database/prisma.service.js';
 import { ZodError } from 'zod';
 import { UserEmailConflictError } from '../users.errors.js';
 import { PrismaUsersRepository } from './prisma-users.repository.js';
+import { PrismaCredentialsRepository } from './prisma-credentials.repository.js';
 
 const user = {
   id: '123e4567-e89b-42d3-a456-426614174000',
@@ -12,8 +13,6 @@ const user = {
   createdAt: new Date('2026-09-19T12:34:56.789Z'),
   updatedAt: new Date('2026-09-19T12:34:56.789Z'),
 };
-
-const createRequest = { email: user.email, displayName: user.displayName };
 
 function createRepository(
   create: ReturnType<typeof vi.fn>,
@@ -168,28 +167,18 @@ describe('PrismaUsersRepository', () => {
     );
   });
 
-  it('creates a user through Prisma with only the public projection', async () => {
-    const create = vi.fn().mockResolvedValue(user);
-    const repository = createRepository(create);
-
-    await expect(repository.create(createRequest)).resolves.toEqual(user);
+  it('creates only a credential-bearing ordinary user in a supplied transaction', async () => {
+    const create = vi.fn().mockResolvedValue({ id: user.id });
+    const repository = new PrismaCredentialsRepository({} as PrismaService);
+    await expect(
+      repository.register(user.email, user.displayName, 'argon2id-hash', {
+        client: { user: { create } } as never,
+      }),
+    ).resolves.toBe(user.id);
     expect(create).toHaveBeenCalledWith({
-      data: createRequest,
-      select: {
-        id: true,
-        email: true,
-        displayName: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      data: { email: user.email, displayName: user.displayName, passwordHash: 'argon2id-hash', role: 'user' },
+      select: { id: true },
     });
-  });
-
-  it('validates selected Prisma records at the repository boundary', async () => {
-    const create = vi.fn().mockResolvedValue({ ...user, createdAt: '2026-09-19T12:34:56.789Z' });
-    const repository = createRepository(create);
-
-    await expect(repository.create(createRequest)).rejects.toBeInstanceOf(ZodError);
   });
 
   it('updates a user through Prisma with only the public projection', async () => {
@@ -262,11 +251,14 @@ describe('PrismaUsersRepository', () => {
         clientVersion: '7.10.0',
         ...options,
       });
-      const repository = createRepository(vi.fn().mockRejectedValue(conflict));
-
-      await expect(repository.create(createRequest)).rejects.toMatchObject({
+      const repository = new PrismaCredentialsRepository({} as PrismaService);
+      await expect(
+        repository.register(user.email, user.displayName, 'argon2id-hash', {
+          client: { user: { create: vi.fn().mockRejectedValue(conflict) } } as never,
+        }),
+      ).rejects.toMatchObject({
         name: UserEmailConflictError.name,
-        email: createRequest.email,
+        email: user.email,
         code: 'CONFLICT',
         cause: conflict,
       });

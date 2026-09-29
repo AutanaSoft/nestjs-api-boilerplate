@@ -1,244 +1,182 @@
+import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { Test } from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { buildRateLimitConfig } from '../../../src/config/rate-limit.config.js';
+import { PrismaService } from '../../../src/database/prisma.service.js';
+import { signUpFixture } from '../../support/auth-signup.js';
 import type { E2ESuiteRegistration } from '../../support/e2e-context.js';
 
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const ISO_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+const notFound = {
+  statusCode: 404,
+  code: 'RESOURCE_NOT_FOUND',
+  message: 'The requested resource was not found.',
+  requestId: expect.stringMatching(UUID_V4),
+};
+const badRequest = { statusCode: 400, code: 'BAD_REQUEST', message: 'The request is invalid.' };
+const conflict = {
+  statusCode: 409,
+  code: 'CONFLICT',
+  message: 'The request conflicts with the current resource state.',
+  requestId: expect.stringMatching(UUID_V4),
+};
 
-function createPayload() {
-  const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+const options = {
+  application: { rateLimitConfig: buildRateLimitConfig({ THROTTLE_LIMIT: 100, THROTTLE_TTL_SECONDS: 60 }) },
+};
 
-  return {
-    email: ` Ada.Lovelace+${unique}@Example.COM `,
-    displayName: ' Ada Lovelace ',
-  };
-}
-
-export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): void {
-  describe('POST /api/v1/users (e2e)', () => {
-    it('creates a normalized public user with system-generated fields and a resource Location', async () => {
-      await registration.runScenario(async ({ app }) => {
-        const payload = createPayload();
-        const response = await request(app.getHttpServer()).post('/api/v1/users').send(payload).expect(201);
-
-        expect(response.headers.location).toBe(`/api/v1/users/${response.body.id}`);
-        expect(response.headers['x-request-id']).toMatch(UUID_V4);
-        expect(response.body).toEqual({
-          id: expect.stringMatching(UUID_V4),
-          email: payload.email.trim().toLowerCase(),
-          displayName: payload.displayName.trim(),
-          createdAt: expect.stringMatching(ISO_TIMESTAMP),
-          updatedAt: expect.stringMatching(ISO_TIMESTAMP),
-        });
-        expect(response.body).not.toHaveProperty('password');
-        expect(response.body).not.toHaveProperty('passwordHash');
-      });
-    });
-
-    it('retrieves a public user by canonical UUIDv4', async () => {
-      await registration.runScenario(async ({ app }) => {
-        const payload = createPayload();
-        const created = await request(app.getHttpServer()).post('/api/v1/users').send(payload).expect(201);
-        const response = await request(app.getHttpServer()).get(`/api/v1/users/${created.body.id}`).expect(200);
-
-        expect(response.body).toEqual({
-          id: created.body.id,
-          email: payload.email.trim().toLowerCase(),
-          displayName: payload.displayName.trim(),
-          createdAt: expect.stringMatching(ISO_TIMESTAMP),
-          updatedAt: expect.stringMatching(ISO_TIMESTAMP),
-        });
-        expect(response.body).not.toHaveProperty('password');
-        expect(response.body).not.toHaveProperty('passwordHash');
-      });
-    });
-
-    it('rejects a non-canonical user ID with the shared 400 contract', async () => {
-      await registration.runScenario(async ({ app }) => {
-        const response = await request(app.getHttpServer()).get('/api/v1/users/not-a-uuid').expect(400);
-
-        expect(response.body).toMatchObject({
-          statusCode: 400,
-          code: 'BAD_REQUEST',
-          message: 'The request is invalid.',
-        });
-      });
-    });
-
-    it('returns the shared 404 resource-not-found contract for an unknown UUIDv4', async () => {
-      await registration.runScenario(async ({ app }) => {
-        const response = await request(app.getHttpServer())
-          .get('/api/v1/users/123e4567-e89b-42d3-a456-426614174001')
-          .expect(404);
-
-        expect(response.body).toEqual({
-          statusCode: 404,
-          code: 'RESOURCE_NOT_FOUND',
-          message: 'The requested resource was not found.',
-          requestId: expect.stringMatching(UUID_V4),
-        });
-      });
-    });
-
-    it('returns the shared 409 conflict contract for a normalized duplicate email', async () => {
-      await registration.runScenario(async ({ app }) => {
-        const payload = createPayload();
-        await request(app.getHttpServer()).post('/api/v1/users').send(payload).expect(201);
-        const response = await request(app.getHttpServer())
+export function registerCreateUserE2ESuite({ runScenario }: E2ESuiteRegistration): void {
+  describe('Users HTTP regression after moving creation to Auth', () => {
+    it('does not expose legacy POST /users, including with valid former input', async () => {
+      await runScenario(async ({ app }) => {
+        await request(app.getHttpServer())
           .post('/api/v1/users')
-          .send({ ...payload, email: `  ${payload.email.trim().toUpperCase()}  ` })
-          .expect(409);
-
-        expect(response.body).toEqual({
-          statusCode: 409,
-          code: 'CONFLICT',
-          message: 'The request conflicts with the current resource state.',
-          requestId: expect.stringMatching(UUID_V4),
-        });
+          .send({ email: `${randomUUID()}@example.test`, displayName: 'Ada Lovelace' })
+          .expect(404);
       });
     });
 
-    it.each([
-      { ...createPayload(), displayName: 'Ada  Lovelace' },
-      { ...createPayload(), id: 'client-id' },
-      { ...createPayload(), createdAt: '2026-01-01T00:00:00.000Z' },
-      { ...createPayload(), updatedAt: '2026-01-01T00:00:00.000Z' },
-    ])('rejects invalid or client-managed input %#', async (payload) => {
-      await registration.runScenario(async ({ app }) => {
-        const response = await request(app.getHttpServer()).post('/api/v1/users').send(payload).expect(400);
-
-        expect(response.body).toMatchObject({
-          statusCode: 400,
-          code: 'BAD_REQUEST',
-          message: 'The request is invalid.',
+    it('retrieves registered users and retains normalized exact-email filtering and strict query', async () => {
+      await runScenario(async ({ app }) => {
+        const first = await signUpFixture(app, 'Ada Lovelace');
+        await signUpFixture(app, 'Grace Hopper');
+        const fetched = await request(app.getHttpServer()).get(`/api/v1/users/${first.id}`).expect(200);
+        expect(fetched.headers['x-request-id']).toMatch(UUID_V4);
+        expect(fetched.body).toEqual({
+          id: first.id,
+          email: first.email,
+          displayName: 'Ada Lovelace',
+          createdAt: expect.stringMatching(ISO_TIMESTAMP),
+          updatedAt: expect.stringMatching(ISO_TIMESTAMP),
         });
-      });
-    });
-  });
-
-  describe('GET /api/v1/users (e2e)', () => {
-    const listScenarioOptions = {
-      application: {
-        rateLimitConfig: buildRateLimitConfig({
-          THROTTLE_LIMIT: '100',
-          THROTTLE_TTL_SECONDS: '60',
-        }),
-      },
-    };
-
-    it('lists exact normalized-email matches and rejects unsupported query shapes', async () => {
-      await registration.runScenario(async ({ app }) => {
-        const first = await request(app.getHttpServer()).post('/api/v1/users').send(createPayload()).expect(201);
-        await request(app.getHttpServer()).post('/api/v1/users').send(createPayload()).expect(201);
-
         const filtered = await request(app.getHttpServer())
-          .get(`/api/v1/users?email=${encodeURIComponent(` ${first.body.email.toUpperCase()} `)}`)
+          .get(`/api/v1/users?email=${encodeURIComponent(` ${first.email.toUpperCase()} `)}`)
           .expect(200);
-        expect(filtered.body.data).toHaveLength(1);
-        expect(filtered.body.data[0]).toMatchObject({ id: first.body.id, email: first.body.email });
-        expect(filtered.body.pageInfo).toEqual({
-          nextCursor: null,
-          previousCursor: null,
-          hasNextPage: false,
-          hasPreviousPage: false,
+        expect(filtered.body).toEqual({
+          data: [fetched.body],
+          pageInfo: {
+            nextCursor: null,
+            previousCursor: null,
+            hasNextPage: false,
+            hasPreviousPage: false,
+          },
         });
-
-        for (const query of ['displayName=Ada', 'limit=0', 'sort=email', 'after=a&before=b', 'limit=1&limit=2']) {
-          await request(app.getHttpServer()).get(`/api/v1/users?${query}`).expect(400);
+        for (const query of ['sort=email', 'limit=0', 'displayName=Ada', 'after=a&before=b', 'limit=1&limit=2']) {
+          const invalid = await request(app.getHttpServer()).get(`/api/v1/users?${query}`).expect(400);
+          expect(invalid.body).toMatchObject(badRequest);
         }
-      }, listScenarioOptions);
+        expect((await request(app.getHttpServer()).get('/api/v1/users/not-a-uuid').expect(400)).body).toMatchObject(
+          badRequest,
+        );
+        expect(
+          (await request(app.getHttpServer()).get('/api/v1/users/123e4567-e89b-42d3-a456-426614174001').expect(404))
+            .body,
+        ).toEqual(notFound);
+        const structured = await new Test(app.getHttpServer(), 'QUERY', '/api/v1/users')
+          .send({ criteria: { email: first.email.toUpperCase() } })
+          .expect(200);
+        expect(structured.body.data.map((user: { id: string }) => user.id)).toEqual([first.id]);
+        await new Test(app.getHttpServer(), 'QUERY', '/api/v1/users')
+          .send({ criteria: { email: first.email, displayName: 'Ada' } })
+          .expect(400);
+      }, options);
     });
 
-    it('paginates every public sort order deterministically and serializes only public rows', async () => {
-      await registration.runScenario(async ({ app }) => {
-        const created = [];
-        for (const displayName of ['Ada Lovelace', 'Ada Lovelace', 'Ada Lovelace', 'Grace Hopper']) {
-          const response = await request(app.getHttpServer())
-            .post('/api/v1/users')
-            .send({ ...createPayload(), displayName })
-            .expect(201);
-          created.push(response.body);
+    it('preserves list ordering, cursor navigation and strict cursor rejection', async () => {
+      await runScenario(async ({ app }) => {
+        const ids = [];
+        for (const name of ['Ada Lovelace', 'Ada Lovelace', 'Grace Hopper']) {
+          ids.push((await signUpFixture(app, name)).id);
         }
-        const tiedIds = created
-          .slice(0, 3)
-          .map((user) => user.id)
-          .sort();
-
-        for (const [sort, direction] of [
-          ['createdAt', 'asc'],
-          ['createdAt', 'desc'],
-          ['displayName', 'asc'],
-          ['displayName', 'desc'],
-        ]) {
-          const page = await request(app.getHttpServer())
-            .get(`/api/v1/users?sort=${sort}&direction=${direction}&limit=25`)
-            .expect(200);
-          expect(page.body.data).toHaveLength(4);
-          const values = page.body.data.map((user: { createdAt: string; displayName: string; id: string }) =>
-            sort === 'createdAt' ? user.createdAt : user.displayName,
-          );
-          const expected = [...values].sort((left, right) =>
-            direction === 'asc' ? left.localeCompare(right) : right.localeCompare(left),
-          );
-          expect(values).toEqual(expected);
-        }
-
         const first = await request(app.getHttpServer())
           .get('/api/v1/users?sort=displayName&direction=asc&limit=1')
           .expect(200);
+        const tiedIds = ids.slice(0, 2).sort();
+        expect(first.headers['x-request-id']).toMatch(UUID_V4);
         expect(first.body.data).toEqual([
           {
             id: tiedIds[0],
-            email: created.find((user) => user.id === tiedIds[0]).email,
+            email: expect.any(String),
             displayName: 'Ada Lovelace',
             createdAt: expect.stringMatching(ISO_TIMESTAMP),
             updatedAt: expect.stringMatching(ISO_TIMESTAMP),
           },
         ]);
-        expect(first.body.data[0]).not.toHaveProperty('password');
-        expect(first.body.data[0]).not.toHaveProperty('passwordHash');
         expect(first.body.pageInfo).toEqual({
           hasNextPage: true,
           hasPreviousPage: false,
           nextCursor: expect.any(String),
           previousCursor: null,
         });
-
-        const intermediate = await request(app.getHttpServer())
+        const second = await request(app.getHttpServer())
           .get(`/api/v1/users?sort=displayName&direction=asc&limit=1&after=${first.body.pageInfo.nextCursor}`)
           .expect(200);
-        expect(intermediate.body.data[0].id).toBe(tiedIds[1]);
-        expect(intermediate.body.pageInfo).toEqual({
+        expect(second.body.data[0].id).toBe(tiedIds[1]);
+        expect(second.body.pageInfo).toEqual({
           hasNextPage: true,
           hasPreviousPage: true,
           nextCursor: expect.any(String),
           previousCursor: expect.any(String),
         });
-
         const backward = await request(app.getHttpServer())
-          .get(
-            `/api/v1/users?sort=displayName&direction=asc&limit=1&before=${intermediate.body.pageInfo.previousCursor}`,
-          )
+          .get(`/api/v1/users?sort=displayName&direction=asc&limit=1&before=${second.body.pageInfo.previousCursor}`)
           .expect(200);
         expect(backward.body).toEqual(first.body);
-
         const third = await request(app.getHttpServer())
-          .get(`/api/v1/users?sort=displayName&direction=asc&limit=1&after=${intermediate.body.pageInfo.nextCursor}`)
+          .get(`/api/v1/users?sort=displayName&direction=asc&limit=1&after=${second.body.pageInfo.nextCursor}`)
           .expect(200);
-        const last = await request(app.getHttpServer())
-          .get(`/api/v1/users?sort=displayName&direction=asc&limit=1&after=${third.body.pageInfo.nextCursor}`)
-          .expect(200);
-        expect(last.body.data[0].displayName).toBe('Grace Hopper');
-        expect(last.body.pageInfo).toEqual({
+        expect(third.body.data[0].displayName).toBe('Grace Hopper');
+        expect(third.body.pageInfo).toEqual({
           hasNextPage: false,
           hasPreviousPage: true,
           nextCursor: null,
           previousCursor: expect.any(String),
         });
+        const all = await request(app.getHttpServer()).get('/api/v1/users?sort=createdAt&direction=desc').expect(200);
+        expect(all.body.data.map((user: { id: string }) => user.id).sort()).toEqual(ids.sort());
+        expect(
+          (
+            await request(app.getHttpServer())
+              .get(`/api/v1/users?sort=createdAt&after=${first.body.pageInfo.nextCursor}`)
+              .expect(400)
+          ).body,
+        ).toMatchObject(badRequest);
+      }, options);
+    });
 
-        const empty = await request(app.getHttpServer()).get('/api/v1/users?email=nobody@example.com').expect(200);
+    it('preserves all four list sort directions, tie breaking, and empty-page flags', async () => {
+      await runScenario(async ({ app }) => {
+        const users = [];
+        for (const name of ['Ada Lovelace', 'Ada Lovelace', 'Ada Lovelace', 'Grace Hopper']) {
+          users.push(await signUpFixture(app, name));
+        }
+        for (const sort of ['createdAt', 'displayName']) {
+          for (const direction of ['asc', 'desc']) {
+            const response = await request(app.getHttpServer())
+              .get(`/api/v1/users?sort=${sort}&direction=${direction}&limit=25`)
+              .expect(200);
+            expect(response.body.data).toHaveLength(4);
+            expect(response.body.data.map((user: { id: string }) => user.id).sort()).toEqual(
+              users.map((user) => user.id).sort(),
+            );
+            const ordered = response.body.data.map((user: { createdAt: string; displayName: string }) => user[sort]);
+            expect(ordered).toEqual(
+              [...ordered].sort((left, right) =>
+                direction === 'asc' ? left.localeCompare(right) : right.localeCompare(left),
+              ),
+            );
+          }
+        }
+        const tied = await request(app.getHttpServer()).get('/api/v1/users?sort=displayName&direction=asc').expect(200);
+        expect(tied.body.data.slice(0, 3).map((user: { id: string }) => user.id)).toEqual(
+          users
+            .slice(0, 3)
+            .map((user) => user.id)
+            .sort(),
+        );
+        const empty = await request(app.getHttpServer()).get('/api/v1/users?email=nobody@example.test').expect(200);
         expect(empty.body).toEqual({
           data: [],
           pageInfo: {
@@ -248,17 +186,40 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
             previousCursor: null,
           },
         });
-      }, listScenarioOptions);
+      }, options);
     });
 
-    it('rejects malformed, oversized, context-mismatched, and repeated list query values', async () => {
-      await registration.runScenario(async ({ app }) => {
-        const created = await request(app.getHttpServer()).post('/api/v1/users').send(createPayload()).expect(201);
-        await request(app.getHttpServer()).post('/api/v1/users').send(createPayload()).expect(201);
+    it('rejects malformed, legacy and repeated list cursors', async () => {
+      await runScenario(async ({ app }) => {
+        const user = await signUpFixture(app);
+        await signUpFixture(app);
         const page = await request(app.getHttpServer()).get('/api/v1/users?limit=1').expect(200);
         const cursor = page.body.pageInfo.nextCursor;
+        const legacy = Buffer.from(
+          JSON.stringify({
+            v: 1,
+            email: user.email,
+            sort: 'createdAt',
+            direction: 'desc',
+            position: { id: page.body.data[0].id, createdAt: page.body.data[0].createdAt },
+          }),
+        ).toString('base64url');
+        for (const query of [
+          'after=not-base64!',
+          `after=${'a'.repeat(1025)}`,
+          `after=${legacy}`,
+          `after=${cursor}&after=${cursor}`,
+          `before=${cursor}&before=${cursor}`,
+          `direction=asc&after=${cursor}`,
+          `sort=displayName&after=${cursor}`,
+          'direction=asc&direction=desc',
+          'sort=createdAt&sort=displayName',
+          `email=${user.email}&email=other@example.com`,
+        ]) {
+          await request(app.getHttpServer()).get(`/api/v1/users?${query}`).expect(400);
+        }
         const crossFilter = await request(app.getHttpServer())
-          .get(`/api/v1/users?email=other@example.com&after=${cursor}`)
+          .get(`/api/v1/users?email=nobody@example.test&after=${cursor}`)
           .expect(200);
         expect(crossFilter.body).toEqual({
           data: [],
@@ -269,74 +230,20 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
             previousCursor: null,
           },
         });
-
-        const legacyCursor = Buffer.from(
-          JSON.stringify({
-            v: 1,
-            email: created.body.email,
-            sort: 'createdAt',
-            direction: 'desc',
-            position: {
-              id: page.body.data[0].id,
-              createdAt: page.body.data[0].createdAt,
-            },
-          }),
-          'utf8',
-        ).toString('base64url');
-
-        for (const query of [
-          'after=not-base64!',
-          `after=${'a'.repeat(1025)}`,
-          `sort=displayName&after=${cursor}`,
-          `direction=asc&after=${cursor}`,
-          `after=${legacyCursor}`,
-          `email=${created.body.email}&email=other@example.com`,
-          'sort=createdAt&sort=displayName',
-          'direction=asc&direction=desc',
-          `after=${cursor}&after=${cursor}`,
-          `before=${cursor}&before=${cursor}`,
-        ]) {
-          await request(app.getHttpServer()).get(`/api/v1/users?${query}`).expect(400);
-        }
-      }, listScenarioOptions);
+      }, options);
     });
-  });
 
-  describe('QUERY /api/v1/users (e2e)', () => {
-    const queryScenarioOptions = {
-      application: {
-        rateLimitConfig: buildRateLimitConfig({
-          THROTTLE_LIMIT: '100',
-          THROTTLE_TTL_SECONDS: '60',
-        }),
-      },
-    };
-
-    it('normalizes exact email criteria and is safe and idempotent', async () => {
-      await registration.runScenario(async ({ app }) => {
-        const payload = createPayload();
-        const created = await request(app.getHttpServer()).post('/api/v1/users').send(payload).expect(201);
-        const body = {
-          criteria: { email: ` ${created.body.email.toUpperCase()} ` },
-          sort: 'displayName',
-          direction: 'asc',
-          limit: 1,
-        };
+    it('preserves strict QUERY bodies and safe repeated results', async () => {
+      await runScenario(async ({ app }) => {
+        const user = await signUpFixture(app);
+        const body = { criteria: { email: user.email }, sort: 'displayName', direction: 'asc', limit: 1 };
         const first = await new Test(app.getHttpServer(), 'QUERY', '/api/v1/users').send(body).expect(200);
         const repeated = await new Test(app.getHttpServer(), 'QUERY', '/api/v1/users').send(body).expect(200);
-
         expect(first.headers['x-request-id']).toMatch(UUID_V4);
-        expect(first.body).toEqual(repeated.body);
+        expect(repeated.body).toEqual(first.body);
+        const fetched = await request(app.getHttpServer()).get(`/api/v1/users/${user.id}`).expect(200);
         expect(first.body).toEqual({
-          data: [
-            {
-              id: created.body.id,
-              email: created.body.email,
-              displayName: created.body.displayName,
-              createdAt: created.body.createdAt,
-              updatedAt: created.body.updatedAt,
-            },
-          ],
+          data: [fetched.body],
           pageInfo: {
             hasNextPage: false,
             hasPreviousPage: false,
@@ -346,38 +253,7 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
         });
         expect(first.body.data[0]).not.toHaveProperty('password');
         expect(first.body.data[0]).not.toHaveProperty('passwordHash');
-
-        await request(app.getHttpServer()).get(`/api/v1/users/${created.body.id}`).expect(200);
-      }, queryScenarioOptions);
-    });
-
-    it('accepts cross-filter cursors and rejects invalid bodies, legacy cursors, and URL query parameters', async () => {
-      await registration.runScenario(async ({ app }) => {
-        const created = await request(app.getHttpServer()).post('/api/v1/users').send(createPayload()).expect(201);
-        await request(app.getHttpServer()).post('/api/v1/users').send(createPayload()).expect(201);
-        const listPage = await request(app.getHttpServer()).get('/api/v1/users?limit=1').expect(200);
-        const crossFilterCursor = listPage.body.pageInfo.nextCursor;
-        const valid = { criteria: { email: created.body.email } };
-        const crossFilter = await new Test(app.getHttpServer(), 'QUERY', '/api/v1/users')
-          .send({ ...valid, after: crossFilterCursor })
-          .expect(200);
-        expect(crossFilter.body.data.every((user: { email: string }) => user.email === created.body.email)).toBe(true);
-
-        const legacyCursor = Buffer.from(
-          JSON.stringify({
-            v: 1,
-            email: created.body.email,
-            sort: 'createdAt',
-            direction: 'desc',
-            position: {
-              id: listPage.body.data[0].id,
-              createdAt: listPage.body.data[0].createdAt,
-            },
-          }),
-          'utf8',
-        ).toString('base64url');
-
-        for (const body of [
+        for (const invalid of [
           null,
           [],
           {},
@@ -385,167 +261,122 @@ export function registerCreateUserE2ESuite(registration: E2ESuiteRegistration): 
           { criteria: [] },
           { criteria: {} },
           { criteria: { email: null } },
-          { criteria: { email: created.body.email, displayName: 'Ada' } },
-          { ...valid, unknown: true },
-          { ...valid, after: 'a', before: 'b' },
-          { ...valid, after: legacyCursor },
+          { criteria: { email: user.email, displayName: 'Ada' } },
+          { ...body, unknown: true },
+          { ...body, after: 'not-base64!' },
+          { ...body, after: 'a', before: 'b' },
         ]) {
-          await new Test(app.getHttpServer(), 'QUERY', '/api/v1/users').send(body).expect(400);
+          const response = await new Test(app.getHttpServer(), 'QUERY', '/api/v1/users').send(invalid).expect(400);
+          expect(response.body).toMatchObject(badRequest);
         }
-
-        await new Test(app.getHttpServer(), 'QUERY', '/api/v1/users?limit=1').send(valid).expect(400);
-      }, queryScenarioOptions);
+        await new Test(app.getHttpServer(), 'QUERY', '/api/v1/users?limit=1').send(body).expect(400);
+        await signUpFixture(app);
+        const page = await request(app.getHttpServer()).get('/api/v1/users?limit=1').expect(200);
+        const after = page.body.pageInfo.nextCursor;
+        const valid = { criteria: { email: user.email } };
+        const crossFilter = await new Test(app.getHttpServer(), 'QUERY', '/api/v1/users')
+          .send({ ...valid, after })
+          .expect(200);
+        expect(crossFilter.body.data.every((row: { email: string }) => row.email === user.email)).toBe(true);
+        const legacy = Buffer.from(
+          JSON.stringify({
+            v: 1,
+            email: user.email,
+            sort: 'createdAt',
+            direction: 'desc',
+            position: { id: page.body.data[0].id, createdAt: page.body.data[0].createdAt },
+          }),
+        ).toString('base64url');
+        await new Test(app.getHttpServer(), 'QUERY', '/api/v1/users').send({ ...valid, after: legacy }).expect(400);
+      }, options);
     });
-  });
 
-  describe('PATCH /api/v1/users/:userId (e2e)', () => {
-    const updateScenarioOptions = {
-      application: {
-        rateLimitConfig: buildRateLimitConfig({
-          THROTTLE_LIMIT: '100',
-          THROTTLE_TTL_SECONDS: '60',
-        }),
-      },
-    };
-
-    it('updates supplied normalized fields and preserves omitted and system-managed fields', async () => {
-      await registration.runScenario(async ({ app }) => {
-        const created = await request(app.getHttpServer()).post('/api/v1/users').send(createPayload()).expect(201);
-        const response = await request(app.getHttpServer())
-          .patch(`/api/v1/users/${created.body.id}`)
+    it('retains the intermediate no-op update and normalized email conflict behavior pending R4', async () => {
+      await runScenario(async ({ app }) => {
+        const user = await signUpFixture(app);
+        const other = await signUpFixture(app);
+        const before = await request(app.getHttpServer()).get(`/api/v1/users/${user.id}`).expect(200);
+        const noop = await request(app.getHttpServer())
+          .patch(`/api/v1/users/${user.id}`)
+          .send({ displayName: before.body.displayName })
+          .expect(200);
+        expect(noop.body).toEqual(before.body);
+        const updated = await request(app.getHttpServer())
+          .patch(`/api/v1/users/${user.id}`)
+          .send({ email: ` ${user.email.toUpperCase()} ` })
+          .expect(200);
+        expect(updated.body).toEqual(before.body);
+        const renamed = await request(app.getHttpServer())
+          .patch(`/api/v1/users/${user.id}`)
           .send({ email: ' Ada.Byron@Example.COM ' })
           .expect(200);
-
-        expect(response.body).toEqual({
-          id: created.body.id,
+        expect(renamed.body).toEqual({
+          ...before.body,
           email: 'ada.byron@example.com',
-          displayName: created.body.displayName,
-          createdAt: created.body.createdAt,
           updatedAt: expect.stringMatching(ISO_TIMESTAMP),
         });
-        expect(response.body.updatedAt).not.toBe(created.body.updatedAt);
-      }, updateScenarioOptions);
-    });
-
-    it('returns a public user without advancing updatedAt for a no-op update', async () => {
-      await registration.runScenario(async ({ app }) => {
-        const created = await request(app.getHttpServer()).post('/api/v1/users').send(createPayload()).expect(201);
-        const response = await request(app.getHttpServer())
-          .patch(`/api/v1/users/${created.body.id}`)
-          .send({ displayName: created.body.displayName })
-          .expect(200);
-
-        expect(response.body).toEqual(created.body);
-      }, updateScenarioOptions);
-    });
-
-    it.each([
-      ['not-a-uuid', { displayName: 'Ada Byron' }],
-      ['123e4567-e89b-42d3-a456-426614174001', null],
-      ['123e4567-e89b-42d3-a456-426614174001', {}],
-      ['123e4567-e89b-42d3-a456-426614174001', { id: 'client-id' }],
-      ['123e4567-e89b-42d3-a456-426614174001', { email: 'not-an-email' }],
-    ])('rejects invalid path or body input %#', async (userId, body) => {
-      await registration.runScenario(async ({ app }) => {
-        const response = await request(app.getHttpServer()).patch(`/api/v1/users/${userId}`).send(body).expect(400);
-
-        expect(response.body).toMatchObject({
-          statusCode: 400,
-          code: 'BAD_REQUEST',
-          message: 'The request is invalid.',
-        });
-      }, updateScenarioOptions);
-    });
-
-    it('returns resource-not-found for an unknown user and conflict for a normalized duplicate email', async () => {
-      await registration.runScenario(async ({ app }) => {
-        await request(app.getHttpServer())
-          .patch('/api/v1/users/123e4567-e89b-42d3-a456-426614174001')
-          .send({ displayName: 'Ada Byron' })
-          .expect(404);
-
-        const first = await request(app.getHttpServer()).post('/api/v1/users').send(createPayload()).expect(201);
-        const second = await request(app.getHttpServer()).post('/api/v1/users').send(createPayload()).expect(201);
-        const response = await request(app.getHttpServer())
-          .patch(`/api/v1/users/${first.body.id}`)
-          .send({ email: ` ${second.body.email.toUpperCase()} ` })
+        expect(renamed.body.updatedAt).not.toBe(before.body.updatedAt);
+        const conflictResponse = await request(app.getHttpServer())
+          .patch(`/api/v1/users/${user.id}`)
+          .send({ email: ` ${other.email.toUpperCase()} ` })
           .expect(409);
-
-        expect(response.body).toEqual({
-          statusCode: 409,
-          code: 'CONFLICT',
-          message: 'The request conflicts with the current resource state.',
-          requestId: expect.stringMatching(UUID_V4),
-        });
-      }, updateScenarioOptions);
-    });
-  });
-
-  describe('DELETE /api/v1/users/:userId (e2e)', () => {
-    const deleteScenarioOptions = {
-      application: {
-        rateLimitConfig: buildRateLimitConfig({
-          THROTTLE_LIMIT: '100',
-          THROTTLE_TTL_SECONDS: '60',
-        }),
-      },
-    };
-
-    it('physically deletes a user with an empty 204 response and no longer retrieves it', async () => {
-      await registration.runScenario(async ({ app }) => {
-        const created = await request(app.getHttpServer()).post('/api/v1/users').send(createPayload()).expect(201);
-        const response = await request(app.getHttpServer()).delete(`/api/v1/users/${created.body.id}`).expect(204);
-
-        expect(response.text).toBe('');
-        expect(response.headers['x-request-id']).toMatch(UUID_V4);
-
-        const fetched = await request(app.getHttpServer()).get(`/api/v1/users/${created.body.id}`).expect(404);
-        expect(fetched.body).toEqual({
-          statusCode: 404,
-          code: 'RESOURCE_NOT_FOUND',
-          message: 'The requested resource was not found.',
-          requestId: expect.stringMatching(UUID_V4),
-        });
-      }, deleteScenarioOptions);
+        expect(conflictResponse.body).toEqual(conflict);
+        expect(
+          (
+            await request(app.getHttpServer())
+              .patch('/api/v1/users/123e4567-e89b-42d3-a456-426614174001')
+              .send({ displayName: 'Ada Byron' })
+              .expect(404)
+          ).body,
+        ).toEqual(notFound);
+        for (const [id, invalid] of [
+          ['not-a-uuid', { displayName: 'Ada Byron' }],
+          [user.id, null],
+          [user.id, {}],
+          [user.id, { id: 'client-id' }],
+          [user.id, { email: 'not-an-email' }],
+          [user.id, { role: 'admin' }],
+          [user.id, { displayName: 'Ada  Byron' }],
+        ] as const) {
+          const response = await request(app.getHttpServer()).patch(`/api/v1/users/${id}`).send(invalid).expect(400);
+          expect(response.body).toMatchObject(badRequest);
+        }
+      }, options);
     });
 
-    it('rejects a non-canonical user ID with the shared 400 contract', async () => {
-      await registration.runScenario(async ({ app }) => {
-        const response = await request(app.getHttpServer())
-          .delete('/api/v1/users/123e4567-e89b-12d3-a456-426614174000')
-          .expect(400);
-
-        expect(response.body).toMatchObject({
-          statusCode: 400,
-          code: 'BAD_REQUEST',
-          message: 'The request is invalid.',
-        });
-      }, deleteScenarioOptions);
+    it('rejects malformed and repeated deletion with the resource-not-found contract', async () => {
+      await runScenario(async ({ app }) => {
+        expect(
+          (await request(app.getHttpServer()).delete('/api/v1/users/123e4567-e89b-12d3-a456-426614174000').expect(400))
+            .body,
+        ).toMatchObject(badRequest);
+        const missing = '/api/v1/users/123e4567-e89b-42d3-a456-426614174001';
+        expect((await request(app.getHttpServer()).delete(missing).expect(404)).body).toEqual(notFound);
+        const user = await signUpFixture(app);
+        const deleted = await request(app.getHttpServer()).delete(`/api/v1/users/${user.id}`).expect(204);
+        expect(deleted.text).toBe('');
+        expect(deleted.headers['x-request-id']).toMatch(UUID_V4);
+        expect((await request(app.getHttpServer()).delete(`/api/v1/users/${user.id}`).expect(404)).body).toEqual(
+          notFound,
+        );
+      }, options);
     });
 
-    it('returns resource-not-found for missing and repeated deletes', async () => {
-      await registration.runScenario(async ({ app }) => {
-        const missing = await request(app.getHttpServer())
-          .delete('/api/v1/users/123e4567-e89b-42d3-a456-426614174001')
-          .expect(404);
-        expect(missing.body).toEqual({
-          statusCode: 404,
-          code: 'RESOURCE_NOT_FOUND',
-          message: 'The requested resource was not found.',
-          requestId: expect.stringMatching(UUID_V4),
-        });
-
-        const created = await request(app.getHttpServer()).post('/api/v1/users').send(createPayload()).expect(201);
-        await request(app.getHttpServer()).delete(`/api/v1/users/${created.body.id}`).expect(204);
-        const repeated = await request(app.getHttpServer()).delete(`/api/v1/users/${created.body.id}`).expect(404);
-
-        expect(repeated.body).toEqual({
-          statusCode: 404,
-          code: 'RESOURCE_NOT_FOUND',
-          message: 'The requested resource was not found.',
-          requestId: expect.stringMatching(UUID_V4),
-        });
-      }, deleteScenarioOptions);
+    it('updates and deletes an HTTP-registered fixture while preserving database cascade', async () => {
+      await runScenario(async ({ app }) => {
+        const user = await signUpFixture(app);
+        const before = await request(app.getHttpServer()).get(`/api/v1/users/${user.id}`).expect(200);
+        const changed = await request(app.getHttpServer())
+          .patch(`/api/v1/users/${user.id}`)
+          .send({ displayName: 'Ada Byron' })
+          .expect(200);
+        expect(changed.body).toMatchObject({ id: user.id, displayName: 'Ada Byron', createdAt: before.body.createdAt });
+        expect(changed.body.updatedAt).not.toBe(before.body.updatedAt);
+        await request(app.getHttpServer()).patch(`/api/v1/users/${user.id}`).send({ role: 'admin' }).expect(400);
+        await request(app.getHttpServer()).delete(`/api/v1/users/${user.id}`).expect(204);
+        expect(await app.get(PrismaService).session.count({ where: { userId: user.id } })).toBe(0);
+        expect((await request(app.getHttpServer()).get(`/api/v1/users/${user.id}`).expect(404)).body).toEqual(notFound);
+      }, options);
     });
   });
 }

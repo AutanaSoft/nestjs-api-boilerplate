@@ -14,7 +14,7 @@ import { buildHttpConfig } from '../../config/http.config.js';
 import { buildOpenApiConfig } from '../../config/openapi.config.js';
 import type { OpenApiConfig } from '../../config/openapi.config.js';
 import { healthResponseSchema } from '../../modules/health/contracts/health-response.schema.js';
-import { createUserRequestSchema } from '../../modules/users/contracts/create-user-request.schema.js';
+import { signUpRequestSchema, tokensResponseSchema } from '../../modules/auth/contracts/sign-up.schema.js';
 import { listUsersRequestSchema } from '../../modules/users/contracts/list-users-request.schema.js';
 import { queryUsersRequestSchema } from '../../modules/users/contracts/query-users-request.schema.js';
 import { updateUserRequestSchema } from '../../modules/users/contracts/update-user-request.schema.js';
@@ -235,6 +235,7 @@ describe('setupOpenApi', () => {
         '/api/v1/health/ready',
         '/api/v1/users',
         '/api/v1/users/{userId}',
+        '/api/v1/auth/sign-up',
       ]);
       const healthOperations = ['/api/v1/health/live', '/api/v1/health/ready'].map((path) => paths[path]?.get);
       expect(healthOperations.map((operation) => operation?.operationId)).toEqual(['healthLive', 'healthReady']);
@@ -467,29 +468,24 @@ describe('setupOpenApi', () => {
         );
       }
 
-      const createUser = paths['/api/v1/users']?.post;
-      expect(createUser?.operationId).toBe('createUser');
-      expect(createUser?.requestBody).toEqual(
+      expect(paths['/api/v1/users']?.post).toBeUndefined();
+      const signUp = paths['/api/v1/auth/sign-up']?.post;
+      expect(signUp?.operationId).toBe('signUp');
+      expect(signUp?.requestBody).toEqual(
         expect.objectContaining({
-          content: {
-            'application/json': { schema: toOpenApiSchema(createUserRequestSchema, 'input') },
-          },
+          content: { 'application/json': { schema: toOpenApiSchema(signUpRequestSchema, 'input') } },
         }),
       );
-      expect(Object.keys(createUser?.responses ?? {})).toEqual(['201', '400', '409', '429', '500']);
-      expect(createUser?.responses?.['201']).toEqual(
+      expect(Object.keys(signUp?.responses ?? {})).toEqual(['201', '400', '409', '429', '500']);
+      expect(signUp?.responses?.['201']).toEqual(
         expect.objectContaining({
-          content: {
-            'application/json': { schema: toOpenApiSchema(userResponseSchema, 'output') },
-          },
+          content: { 'application/json': { schema: toOpenApiSchema(tokensResponseSchema, 'output') } },
         }),
       );
       for (const status of ['400', '409', '429', '500']) {
-        expect(createUser?.responses?.[status]).toEqual(
+        expect(signUp?.responses?.[status]).toEqual(
           expect.objectContaining({
-            content: {
-              'application/json': { schema: toOpenApiSchema(errorResponseSchema, 'output') },
-            },
+            content: { 'application/json': { schema: toOpenApiSchema(errorResponseSchema, 'output') } },
           }),
         );
       }
@@ -525,6 +521,7 @@ describe('setupOpenApi', () => {
         '/v1/health/ready',
         '/v1/users',
         '/v1/users/{userId}',
+        '/v1/auth/sign-up',
       ]);
     } finally {
       await documentApp.close();

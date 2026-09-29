@@ -1,7 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { ListUsersRequest } from '../contracts/list-users-request.schema.js';
 import type { ListUsersResponseInput } from '../contracts/list-users-response.schema.js';
-import type { CreateUserRequest } from '../contracts/create-user-request.schema.js';
 import type { UpdateUserRequest } from '../contracts/update-user-request.schema.js';
 import type { User } from '../contracts/user.schema.js';
 import { decodeListUsersCursor, encodeListUsersCursor } from '../codecs/list-users-cursor.codec.js';
@@ -52,10 +51,6 @@ export class UsersService {
           : null,
       },
     };
-  }
-
-  create(data: CreateUserRequest): Promise<User> {
-    return this.usersRepository.create(data);
   }
 
   async update(id: string, data: UpdateUserRequest): Promise<User> {

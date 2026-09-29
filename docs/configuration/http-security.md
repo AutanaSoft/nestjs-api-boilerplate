@@ -19,18 +19,21 @@ continuación y reinicie el proceso para que los cambios surtan efecto. La confi
 
 <!-- markdownlint-disable MD013 -->
 
-| Namespace   | Variable                 | Predeterminado                              | Reglas                                                                      |
-| ----------- | ------------------------ | ------------------------------------------- | --------------------------------------------------------------------------- |
-| `api`       | `API_GLOBAL_PREFIX`      | `api`                                       | Path relativo normalizado; vacío explícito omite el prefijo.                |
-| `http`      | `PORT`                   | `3000`                                      | Entero de 1 a 65535.                                                        |
-| `http`      | `TRUST_PROXY_HOPS`       | `0`                                         | Entero de 0 a 255.                                                          |
-| `cors`      | `CORS_ORIGINS`           | `http://localhost:3000` fuera de producción | Orígenes HTTP(S) separados por comas. Obligatorio y no vacío en producción. |
-| `cors`      | `CORS_MAX_AGE_SECONDS`   | `600`                                       | Entero de 0 a 86400. `0` desactiva el caché de preflight.                   |
-| `rateLimit` | `THROTTLE_TTL_SECONDS`   | `60`                                        | Request window en segundos con entero positivo.                             |
-| `rateLimit` | `THROTTLE_LIMIT`         | `100`                                       | Requests permitidos por window con entero positivo.                         |
-| `openapi`   | `OPENAPI_ENABLED`        | `false`                                     | Solo acepta `true` o `false`; controla la exposición condicional.           |
-| `openapi`   | `OPENAPI_DOCS_ROUTE`     | `docs`                                      | Path relativo normalizado para la UI.                                       |
-| `openapi`   | `OPENAPI_DOCUMENT_ROUTE` | `openapi.json`                              | Path relativo normalizado para el documento JSON; debe diferir de la UI.    |
+| Namespace   | Variable                   | Predeterminado                              | Reglas                                                                      |
+| ----------- | -------------------------- | ------------------------------------------- | --------------------------------------------------------------------------- |
+| `auth`      | `AUTH_JWT_SECRET`          | Efímero fuera de producción                 | Obligatorio en producción; mínimo 32 caracteres.                            |
+| `auth`      | `AUTH_ACCESS_TTL_SECONDS`  | `900`                                       | Entero positivo de hasta 86400 segundos.                                    |
+| `auth`      | `AUTH_REFRESH_TTL_SECONDS` | `604800`                                    | Entero positivo de hasta 31536000 segundos.                                 |
+| `api`       | `API_GLOBAL_PREFIX`        | `api`                                       | Path relativo normalizado; vacío explícito omite el prefijo.                |
+| `http`      | `PORT`                     | `3000`                                      | Entero de 1 a 65535.                                                        |
+| `http`      | `TRUST_PROXY_HOPS`         | `0`                                         | Entero de 0 a 255.                                                          |
+| `cors`      | `CORS_ORIGINS`             | `http://localhost:3000` fuera de producción | Orígenes HTTP(S) separados por comas. Obligatorio y no vacío en producción. |
+| `cors`      | `CORS_MAX_AGE_SECONDS`     | `600`                                       | Entero de 0 a 86400. `0` desactiva el caché de preflight.                   |
+| `rateLimit` | `THROTTLE_TTL_SECONDS`     | `60`                                        | Request window en segundos con entero positivo.                             |
+| `rateLimit` | `THROTTLE_LIMIT`           | `100`                                       | Requests permitidos por window con entero positivo.                         |
+| `openapi`   | `OPENAPI_ENABLED`          | `false`                                     | Solo acepta `true` o `false`; controla la exposición condicional.           |
+| `openapi`   | `OPENAPI_DOCS_ROUTE`       | `docs`                                      | Path relativo normalizado para la UI.                                       |
+| `openapi`   | `OPENAPI_DOCUMENT_ROUTE`   | `openapi.json`                              | Path relativo normalizado para el documento JSON; debe diferir de la UI.    |
 
 <!-- markdownlint-enable MD013 -->
 
@@ -49,6 +52,15 @@ protocolos no HTTP(S), paths distintos de `/`, query strings y fragments.
 La política CORS fija los métodos `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS` y `QUERY`; permite los
 headers `Accept`, `Authorization`, `Content-Type` y `X-Request-Id`; expone solo `X-Request-Id`; mantiene credentials
 deshabilitadas; responde preflight con `204`; y no continúa el preflight hacia la aplicación.
+
+### Configuración Auth (transición R2; no publicada)
+
+Configure `AUTH_JWT_SECRET` con un valor de al menos 32 caracteres en producción; el startup falla si falta o es
+inválido. Fuera de producción, si se omite, el proceso genera un secreto efímero. Los JWT emitidos con ese secreto
+quedan inválidos al reiniciar el proceso. Establezca los TTL en segundos si necesita modificar los valores
+predeterminados de acceso (900, 15 minutos) y refresh (604800, 7 días). Los cambios de estas variables requieren
+reiniciar la API. Esta referencia describe la configuración Auth en desarrollo, no anuncia la publicación de R2 ni de
+los endpoints Auth.
 
 ## Ejemplos
 
