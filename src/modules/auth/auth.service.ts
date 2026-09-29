@@ -8,7 +8,8 @@ import type { DatabaseTransaction } from '../../database/transaction/database-tr
 import { CredentialsService } from '../users/services/credentials.service.js';
 import type { SignUpRequest } from './contracts/sign-up.schema.js';
 import type { SignInRequest } from './contracts/sign-in.schema.js';
-import { InvalidCredentialsError } from './auth.errors.js';
+import type { RefreshRequest } from './contracts/refresh.schema.js';
+import { InvalidCredentialsError, InvalidRefreshTokenError } from './auth.errors.js';
 import { SESSIONS_REPOSITORY } from './repositories/sessions.repository.js';
 import type { SessionsRepository } from './repositories/sessions.repository.js';
 
@@ -33,6 +34,46 @@ export class AuthService {
     const userId = await this.credentials.verify(request.email, request.password);
     if (userId === null) throw new InvalidCredentialsError();
     return this.transactions.run((transaction) => this.issueTokens(userId, transaction));
+  }
+
+  async refresh(request: RefreshRequest) {
+    const digest = createHash('sha256').update(request.refreshToken).digest('hex');
+    const candidate = await this.sessions.findByDigest(digest);
+    if (candidate === null) throw new InvalidRefreshTokenError();
+
+    const nextToken = randomBytes(32).toString('base64url');
+    const nextDigest = createHash('sha256').update(nextToken).digest('hex');
+    const result = await this.transactions.runReadCommitted(async (transaction) => {
+      const current = await this.sessions.lockAndFindDigest(candidate.id, digest, transaction);
+      const at = new Date();
+      if (current === null) return null;
+      if (current.retiredAt !== null) {
+        if (current.digestExpiresAt.getTime() + 7 * 24 * 60 * 60 * 1000 > at.getTime()) {
+          await this.sessions.revokeInTransaction(current.id, at, transaction);
+        }
+        // Return, never throw: replay revocation must commit before the public 401.
+        return null;
+      }
+      if (current.revokedAt !== null || current.expiresAt <= at || current.digestExpiresAt <= at) return null;
+      const expiresAt = new Date((Math.floor(at.getTime() / 1000) + this.config.accessTtlSeconds) * 1000);
+      const refreshExpiresAt = new Date(at.getTime() + this.config.refreshTtlSeconds * 1000);
+      if (!(await this.sessions.rotateDigest(current.id, digest, nextDigest, refreshExpiresAt, at, transaction))) {
+        return null;
+      }
+      const accessToken = await this.jwt.signAsync({
+        sub: current.userId,
+        sid: current.id,
+        exp: Math.floor(expiresAt.getTime() / 1000),
+      });
+      return {
+        accessToken,
+        expiresAt: expiresAt.toISOString(),
+        refreshToken: nextToken,
+        refreshExpiresAt: refreshExpiresAt.toISOString(),
+      };
+    });
+    if (result === null) throw new InvalidRefreshTokenError();
+    return result;
   }
 
   /** Revokes only the authenticated session, never all of the user's sessions. */

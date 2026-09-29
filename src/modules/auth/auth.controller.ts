@@ -30,6 +30,8 @@ import { signUpRequestSchema, tokensResponseSchema } from './contracts/sign-up.s
 import type { SignUpRequest } from './contracts/sign-up.schema.js';
 import { signInRequestSchema } from './contracts/sign-in.schema.js';
 import type { SignInRequest } from './contracts/sign-in.schema.js';
+import { refreshRequestSchema } from './contracts/refresh.schema.js';
+import type { RefreshRequest } from './contracts/refresh.schema.js';
 
 @Controller({ path: 'auth', version: API_VERSION })
 export class AuthController {
@@ -62,6 +64,19 @@ export class AuthController {
   @SerializeOptions({ schema: tokensResponseSchema })
   signIn(@Body({ schema: signInRequestSchema }) body: SignInRequest) {
     return this.auth.signIn(body);
+  }
+
+  @Public()
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ operationId: 'refreshSession' })
+  @ApiBody({ schema: toOpenApiSchema(refreshRequestSchema, 'input') })
+  @ApiOkResponse({ schema: toOpenApiSchema(tokensResponseSchema, 'output') })
+  @ApiBadRequestResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @ApiUnauthorizedResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @SerializeOptions({ schema: tokensResponseSchema })
+  refresh(@Body({ schema: refreshRequestSchema }) body: RefreshRequest) {
+    return this.auth.refresh(body);
   }
 
   @Post('sign-out')

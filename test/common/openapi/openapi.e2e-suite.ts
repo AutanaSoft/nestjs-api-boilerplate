@@ -7,6 +7,7 @@ import { buildApiConfig } from '../../../src/config/api.config.js';
 import { buildOpenApiConfig } from '../../../src/config/openapi.config.js';
 import { healthResponseSchema } from '../../../src/modules/health/contracts/health-response.schema.js';
 import { signUpRequestSchema, tokensResponseSchema } from '../../../src/modules/auth/contracts/sign-up.schema.js';
+import { refreshRequestSchema } from '../../../src/modules/auth/contracts/refresh.schema.js';
 import { listUsersRequestSchema } from '../../../src/modules/users/contracts/list-users-request.schema.js';
 import { queryUsersRequestSchema } from '../../../src/modules/users/contracts/query-users-request.schema.js';
 import { updateUserRequestSchema } from '../../../src/modules/users/contracts/update-user-request.schema.js';
@@ -22,6 +23,7 @@ const OPENAPI_PATHS = [
   USER_RETRIEVAL_OPENAPI_PATH,
   '/api/v1/auth/sign-up',
   '/api/v1/auth/sign-in',
+  '/api/v1/auth/refresh',
   '/api/v1/auth/sign-out',
 ];
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
@@ -264,6 +266,15 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
             );
           }
 
+          const refresh = document.body.paths['/api/v1/auth/refresh'].post;
+          expect(refresh.operationId).toBe('refreshSession');
+          expect(refresh.requestBody.content['application/json'].schema).toEqual(
+            toOpenApiSchema(refreshRequestSchema, 'input'),
+          );
+          expect(Object.keys(refresh.responses)).toEqual(['200', '400', '401']);
+          expect(refresh.responses['200'].content['application/json'].schema).toEqual(
+            toOpenApiSchema(tokensResponseSchema, 'output'),
+          );
           expect(JSON.stringify(document.body)).not.toContain('"nullable":');
           expect(JSON.stringify(document.body)).not.toMatch(/NotFound|__test|rate.limit|serializ|validat/i);
 
@@ -316,6 +327,7 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
             '/v1/users/{userId}',
             '/v1/auth/sign-up',
             '/v1/auth/sign-in',
+            '/v1/auth/refresh',
             '/v1/auth/sign-out',
           ]);
           await request(app.getHttpServer()).get('/v1/openapi.json').expect(404);

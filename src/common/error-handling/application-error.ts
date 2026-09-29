@@ -1,4 +1,4 @@
-export type ApplicationErrorCode = 'RESOURCE_NOT_FOUND' | 'CONFLICT' | 'INVALID_CREDENTIALS';
+export type ApplicationErrorCode = 'RESOURCE_NOT_FOUND' | 'CONFLICT' | 'INVALID_CREDENTIALS' | 'INVALID_REFRESH_TOKEN';
 
 export abstract class ApplicationError extends Error {
   abstract readonly code: ApplicationErrorCode;

@@ -43,4 +43,51 @@ export class PrismaSessionsRepository implements SessionsRepository {
     const result = await this.prisma.session.updateMany({ where: { id, revokedAt: null }, data: { revokedAt } });
     return result.count === 1;
   }
+
+  async lockAndFindDigest(sessionId: string, digest: string, transaction: DatabaseTransaction) {
+    const rows = await transaction.client.$queryRaw<{ id: string }[]>`
+      SELECT id FROM sessions WHERE id = ${sessionId}::uuid FOR UPDATE
+    `;
+    if (rows.length !== 1) return null;
+    const record = await transaction.client.refreshDigest.findUnique({
+      where: { digest },
+      include: { session: true },
+    });
+    return record === null || record.sessionId !== sessionId
+      ? null
+      : { ...record.session, retiredAt: record.retiredAt, digestExpiresAt: record.expiresAt };
+  }
+
+  async rotateDigest(
+    sessionId: string,
+    oldDigest: string,
+    nextDigest: string,
+    expiresAt: Date,
+    now: Date,
+    transaction: DatabaseTransaction,
+  ): Promise<boolean> {
+    const retired = await transaction.client.refreshDigest.updateMany({
+      where: { digest: oldDigest, sessionId, retiredAt: null, expiresAt: { gt: now } },
+      data: { retiredAt: now },
+    });
+    if (retired.count !== 1) return false;
+    await transaction.client.refreshDigest.create({ data: { digest: nextDigest, sessionId, expiresAt } });
+    await transaction.client.session.update({ where: { id: sessionId }, data: { expiresAt } });
+    return true;
+  }
+
+  async revokeInTransaction(id: string, now: Date, transaction: DatabaseTransaction): Promise<void> {
+    await transaction.client.session.updateMany({ where: { id, revokedAt: null }, data: { revokedAt: now } });
+  }
+
+  async purgeRetired(before: Date): Promise<number> {
+    // A bounded batch across every session, not only the session addressed by this request.
+    return this.prisma.$executeRaw`
+      DELETE FROM refresh_digests WHERE digest IN (
+        SELECT digest FROM refresh_digests
+        WHERE retired_at IS NOT NULL AND expires_at <= ${before}
+        ORDER BY expires_at LIMIT 256 FOR UPDATE SKIP LOCKED
+      )
+    `;
+  }
 }

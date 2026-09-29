@@ -16,4 +16,21 @@ export interface SessionsRepository {
   findActive(id: string, now: Date): Promise<SessionRecord | null>;
   retireDigest(digest: string, retiredAt: Date): Promise<boolean>;
   revoke(id: string, revokedAt: Date): Promise<boolean>;
+  /** Lock the parent row before re-reading a digest; never infer currentness from the pre-lock lookup. */
+  lockAndFindDigest(
+    sessionId: string,
+    digest: string,
+    transaction: DatabaseTransaction,
+  ): Promise<(SessionRecord & { retiredAt: Date | null; digestExpiresAt: Date }) | null>;
+  rotateDigest(
+    sessionId: string,
+    oldDigest: string,
+    nextDigest: string,
+    expiresAt: Date,
+    now: Date,
+    transaction: DatabaseTransaction,
+  ): Promise<boolean>;
+  revokeInTransaction(id: string, now: Date, transaction: DatabaseTransaction): Promise<void>;
+  /** Globally remove only retired digests past the full replay-detection window. */
+  purgeRetired(before: Date): Promise<number>;
 }

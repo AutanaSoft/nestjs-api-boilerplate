@@ -6,6 +6,7 @@ import { registerSessionStorageE2ESuite } from './modules/auth/session-storage.e
 import { registerSignUpE2ESuite } from './modules/auth/sign-up.e2e-suite.js';
 import { registerSignInE2ESuite } from './modules/auth/sign-in.e2e-suite.js';
 import { registerSignOutE2ESuite } from './modules/auth/sign-out.e2e-suite.js';
+import { registerRefreshE2ESuite } from './modules/auth/refresh.e2e-suite.js';
 import { registerHealthE2ESuite } from './modules/health/health.e2e-suite.js';
 import { registerCreateUserE2ESuite } from './modules/users/create-user.e2e-suite.js';
 import { createE2EEnvironment } from './support/e2e-environment.js';
@@ -31,6 +32,7 @@ registerSessionStorageE2ESuite({ runScenario });
 registerSignUpE2ESuite({ runScenario });
 registerSignInE2ESuite({ runScenario });
 registerSignOutE2ESuite({ runScenario });
+registerRefreshE2ESuite({ runScenario });
 registerCreateUserE2ESuite({ runScenario });
 registerOpenApiE2ESuite({ runScenario });
 registerSerializationE2ESuite({ runScenario });

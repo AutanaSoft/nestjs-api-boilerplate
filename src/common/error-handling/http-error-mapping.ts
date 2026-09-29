@@ -26,6 +26,11 @@ export const applicationErrorHttpDescriptors = Object.freeze({
     code: 'INVALID_CREDENTIALS',
     message: 'Invalid email or password.',
   }),
+  INVALID_REFRESH_TOKEN: Object.freeze({
+    statusCode: 401,
+    code: 'INVALID_REFRESH_TOKEN',
+    message: 'Invalid refresh token.',
+  }),
 }) satisfies Readonly<Record<ApplicationErrorCode, HttpErrorDescriptor>>;
 
 const unknownErrorHttpDescriptor: HttpErrorDescriptor = Object.freeze({
