@@ -25,6 +25,7 @@ import {
   ApiTooManyRequestsResponse,
 } from '@nestjs/swagger';
 import { errorResponseSchema } from '../../../common/error-handling/error-response.js';
+import { Public } from '../../../common/auth/public.js';
 import { toOpenApiSchema } from '../../../common/openapi/openapi-schema.js';
 import { API_VERSION } from '../../../config/api.config.js';
 import { listUsersRequestSchema } from '../contracts/list-users-request.schema.js';
@@ -38,6 +39,8 @@ import { userResponseSchema } from '../contracts/user-response.schema.js';
 import { userSchema } from '../contracts/user.schema.js';
 import { UsersService } from '../services/users.service.js';
 
+// Transitional R3b exception only: R4 removes public access before release.
+@Public()
 @Controller({ path: 'users', version: API_VERSION })
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}

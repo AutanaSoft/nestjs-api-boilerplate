@@ -1,6 +1,7 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { z } from 'zod';
 import { API_VERSION } from '../../src/config/api.config.js';
+import { Public } from '../../src/common/auth/public.js';
 
 export const e2eRequestValidationSchema = z
   .object({
@@ -11,6 +12,7 @@ export const e2eRequestValidationSchema = z
 export type E2ERequestValidationInput = z.input<typeof e2eRequestValidationSchema>;
 export type E2ERequestValidationOutput = z.output<typeof e2eRequestValidationSchema>;
 
+@Public()
 @Controller({ path: '__test/validation', version: API_VERSION })
 export class E2ERequestValidationController {
   @Post()

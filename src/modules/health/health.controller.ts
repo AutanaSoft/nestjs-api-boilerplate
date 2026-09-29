@@ -3,10 +3,12 @@ import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { HealthCheck, HealthCheckService } from '@nestjs/terminus';
 import { SkipThrottle } from '@nestjs/throttler';
 import { errorResponseSchema } from '../../common/error-handling/error-response.js';
+import { Public } from '../../common/auth/public.js';
 import { toOpenApiSchema } from '../../common/openapi/openapi-schema.js';
 import { API_VERSION } from '../../config/api.config.js';
 import { healthResponseSchema } from './contracts/health-response.schema.js';
 
+@Public()
 @SkipThrottle()
 @Controller({ path: 'health', version: API_VERSION })
 export class HealthController {

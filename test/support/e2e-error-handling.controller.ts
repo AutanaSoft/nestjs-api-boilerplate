@@ -1,6 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApplicationError } from '../../src/common/error-handling/application-error.js';
 import { API_VERSION } from '../../src/config/api.config.js';
+import { Public } from '../../src/common/auth/public.js';
 
 type SensitiveResourceContext = Readonly<{
   token: string;
@@ -15,6 +16,7 @@ class E2EResourceNotFoundError extends ApplicationError {
   }
 }
 
+@Public()
 @Controller({ path: '__test/errors', version: API_VERSION })
 export class E2EErrorHandlingController {
   @Get('application-error')

@@ -10,6 +10,8 @@ import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { PrismaSessionsRepository } from './repositories/prisma-sessions.repository.js';
 import { SESSIONS_REPOSITORY } from './repositories/sessions.repository.js';
+import { APP_GUARD } from '@nestjs/core';
+import { AccessTokenGuard } from './guards/access-token.guard.js';
 
 @Module({
   imports: [
@@ -24,6 +26,7 @@ import { SESSIONS_REPOSITORY } from './repositories/sessions.repository.js';
   controllers: [AuthController],
   providers: [
     AuthService,
+    { provide: APP_GUARD, useClass: AccessTokenGuard },
     DatabaseTransactionRunner,
     { provide: SESSIONS_REPOSITORY, useClass: PrismaSessionsRepository },
   ],

@@ -35,6 +35,11 @@ export class AuthService {
     return this.transactions.run((transaction) => this.issueTokens(userId, transaction));
   }
 
+  /** Revokes only the authenticated session, never all of the user's sessions. */
+  async signOut(sessionId: string): Promise<void> {
+    await this.sessions.revoke(sessionId, new Date());
+  }
+
   private async issueTokens(userId: string, transaction: DatabaseTransaction) {
     const now = Date.now();
     const refreshToken = randomBytes(32).toString('base64url');
