@@ -13,6 +13,7 @@ import {
   ApiBody,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
   ApiNoContentResponse,
   ApiOkResponse,
@@ -32,6 +33,8 @@ import { signInRequestSchema } from './contracts/sign-in.schema.js';
 import type { SignInRequest } from './contracts/sign-in.schema.js';
 import { refreshRequestSchema } from './contracts/refresh.schema.js';
 import type { RefreshRequest } from './contracts/refresh.schema.js';
+import { changePasswordRequestSchema } from './contracts/change-password.schema.js';
+import type { ChangePasswordRequest } from './contracts/change-password.schema.js';
 
 @Controller({ path: 'auth', version: API_VERSION })
 export class AuthController {
@@ -77,6 +80,21 @@ export class AuthController {
   @SerializeOptions({ schema: tokensResponseSchema })
   refresh(@Body({ schema: refreshRequestSchema }) body: RefreshRequest) {
     return this.auth.refresh(body);
+  }
+
+  @Post('change-password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ operationId: 'changePassword' })
+  @ApiBody({ schema: toOpenApiSchema(changePasswordRequestSchema, 'input') })
+  @ApiNoContentResponse()
+  @ApiBadRequestResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @ApiUnauthorizedResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @ApiForbiddenResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  changePassword(
+    @CurrentPrincipal() principal: AuthenticatedPrincipal,
+    @Body({ schema: changePasswordRequestSchema }) body: ChangePasswordRequest,
+  ): Promise<void> {
+    return this.auth.changePassword(principal.userId, body);
   }
 
   @Post('sign-out')

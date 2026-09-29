@@ -238,6 +238,7 @@ describe('setupOpenApi', () => {
         '/api/v1/auth/sign-up',
         '/api/v1/auth/sign-in',
         '/api/v1/auth/refresh',
+        '/api/v1/auth/change-password',
         '/api/v1/auth/sign-out',
       ]);
       const healthOperations = ['/api/v1/health/live', '/api/v1/health/ready'].map((path) => paths[path]?.get);
@@ -527,6 +528,7 @@ describe('setupOpenApi', () => {
         '/v1/auth/sign-up',
         '/v1/auth/sign-in',
         '/v1/auth/refresh',
+        '/v1/auth/change-password',
         '/v1/auth/sign-out',
       ]);
     } finally {

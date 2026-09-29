@@ -24,6 +24,7 @@ const OPENAPI_PATHS = [
   '/api/v1/auth/sign-up',
   '/api/v1/auth/sign-in',
   '/api/v1/auth/refresh',
+  '/api/v1/auth/change-password',
   '/api/v1/auth/sign-out',
 ];
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
@@ -328,6 +329,7 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
             '/v1/auth/sign-up',
             '/v1/auth/sign-in',
             '/v1/auth/refresh',
+            '/v1/auth/change-password',
             '/v1/auth/sign-out',
           ]);
           await request(app.getHttpServer()).get('/v1/openapi.json').expect(404);

@@ -30,23 +30,29 @@ describe('CredentialsService', () => {
   });
 
   it('performs Argon2id verification for absent accounts as well as existing ones', async () => {
-    const findHashByEmail = vi.fn().mockResolvedValue(null);
-    const repository = { findHashByEmail } as unknown as CredentialsRepository;
+    const findIdByEmail = vi.fn().mockResolvedValue(null);
+    const lockAndFindHash = vi.fn();
+    const repository = { findIdByEmail, lockAndFindHash } as unknown as CredentialsRepository;
     const service = new CredentialsService(repository);
+    const transaction = { client: {} } as never;
     vi.mocked(argon2.verify).mockClear();
-    await expect(service.verify(' MISSING@EXAMPLE.COM ', 'short')).resolves.toBeNull();
-    expect(findHashByEmail).toHaveBeenCalledWith('missing@example.com');
+    await expect(service.verify(' MISSING@EXAMPLE.COM ', 'short', transaction)).resolves.toBeNull();
+    expect(findIdByEmail).toHaveBeenCalledWith('missing@example.com', transaction);
+    expect(lockAndFindHash).not.toHaveBeenCalled();
     expect(argon2.verify).toHaveBeenCalledOnce();
     expect(argon2.verify).toHaveBeenCalledWith(expect.stringMatching(/^\$argon2id\$/), 'short');
   });
 
   it('checks raw existing passwords without imposing the enrollment minimum and excludes hashes from results', async () => {
     const passwordHash = await argon2.hash('short', { type: argon2.argon2id });
-    const findHashByEmail = vi.fn().mockResolvedValue({ id: 'user-id', passwordHash });
-    const repository = { findHashByEmail } as unknown as CredentialsRepository;
+    const findIdByEmail = vi.fn().mockResolvedValue('user-id');
+    const lockAndFindHash = vi.fn().mockResolvedValue(passwordHash);
+    const repository = { findIdByEmail, lockAndFindHash } as unknown as CredentialsRepository;
     const service = new CredentialsService(repository);
-    await expect(service.verify(' ADA@EXAMPLE.COM ', 'short')).resolves.toBe('user-id');
-    await expect(service.verify(' ADA@EXAMPLE.COM ', 'wrong')).resolves.toBeNull();
-    expect(findHashByEmail).toHaveBeenCalledWith('ada@example.com');
+    const transaction = { client: {} } as never;
+    await expect(service.verify(' ADA@EXAMPLE.COM ', 'short', transaction)).resolves.toBe('user-id');
+    await expect(service.verify(' ADA@EXAMPLE.COM ', 'wrong', transaction)).resolves.toBeNull();
+    expect(findIdByEmail).toHaveBeenCalledWith('ada@example.com', transaction);
+    expect(lockAndFindHash).toHaveBeenCalledWith('user-id', transaction);
   });
 });

@@ -30,10 +30,27 @@ export class CredentialsService {
     return this.repository.findCurrent(id);
   }
 
-  async verify(email: string, password: string): Promise<string | null> {
+  /** Verify the locked current hash before changing it; caller revokes sessions in the same transaction. */
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+    transaction: DatabaseTransaction,
+  ): Promise<'changed' | 'invalid-current' | 'reuse'> {
+    const hash = await this.repository.lockAndFindHash(userId, transaction);
+    if (hash === null || !(await argon2.verify(hash, currentPassword))) return 'invalid-current';
+    if (await argon2.verify(hash, newPassword)) return 'reuse';
+    const nextHash = await argon2.hash(newPassword, { type: argon2.argon2id });
+    await this.repository.updateHash(userId, nextHash, transaction);
+    return 'changed';
+  }
+
+  /** Holds the user row through verification and session issuance in the caller's transaction. */
+  async verify(email: string, password: string, transaction: DatabaseTransaction): Promise<string | null> {
     const normalized = createUserRequestSchema.shape.email.parse(email);
-    const credentials = await this.repository.findHashByEmail(normalized);
-    const valid = await argon2.verify(credentials?.passwordHash ?? dummyPasswordHash, password);
-    return credentials !== null && valid ? credentials.id : null;
+    const id = await this.repository.findIdByEmail(normalized, transaction);
+    const hash = id === null ? null : await this.repository.lockAndFindHash(id, transaction);
+    const valid = await argon2.verify(hash ?? dummyPasswordHash, password);
+    return hash !== null && valid ? id : null;
   }
 }

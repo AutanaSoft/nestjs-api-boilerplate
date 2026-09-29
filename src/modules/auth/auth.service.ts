@@ -9,7 +9,13 @@ import { CredentialsService } from '../users/services/credentials.service.js';
 import type { SignUpRequest } from './contracts/sign-up.schema.js';
 import type { SignInRequest } from './contracts/sign-in.schema.js';
 import type { RefreshRequest } from './contracts/refresh.schema.js';
-import { InvalidCredentialsError, InvalidRefreshTokenError } from './auth.errors.js';
+import type { ChangePasswordRequest } from './contracts/change-password.schema.js';
+import {
+  InvalidCredentialsError,
+  InvalidCurrentPasswordError,
+  InvalidRefreshTokenError,
+  PasswordReuseNotAllowedError,
+} from './auth.errors.js';
 import { SESSIONS_REPOSITORY } from './repositories/sessions.repository.js';
 import type { SessionsRepository } from './repositories/sessions.repository.js';
 
@@ -31,9 +37,11 @@ export class AuthService {
   }
 
   async signIn(request: SignInRequest) {
-    const userId = await this.credentials.verify(request.email, request.password);
-    if (userId === null) throw new InvalidCredentialsError();
-    return this.transactions.run((transaction) => this.issueTokens(userId, transaction));
+    return this.transactions.runReadCommitted(async (transaction) => {
+      const userId = await this.credentials.verify(request.email, request.password, transaction);
+      if (userId === null) throw new InvalidCredentialsError();
+      return this.issueTokens(userId, transaction);
+    });
   }
 
   async refresh(request: RefreshRequest) {
@@ -74,6 +82,21 @@ export class AuthService {
     });
     if (result === null) throw new InvalidRefreshTokenError();
     return result;
+  }
+
+  async changePassword(userId: string, request: ChangePasswordRequest): Promise<void> {
+    await this.transactions.runReadCommitted(async (transaction) => {
+      const result = await this.credentials.changePassword(
+        userId,
+        request.currentPassword,
+        request.newPassword,
+        transaction,
+      );
+      if (result === 'invalid-current') throw new InvalidCurrentPasswordError();
+      if (result === 'reuse') throw new PasswordReuseNotAllowedError();
+      // Session updates wait for any in-flight rotation row locks; the commit is the revocation boundary.
+      await this.sessions.revokeAllForUser(userId, new Date(), transaction);
+    });
   }
 
   /** Revokes only the authenticated session, never all of the user's sessions. */

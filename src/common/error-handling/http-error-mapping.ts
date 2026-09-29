@@ -31,6 +31,16 @@ export const applicationErrorHttpDescriptors = Object.freeze({
     code: 'INVALID_REFRESH_TOKEN',
     message: 'Invalid refresh token.',
   }),
+  INVALID_CURRENT_PASSWORD: Object.freeze({
+    statusCode: 403,
+    code: 'INVALID_CURRENT_PASSWORD',
+    message: 'The current password is incorrect.',
+  }),
+  PASSWORD_REUSE_NOT_ALLOWED: Object.freeze({
+    statusCode: 400,
+    code: 'PASSWORD_REUSE_NOT_ALLOWED',
+    message: 'The new password must differ from the current password.',
+  }),
 }) satisfies Readonly<Record<ApplicationErrorCode, HttpErrorDescriptor>>;
 
 const unknownErrorHttpDescriptor: HttpErrorDescriptor = Object.freeze({

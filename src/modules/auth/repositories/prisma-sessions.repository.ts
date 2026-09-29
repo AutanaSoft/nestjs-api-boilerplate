@@ -80,6 +80,10 @@ export class PrismaSessionsRepository implements SessionsRepository {
     await transaction.client.session.updateMany({ where: { id, revokedAt: null }, data: { revokedAt: now } });
   }
 
+  async revokeAllForUser(userId: string, now: Date, transaction: DatabaseTransaction): Promise<void> {
+    await transaction.client.session.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: now } });
+  }
+
   async purgeRetired(before: Date): Promise<number> {
     // A bounded batch across every session, not only the session addressed by this request.
     return this.prisma.$executeRaw`

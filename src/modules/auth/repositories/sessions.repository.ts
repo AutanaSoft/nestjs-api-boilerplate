@@ -31,6 +31,7 @@ export interface SessionsRepository {
     transaction: DatabaseTransaction,
   ): Promise<boolean>;
   revokeInTransaction(id: string, now: Date, transaction: DatabaseTransaction): Promise<void>;
+  revokeAllForUser(userId: string, now: Date, transaction: DatabaseTransaction): Promise<void>;
   /** Globally remove only retired digests past the full replay-detection window. */
   purgeRetired(before: Date): Promise<number>;
 }
