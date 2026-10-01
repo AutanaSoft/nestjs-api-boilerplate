@@ -7,7 +7,9 @@ import { buildApiConfig } from '../../../src/config/api.config.js';
 import { buildOpenApiConfig } from '../../../src/config/openapi.config.js';
 import { healthResponseSchema } from '../../../src/modules/health/contracts/health-response.schema.js';
 import { signUpRequestSchema, tokensResponseSchema } from '../../../src/modules/auth/contracts/sign-up.schema.js';
+import { signInRequestSchema } from '../../../src/modules/auth/contracts/sign-in.schema.js';
 import { refreshRequestSchema } from '../../../src/modules/auth/contracts/refresh.schema.js';
+import { changePasswordRequestSchema } from '../../../src/modules/auth/contracts/change-password.schema.js';
 import { listUsersRequestSchema } from '../../../src/modules/users/contracts/list-users-request.schema.js';
 import { queryUsersRequestSchema } from '../../../src/modules/users/contracts/query-users-request.schema.js';
 import { updateUserRequestSchema } from '../../../src/modules/users/contracts/update-user-request.schema.js';
@@ -314,15 +316,63 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
             );
           }
 
+          const signIn = document.body.paths['/api/v1/auth/sign-in'].post;
+          expect(signIn.operationId).toBe('signIn');
+          expect(signIn.requestBody.content['application/json'].schema).toEqual(
+            toOpenApiSchema(signInRequestSchema, 'input'),
+          );
+          expect(Object.keys(signIn.responses)).toEqual(['200', '400', '401', '429', '500']);
+          expect(signIn.responses['200'].content['application/json'].schema).toEqual(
+            toOpenApiSchema(tokensResponseSchema, 'output'),
+          );
+          for (const status of ['400', '401', '429', '500']) {
+            expect(signIn.responses[status].content['application/json'].schema).toEqual(
+              toOpenApiSchema(errorResponseSchema, 'output'),
+            );
+          }
+          expect(signIn.security).toBeUndefined();
+
           const refresh = document.body.paths['/api/v1/auth/refresh'].post;
           expect(refresh.operationId).toBe('refreshSession');
           expect(refresh.requestBody.content['application/json'].schema).toEqual(
             toOpenApiSchema(refreshRequestSchema, 'input'),
           );
-          expect(Object.keys(refresh.responses)).toEqual(['200', '400', '401']);
+          expect(Object.keys(refresh.responses)).toEqual(['200', '400', '401', '429', '500']);
           expect(refresh.responses['200'].content['application/json'].schema).toEqual(
             toOpenApiSchema(tokensResponseSchema, 'output'),
           );
+          for (const status of ['400', '401', '429', '500']) {
+            expect(refresh.responses[status].content['application/json'].schema).toEqual(
+              toOpenApiSchema(errorResponseSchema, 'output'),
+            );
+          }
+          expect(refresh.security).toBeUndefined();
+
+          const changePassword = document.body.paths['/api/v1/auth/change-password'].post;
+          expect(changePassword.operationId).toBe('changePassword');
+          expect(Object.keys(changePassword.responses)).toEqual(['204', '400', '401', '403', '429', '500']);
+          expect(changePassword.responses['204'].content).toBeUndefined();
+          expect(changePassword.requestBody.content['application/json'].schema).toEqual(
+            toOpenApiSchema(changePasswordRequestSchema, 'input'),
+          );
+          for (const status of ['400', '401', '403', '429', '500']) {
+            expect(changePassword.responses[status].content['application/json'].schema).toEqual(
+              toOpenApiSchema(errorResponseSchema, 'output'),
+            );
+          }
+          expect(changePassword.security).toEqual([{ bearer: [] }]);
+
+          const signOut = document.body.paths['/api/v1/auth/sign-out'].post;
+          expect(signOut.operationId).toBe('signOut');
+          expect(signOut.requestBody).toBeUndefined();
+          expect(Object.keys(signOut.responses)).toEqual(['204', '400', '401', '429', '500']);
+          expect(signOut.responses['204'].content).toBeUndefined();
+          for (const status of ['400', '401', '429', '500']) {
+            expect(signOut.responses[status].content['application/json'].schema).toEqual(
+              toOpenApiSchema(errorResponseSchema, 'output'),
+            );
+          }
+          expect(signOut.security).toEqual([{ bearer: [] }]);
           expect(JSON.stringify(document.body)).not.toContain('"nullable":');
           expect(JSON.stringify(document.body)).not.toMatch(/NotFound|__test|rate.limit|serializ|validat/i);
 

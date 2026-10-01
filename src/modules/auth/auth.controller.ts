@@ -11,6 +11,7 @@ import {
 import { SkipThrottle } from '@nestjs/throttler';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiBody,
   ApiConflictResponse,
   ApiCreatedResponse,
@@ -81,6 +82,8 @@ export class AuthController {
   @ApiOkResponse({ schema: toOpenApiSchema(tokensResponseSchema, 'output') })
   @ApiBadRequestResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
   @ApiUnauthorizedResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @ApiTooManyRequestsResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @ApiInternalServerErrorResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
   @SerializeOptions({ schema: tokensResponseSchema })
   refresh(@Body({ schema: refreshRequestSchema }) body: RefreshRequest) {
     return this.auth.refresh(body);
@@ -88,12 +91,15 @@ export class AuthController {
 
   @Post('change-password')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth('bearer')
   @ApiOperation({ operationId: 'changePassword' })
   @ApiBody({ schema: toOpenApiSchema(changePasswordRequestSchema, 'input') })
   @ApiNoContentResponse()
   @ApiBadRequestResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
   @ApiUnauthorizedResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
   @ApiForbiddenResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @ApiTooManyRequestsResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @ApiInternalServerErrorResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
   changePassword(
     @CurrentPrincipal() principal: AuthenticatedPrincipal,
     @Body({ schema: changePasswordRequestSchema }) body: ChangePasswordRequest,
@@ -103,10 +109,13 @@ export class AuthController {
 
   @Post('sign-out')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth('bearer')
   @ApiOperation({ operationId: 'signOut' })
   @ApiNoContentResponse()
   @ApiBadRequestResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
   @ApiUnauthorizedResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @ApiTooManyRequestsResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @ApiInternalServerErrorResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
   async signOut(
     @CurrentPrincipal() principal: AuthenticatedPrincipal,
     @Req() request: { headers: { 'content-length'?: string; 'transfer-encoding'?: string } },
