@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { Test } from 'supertest';
 import { describe, expect, it } from 'vitest';
@@ -443,22 +443,97 @@ export function registerCreateUserE2ESuite({ runScenario }: E2ESuiteRegistration
       }, options);
     });
 
-    it('updates and deletes an HTTP-registered fixture while preserving database cascade', async () => {
+    it('updates and deletes an HTTP-registered fixture while cascading sessions and refresh digests', async () => {
       await runScenario(async ({ app }) => {
         const user = await signUpFixture(app);
         const observer = await signUpFixture(app);
         const client = authorizedRequest(app, user.accessToken);
+        const prisma = app.get(PrismaService);
         const before = await client.get(`/api/v1/users/${user.id}`).expect(200);
         const changed = await client.patch(`/api/v1/users/${user.id}`).send({ displayName: 'Ada Byron' }).expect(200);
         expect(changed.body).toMatchObject({ id: user.id, displayName: 'Ada Byron', createdAt: before.body.createdAt });
         expect(changed.body.updatedAt).not.toBe(before.body.updatedAt);
         expect(changed.body.role).toBe('user');
         await client.patch(`/api/v1/users/${user.id}`).send({ role: 'admin', displayName: 'Ada Byron' }).expect(400);
+        const sessionsBefore = await prisma.session.findMany({
+          where: { userId: user.id },
+          select: { id: true, digests: { select: { digest: true } } },
+        });
+        const digestIds = sessionsBefore.flatMap((session) => session.digests.map(({ digest }) => digest));
+        expect(sessionsBefore.length).toBeGreaterThan(0);
+        expect(digestIds.length).toBeGreaterThan(0);
+
         await client.delete(`/api/v1/users/${user.id}`).expect(204);
-        expect(await app.get(PrismaService).session.count({ where: { userId: user.id } })).toBe(0);
+
+        expect(await prisma.session.count({ where: { userId: user.id } })).toBe(0);
+        expect(await prisma.refreshDigest.count({ where: { digest: { in: digestIds } } })).toBe(0);
         expect(
           (await authorizedRequest(app, observer.accessToken).get(`/api/v1/users/${user.id}`).expect(404)).body,
         ).toEqual(notFound);
+      }, options);
+    });
+
+    it('rolls back owner deletion when cascading session deletion fails', async () => {
+      await runScenario(async ({ app }) => {
+        const email = `${randomUUID()}@example.test`;
+        const signup = await request(app.getHttpServer())
+          .post('/api/v1/auth/sign-up')
+          .send({ email, displayName: 'Test User', password: 'test fixture password' })
+          .expect(201);
+        const prisma = app.get(PrismaService);
+        const user = await prisma.user.findUniqueOrThrow({
+          where: { email },
+          select: { id: true, passwordHash: true },
+        });
+        const digest = createHash('sha256')
+          .update(signup.body.refreshToken as string)
+          .digest('hex');
+        const sessionBefore = await prisma.session.findFirstOrThrow({
+          where: { userId: user.id },
+          include: { digests: true },
+        });
+        expect(sessionBefore.digests.some((entry) => entry.digest === digest)).toBe(true);
+
+        try {
+          await prisma.$executeRawUnsafe(`
+            CREATE FUNCTION e2e_reject_session_delete() RETURNS trigger
+            LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'forced session deletion failure'; END; $$
+          `);
+          await prisma.$executeRawUnsafe(`
+            CREATE TRIGGER e2e_reject_session_delete
+            BEFORE DELETE ON sessions
+            FOR EACH ROW EXECUTE FUNCTION e2e_reject_session_delete()
+          `);
+          const failed = await authorizedRequest(app, signup.body.accessToken as string)
+            .delete(`/api/v1/users/${user.id}`)
+            .expect(500);
+          expect(failed.body).toEqual({
+            statusCode: 500,
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'An unexpected error occurred.',
+            requestId: expect.stringMatching(UUID_V4),
+          });
+          expect(failed.text).not.toContain('forced session deletion failure');
+          expect(failed.text).not.toContain('e2e_reject_session_delete');
+
+          const userAfter = await prisma.user.findUniqueOrThrow({
+            where: { id: user.id },
+            select: { id: true, passwordHash: true },
+          });
+          const sessionAfter = await prisma.session.findUniqueOrThrow({
+            where: { id: sessionBefore.id },
+            include: { digests: true },
+          });
+          expect(userAfter).toEqual(user);
+          expect(sessionAfter).toEqual(sessionBefore);
+          expect(sessionAfter.digests).toContainEqual(expect.objectContaining({ digest }));
+          await authorizedRequest(app, signup.body.accessToken as string)
+            .get('/api/v1/users/me')
+            .expect(200);
+        } finally {
+          await prisma.$executeRawUnsafe('DROP TRIGGER IF EXISTS e2e_reject_session_delete ON sessions');
+          await prisma.$executeRawUnsafe('DROP FUNCTION IF EXISTS e2e_reject_session_delete()');
+        }
       }, options);
     });
   });
