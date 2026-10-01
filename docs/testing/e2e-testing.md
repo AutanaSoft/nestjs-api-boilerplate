@@ -133,18 +133,20 @@ El seed de desarrollo es una operación independiente y no forma parte del boots
 seed explícito requiere `--environment development`, rechaza `NODE_ENV=production` y `NODE_ENV=test`, y su
 implementación inicial no crea usuarios, credenciales ni ningún otro dato por defecto.
 
-## Extensiones futuras no implementadas
+## Cobertura implementada y extensiones futuras
 
-La base no implementa autenticación, fixtures, seeds, proveedores externos ni indicadores de salud para dependencias.
+La suite E2E cubre mediante HTTP real los flujos Auth de sign-up, sign-in, refresh, sign-out y change-password, además
+de acceso protegido a Users. También verifica los límites globales y específicos de Auth, y el documento OpenAPI
+publicado. Los escenarios obtienen sus datos y credenciales a través de la API y utilizan la base PostgreSQL aislada
+descrita arriba. Los requisitos funcionales y sus respuestas canónicas pertenecen a los PDRs de
+[Auth](../prd/auth/authentication/authentication-pdr.md) y [Users](../prd/users/management/users-management-pdr.md); no
+se duplican aquí.
 
-Cuando exista una necesidad real, las siguientes pautas aplicarán:
-
-- **Autenticación:** obtener credenciales mediante los flujos HTTP públicos de registro o inicio de sesión; no usar
-  tokens preemitidos para omitir el comportamiento verificado.
-- **Proveedores externos:** aislar únicamente el adaptador inyectado que cruza el límite fuera de proceso;
-  controladores, guards, servicios, repositorios y persistencia permanecen reales.
-- **Datos de prueba:** crear los prerrequisitos mediante HTTP cuando sea razonable. Un seed directo solo podrá crear un
-  prerrequisito mínimo y justificado que no deba producirse mediante la API.
+Aún no hay integraciones con proveedores externos ni probes de salud para dependencias. Cuando se incorporen, se debe
+aislar únicamente el adaptador inyectado que cruza el límite fuera de proceso; controladores, guards, servicios,
+repositorios y persistencia permanecen reales. Para los datos de prueba, crear los prerrequisitos mediante HTTP cuando
+sea razonable; un seed directo solo podrá crear un prerrequisito mínimo y justificado que no deba producirse mediante la
+API.
 
 No se deben introducir interfaces vacías, adaptadores falsos, infraestructura simulada ni abstracciones prematuras antes
 de que una capacidad concreta las requiera.

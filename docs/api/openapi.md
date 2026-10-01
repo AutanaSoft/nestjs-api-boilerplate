@@ -42,9 +42,10 @@ Los schemas de respuesta y entrada se derivan directamente desde sus schemas Zod
 compartido, con dirección explícita `output` o `input`. No cree DTOs de Swagger, clases anotadas ni tipos paralelos para
 describir un contrato existente.
 
-La generación incluye una lista explícita de módulos de producción publicados. Actualmente incluye `HealthModule`;
-excluye el catch-all de rutas no encontradas y todos los controllers o fixtures exclusivos de E2E. Un Feature que
-publique un controller debe añadir su módulo, decoradores y pruebas de documento en la misma unidad de trabajo.
+La generación incluye una lista explícita de módulos de producción publicados. Actualmente incluye `HealthModule`,
+`UsersModule` y `AuthModule`; excluye el catch-all de rutas no encontradas y todos los controllers o fixtures exclusivos
+de E2E. Un Feature que publique un controller debe añadir su módulo, decoradores y pruebas de documento en la misma
+unidad de trabajo.
 
 ## Version
 

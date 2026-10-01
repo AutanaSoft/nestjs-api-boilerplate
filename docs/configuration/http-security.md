@@ -53,14 +53,20 @@ La política CORS fija los métodos `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELE
 headers `Accept`, `Authorization`, `Content-Type` y `X-Request-Id`; expone solo `X-Request-Id`; mantiene credentials
 deshabilitadas; responde preflight con `204`; y no continúa el preflight hacia la aplicación.
 
-### Configuración Auth (transición R2; no publicada)
+### Configuración Auth (implementada)
 
 Configure `AUTH_JWT_SECRET` con un valor de al menos 32 caracteres en producción; el startup falla si falta o es
 inválido. Fuera de producción, si se omite, el proceso genera un secreto efímero. Los JWT emitidos con ese secreto
 quedan inválidos al reiniciar el proceso. Establezca los TTL en segundos si necesita modificar los valores
 predeterminados de acceso (900, 15 minutos) y refresh (604800, 7 días). Los cambios de estas variables requieren
-reiniciar la API. Esta referencia describe la configuración Auth en desarrollo, no anuncia la publicación de R2 ni de
-los endpoints Auth.
+reiniciar la API. Los endpoints Auth publicados incluyen sign-up, sign-in, refresh, sign-out y change-password; las
+operaciones protegidas requieren Bearer authentication.
+
+El limit global configurable por `THROTTLE_LIMIT` y `THROTTLE_TTL_SECONDS` permite por defecto 100 requests por cada
+ventana de 60 segundos, por handler e IP. Sign-up y sign-in tienen además límites independientes de 10 requests por
+ventana de 60 segundos e IP; refresh solo usa el limit global. Los counters son locales al proceso y no coordinan
+réplicas. `TRUST_PROXY_HOPS` debe reflejar únicamente los proxy hops de confianza: una configuración demasiado permisiva
+puede permitir que los clients influyan en la IP aparente usada por los counters.
 
 ## Ejemplos
 

@@ -2,7 +2,8 @@ import { createHash, randomUUID } from 'node:crypto';
 import { JwtService } from '@nestjs/jwt';
 import authConfig from '../../../src/config/auth.config.js';
 import request from 'supertest';
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
+import { StructuredLoggerService } from '../../../src/common/observability/logging/logger.service.js';
 import { PrismaService } from '../../../src/database/prisma.service.js';
 import { buildHttpConfig } from '../../../src/config/http.config.js';
 import { buildRateLimitConfig } from '../../../src/config/rate-limit.config.js';
@@ -55,6 +56,51 @@ export function registerSignUpE2ESuite({ runScenario }: E2ESuiteRegistration): v
       expect(session.digests).toHaveLength(1);
       expect(session.digests[0].digest).toBe(createHash('sha256').update(response.body.refreshToken).digest('hex'));
       expect(await prisma.refreshDigest.findUnique({ where: { digest: response.body.refreshToken } })).toBeNull();
+    });
+  });
+
+  it('omits Auth credentials and tokens from request completion logs', async () => {
+    await runScenario(async ({ app }) => {
+      const logger = app.get(StructuredLoggerService);
+      const logCompleted = vi.spyOn(logger, 'logHttpRequestCompleted');
+      const logUnexpectedError = vi.spyOn(logger, 'logUnexpectedHttpError');
+      const email = `log-sentinel-${randomUUID()}@example.test`;
+      const password = 'sentinel-password-for-log-check';
+
+      const signUp = await request(app.getHttpServer())
+        .post('/api/v1/auth/sign-up')
+        .send({ email, displayName: 'Log Sentinel', password })
+        .expect(201);
+      const signIn = await request(app.getHttpServer())
+        .post('/api/v1/auth/sign-in')
+        .set('Authorization', `Bearer ${signUp.body.accessToken}`)
+        .send({ email, password })
+        .expect(200);
+
+      expect(logCompleted).toHaveBeenCalledTimes(2);
+      expect(logUnexpectedError).not.toHaveBeenCalled();
+      const terminalEvents = logCompleted.mock.calls.map(([metadata]) => metadata);
+      expect(terminalEvents.map(({ method, route, statusCode }) => ({ method, route, statusCode }))).toEqual([
+        { method: 'POST', route: '/api/v1/auth/sign-up', statusCode: 201 },
+        { method: 'POST', route: '/api/v1/auth/sign-in', statusCode: 200 },
+      ]);
+      for (const metadata of terminalEvents) {
+        expect(Object.keys(metadata).sort()).toEqual(['durationMs', 'method', 'route', 'statusCode']);
+      }
+
+      const serializedEvents = JSON.stringify(terminalEvents);
+      const sensitiveValues = [
+        email,
+        password,
+        signUp.body.accessToken,
+        signUp.body.refreshToken,
+        signIn.body.accessToken,
+        signIn.body.refreshToken,
+        `Bearer ${signUp.body.accessToken}`,
+      ];
+      for (const sensitiveValue of sensitiveValues) {
+        expect(serializedEvents.includes(sensitiveValue)).toBe(false);
+      }
     });
   });
 
