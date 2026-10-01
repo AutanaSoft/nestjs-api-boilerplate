@@ -1,6 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto';
+import { JwtService } from '@nestjs/jwt';
 import request from 'supertest';
 import { expect, it } from 'vitest';
+import { buildAuthConfig } from '../../../src/config/auth.config.js';
 import { buildRateLimitConfig } from '../../../src/config/rate-limit.config.js';
 import { PrismaService } from '../../../src/database/prisma.service.js';
 import { DatabaseTransactionRunner } from '../../../src/database/transaction/database-transaction.js';
@@ -10,6 +12,129 @@ import type { E2ESuiteRegistration } from '../../support/e2e-context.js';
 import { holdRefreshRaceGate } from '../../support/refresh-race-gate.js';
 
 export function registerRefreshE2ESuite({ runScenario }: E2ESuiteRegistration): void {
+  it('uses configured token lifetimes for real HTTP issuance and refresh rotation', async () => {
+    const jwtSecret = 'r5d-test-signing-secret-with-at-least-32-characters';
+    const accessTtlSeconds = 61;
+    const refreshTtlSeconds = 3_601;
+    await runScenario(
+      async ({ app }) => {
+        const server = app.getHttpServer();
+        const prisma = app.get(PrismaService);
+        const jwt = app.get(JwtService);
+
+        const assertIssuedCredentials = async (
+          credentials: { accessToken: string; expiresAt: string; refreshToken: string; refreshExpiresAt: string },
+          startedAt: number,
+          completedAt: number,
+        ) => {
+          expect(Object.keys(credentials).sort()).toEqual(
+            ['accessToken', 'expiresAt', 'refreshToken', 'refreshExpiresAt'].sort(),
+          );
+          expect(JSON.stringify(credentials)).not.toContain(jwtSecret);
+          for (const expiresAt of [credentials.expiresAt, credentials.refreshExpiresAt]) {
+            const parsed = new Date(expiresAt);
+            expect(parsed.toISOString()).toBe(expiresAt);
+          }
+          const accessExpiry = Date.parse(credentials.expiresAt);
+          expect(accessExpiry).toBeGreaterThanOrEqual(startedAt + accessTtlSeconds * 1_000 - 2_000);
+          expect(accessExpiry).toBeLessThanOrEqual(completedAt + accessTtlSeconds * 1_000);
+          const refreshExpiry = Date.parse(credentials.refreshExpiresAt);
+          expect(refreshExpiry).toBeGreaterThanOrEqual(startedAt + refreshTtlSeconds * 1_000);
+          expect(refreshExpiry).toBeLessThanOrEqual(completedAt + refreshTtlSeconds * 1_000);
+
+          const claims = await jwt.verifyAsync<{ exp: number; sid: string }>(credentials.accessToken);
+          expect(claims.exp * 1_000).toBe(accessExpiry);
+          const session = await prisma.session.findUniqueOrThrow({ where: { id: claims.sid } });
+          const digest = createHash('sha256').update(credentials.refreshToken).digest('hex');
+          const storedDigest = await prisma.refreshDigest.findUniqueOrThrow({ where: { digest } });
+          expect(session.expiresAt.toISOString()).toBe(credentials.refreshExpiresAt);
+          expect(storedDigest.expiresAt.toISOString()).toBe(credentials.refreshExpiresAt);
+          expect(storedDigest.digest).not.toBe(credentials.refreshToken);
+        };
+
+        const startedAt = Date.now();
+        const signup = await request(server)
+          .post('/api/v1/auth/sign-up')
+          .send({ email: `${randomUUID()}@example.test`, displayName: 'Ada Lovelace', password: 'twelve characters' })
+          .expect(201);
+        const signupCompletedAt = Date.now();
+        await assertIssuedCredentials(signup.body, startedAt, signupCompletedAt);
+
+        const refreshStartedAt = Date.now();
+        const refreshed = await request(server)
+          .post('/api/v1/auth/refresh')
+          .send({ refreshToken: signup.body.refreshToken })
+          .expect(200);
+        const refreshCompletedAt = Date.now();
+        await assertIssuedCredentials(refreshed.body, refreshStartedAt, refreshCompletedAt);
+        expect(refreshed.body.refreshToken).not.toBe(signup.body.refreshToken);
+      },
+      {
+        application: {
+          authConfig: buildAuthConfig({
+            NODE_ENV: 'test',
+            AUTH_JWT_SECRET: jwtSecret,
+            AUTH_ACCESS_TTL_SECONDS: String(accessTtlSeconds),
+            AUTH_REFRESH_TTL_SECONDS: String(refreshTtlSeconds),
+          }),
+          rateLimitConfig: buildRateLimitConfig({ THROTTLE_LIMIT: 100, THROTTLE_TTL_SECONDS: 60 }),
+        },
+      },
+    );
+  });
+
+  it('uniformly rejects refresh and access credentials after their session cascades away', async () => {
+    await runScenario(
+      async ({ app }) => {
+        const server = app.getHttpServer();
+        const first = await request(server)
+          .post('/api/v1/auth/sign-up')
+          .send({ email: `${randomUUID()}@example.test`, displayName: 'Ada Lovelace', password: 'twelve characters' })
+          .expect(201);
+        const other = await request(server)
+          .post('/api/v1/auth/sign-up')
+          .send({ email: `${randomUUID()}@example.test`, displayName: 'Grace Hopper', password: 'twelve characters' })
+          .expect(201);
+        const prisma = app.get(PrismaService);
+        const digest = createHash('sha256').update(first.body.refreshToken).digest('hex');
+        const storedDigest = await prisma.refreshDigest.findUniqueOrThrow({ where: { digest } });
+        const session = await prisma.session.findUniqueOrThrow({ where: { id: storedDigest.sessionId } });
+
+        await prisma.session.delete({ where: { id: session.id } });
+
+        expect(await prisma.session.findUnique({ where: { id: session.id } })).toBeNull();
+        expect(await prisma.refreshDigest.findUnique({ where: { digest } })).toBeNull();
+        const unknown = await request(server)
+          .post('/api/v1/auth/refresh')
+          .send({ refreshToken: randomUUID() })
+          .expect(401);
+        const formerSessionCredential = await request(server)
+          .post('/api/v1/auth/refresh')
+          .send({ refreshToken: first.body.refreshToken })
+          .expect(401);
+        expect(unknown.body).toEqual({
+          statusCode: 401,
+          code: 'INVALID_REFRESH_TOKEN',
+          message: 'Invalid refresh token.',
+          requestId: unknown.headers['x-request-id'],
+        });
+        expect(formerSessionCredential.body).toEqual({
+          ...unknown.body,
+          requestId: formerSessionCredential.headers['x-request-id'],
+        });
+        expect(formerSessionCredential.body).not.toHaveProperty('details');
+        await request(server)
+          .post('/api/v1/auth/sign-out')
+          .set('Authorization', `Bearer ${first.body.accessToken}`)
+          .expect(401);
+        await request(server)
+          .post('/api/v1/auth/sign-out')
+          .set('Authorization', `Bearer ${other.body.accessToken}`)
+          .expect(204);
+      },
+      { application: { rateLimitConfig: buildRateLimitConfig({ THROTTLE_LIMIT: 100, THROTTLE_TTL_SECONDS: 60 }) } },
+    );
+  });
   it('rotates a refresh credential over public HTTP and rejects reuse', async () => {
     await runScenario(
       async ({ app }) => {

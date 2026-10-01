@@ -13,6 +13,8 @@ import databaseConfig from '../../src/config/database.config.js';
 import type { DatabaseConfig } from '../../src/config/database.config.js';
 import httpConfig from '../../src/config/http.config.js';
 import type { HttpConfig } from '../../src/config/http.config.js';
+import authConfig from '../../src/config/auth.config.js';
+import type { AuthConfig } from '../../src/config/auth.config.js';
 import openapiConfig from '../../src/config/openapi.config.js';
 import type { OpenApiConfig } from '../../src/config/openapi.config.js';
 import rateLimitConfig from '../../src/config/rate-limit.config.js';
@@ -30,6 +32,7 @@ export type CreateE2EApplicationOptions = Readonly<{
   openapiConfig?: OpenApiConfig;
   httpConfig?: HttpConfig;
   rateLimitConfig?: RateLimitConfig;
+  authConfig?: AuthConfig;
 }>;
 
 export async function createE2EApplication(options: CreateE2EApplicationOptions = {}): Promise<E2EContext> {
@@ -68,6 +71,10 @@ export async function createE2EApplication(options: CreateE2EApplicationOptions 
 
     if (options.rateLimitConfig !== undefined) {
       testingModule.overrideProvider(rateLimitConfig.KEY).useValue(options.rateLimitConfig);
+    }
+
+    if (options.authConfig !== undefined) {
+      testingModule.overrideProvider(authConfig.KEY).useValue(options.authConfig);
     }
 
     const moduleFixture = await testingModule.compile();
