@@ -84,7 +84,8 @@ Las reglas de versionado se definen en `versioning.md`.
 ## Security
 
 Las operaciones protegidas deben representar sus requisitos de authentication mediante los Security Schemes
-correspondientes.
+correspondientes. La API documenta el esquema `bearer` como HTTP Bearer con formato JWT; cada operación protegida
+declara ese requisito y las operaciones públicas no lo heredan.
 
 La especificación no debe presentar una operación protegida como pública.
 

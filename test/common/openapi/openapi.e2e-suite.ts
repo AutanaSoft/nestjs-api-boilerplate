@@ -89,6 +89,9 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
             description: appConfig.description,
             version: appConfig.version,
           });
+          expect(document.body.components.securitySchemes).toMatchObject({
+            bearer: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+          });
           expect(Object.keys(document.body.paths)).toEqual(OPENAPI_PATHS);
           expect(document.body.paths['/api/v1/health/live'].get.operationId).toBe('healthLive');
           expect(document.body.paths['/api/v1/health/ready'].get.operationId).toBe('healthReady');
@@ -225,6 +228,9 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
             },
           ]);
           expect(Object.keys(listUsers.responses)).toEqual(['200', '400', '401', '429', '500']);
+          expect(listUsers.responses['200'].content['application/json'].schema.properties.data.items).toEqual(
+            toOpenApiSchema(viewerUserResponseSchema, 'output'),
+          );
           expect(listUsers.responses['200'].content['application/json'].schema).toEqual(
             expect.objectContaining({
               type: 'object',
@@ -251,6 +257,9 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
             toOpenApiSchema(queryUsersRequestSchema, 'input'),
           );
           expect(Object.keys(queryUsers.responses)).toEqual(['200', '400', '401', '429', '500']);
+          expect(queryUsers.responses['200'].content['application/json'].schema.properties.data.items).toEqual(
+            toOpenApiSchema(viewerUserResponseSchema, 'output'),
+          );
           expect(queryUsers.responses['200'].content['application/json'].schema).toEqual(
             expect.objectContaining({
               type: 'object',
@@ -270,7 +279,26 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
             );
           }
 
+          const usersOperations = [
+            document.body.paths['/api/v1/users'].get,
+            document.body.paths['/api/v1/users'].query,
+            currentUser.get,
+            currentUser.patch,
+            getUser,
+            updateUser,
+            deleteUser,
+          ];
+          for (const operation of usersOperations) {
+            expect(operation.security).toEqual([{ bearer: [] }]);
+          }
+          for (const path of HEALTH_OPENAPI_PATHS) {
+            expect(document.body.paths[path].get.security).toBeUndefined();
+          }
+          for (const path of ['/api/v1/auth/sign-up', '/api/v1/auth/sign-in', '/api/v1/auth/refresh']) {
+            expect(document.body.paths[path].post.security).toBeUndefined();
+          }
           expect(document.body.paths['/api/v1/users'].post).toBeUndefined();
+          expect(currentUser.delete).toBeUndefined();
           const signUp = document.body.paths['/api/v1/auth/sign-up'].post;
           expect(signUp.operationId).toBe('signUp');
           expect(signUp.requestBody.content['application/json'].schema).toEqual(

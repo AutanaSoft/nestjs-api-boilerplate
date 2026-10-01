@@ -16,6 +16,7 @@ export function setupOpenApi(app: INestApplication, appConfig: AppConfig, openap
     .setTitle(appConfig.name)
     .setDescription(appConfig.description)
     .setVersion(appConfig.version)
+    .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'bearer')
     .build();
   const document = asOpenApi32Document(
     SwaggerModule.createDocument(app, documentConfig, {

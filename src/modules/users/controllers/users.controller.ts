@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiBody,
   ApiInternalServerErrorResponse,
   ApiNoContentResponse,
@@ -41,6 +42,7 @@ import { userSchema } from '../contracts/user.schema.js';
 import { UsersService } from '../services/users.service.js';
 
 @Controller({ path: 'users', version: API_VERSION })
+@ApiBearerAuth('bearer')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
