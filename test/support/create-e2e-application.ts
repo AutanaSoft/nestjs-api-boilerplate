@@ -12,6 +12,7 @@ import corsConfig from '../../src/config/cors.config.js';
 import databaseConfig from '../../src/config/database.config.js';
 import type { DatabaseConfig } from '../../src/config/database.config.js';
 import httpConfig from '../../src/config/http.config.js';
+import type { HttpConfig } from '../../src/config/http.config.js';
 import openapiConfig from '../../src/config/openapi.config.js';
 import type { OpenApiConfig } from '../../src/config/openapi.config.js';
 import rateLimitConfig from '../../src/config/rate-limit.config.js';
@@ -27,6 +28,7 @@ export type CreateE2EApplicationOptions = Readonly<{
   appConfig?: AppConfig;
   databaseConfig?: DatabaseConfig;
   openapiConfig?: OpenApiConfig;
+  httpConfig?: HttpConfig;
   rateLimitConfig?: RateLimitConfig;
 }>;
 
@@ -58,6 +60,10 @@ export async function createE2EApplication(options: CreateE2EApplicationOptions 
 
     if (options.openapiConfig !== undefined) {
       testingModule.overrideProvider(openapiConfig.KEY).useValue(options.openapiConfig);
+    }
+
+    if (options.httpConfig !== undefined) {
+      testingModule.overrideProvider(httpConfig.KEY).useValue(options.httpConfig);
     }
 
     if (options.rateLimitConfig !== undefined) {

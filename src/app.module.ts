@@ -19,6 +19,7 @@ import rateLimitConfig from './config/rate-limit.config.js';
 import shutdownConfig from './config/shutdown.config.js';
 import { DatabaseModule } from './database/database.module.js';
 import { HealthModule } from './modules/health/health.module.js';
+import { AuthController } from './modules/auth/auth.controller.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 
@@ -43,8 +44,23 @@ import { UsersModule } from './modules/users/users.module.js';
       inject: [rateLimitConfig.KEY],
       useFactory: (config: ConfigType<typeof rateLimitConfig>) => [
         {
+          name: 'default',
           ttl: config.global.ttlMs,
           limit: config.global.limit,
+        },
+        {
+          name: 'signUp',
+          ttl: config.signUp.ttlMs,
+          limit: config.signUp.limit,
+          skipIf: (context) =>
+            context.getClass() !== AuthController || context.getHandler() !== AuthController.prototype.signUp,
+        },
+        {
+          name: 'signIn',
+          ttl: config.signIn.ttlMs,
+          limit: config.signIn.limit,
+          skipIf: (context) =>
+            context.getClass() !== AuthController || context.getHandler() !== AuthController.prototype.signIn,
         },
       ],
     }),

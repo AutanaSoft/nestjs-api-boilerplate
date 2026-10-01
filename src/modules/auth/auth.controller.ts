@@ -8,6 +8,7 @@ import {
   Req,
   SerializeOptions,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import {
   ApiBadRequestResponse,
   ApiBody,
@@ -36,11 +37,13 @@ import type { RefreshRequest } from './contracts/refresh.schema.js';
 import { changePasswordRequestSchema } from './contracts/change-password.schema.js';
 import type { ChangePasswordRequest } from './contracts/change-password.schema.js';
 
+@SkipThrottle({ signUp: true, signIn: true })
 @Controller({ path: 'auth', version: API_VERSION })
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   @Public()
+  @SkipThrottle({ signUp: false })
   @Post('sign-up')
   @ApiOperation({ operationId: 'signUp' })
   @ApiBody({ schema: toOpenApiSchema(signUpRequestSchema, 'input') })
@@ -55,6 +58,7 @@ export class AuthController {
   }
 
   @Public()
+  @SkipThrottle({ signIn: false })
   @Post('sign-in')
   @HttpCode(200)
   @ApiOperation({ operationId: 'signIn' })

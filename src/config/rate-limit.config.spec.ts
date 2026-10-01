@@ -8,6 +8,8 @@ describe('buildRateLimitConfig', () => {
         ttlMs: 60_000,
         limit: 100,
       },
+      signUp: { ttlMs: 60_000, limit: 10 },
+      signIn: { ttlMs: 60_000, limit: 10 },
     });
   });
 
@@ -22,6 +24,8 @@ describe('buildRateLimitConfig', () => {
         ttlMs: 120_000,
         limit: 25,
       },
+      signUp: { ttlMs: 60_000, limit: 10 },
+      signIn: { ttlMs: 60_000, limit: 10 },
     });
   });
 

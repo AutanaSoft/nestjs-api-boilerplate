@@ -4,12 +4,16 @@ import authConfig from '../../../src/config/auth.config.js';
 import request from 'supertest';
 import { expect, it } from 'vitest';
 import { PrismaService } from '../../../src/database/prisma.service.js';
+import { buildHttpConfig } from '../../../src/config/http.config.js';
 import { buildRateLimitConfig } from '../../../src/config/rate-limit.config.js';
 import type { E2ESuiteRegistration } from '../../support/e2e-context.js';
 
 export function registerSignUpE2ESuite({ runScenario }: E2ESuiteRegistration): void {
   const options = {
-    application: { rateLimitConfig: buildRateLimitConfig({ THROTTLE_LIMIT: 100, THROTTLE_TTL_SECONDS: 60 }) },
+    application: {
+      httpConfig: buildHttpConfig({ TRUST_PROXY_HOPS: 1 }),
+      rateLimitConfig: buildRateLimitConfig({ THROTTLE_LIMIT: 100, THROTTLE_TTL_SECONDS: 60 }),
+    },
   };
   it('registers a normalized Argon2id user with only tokens and a persisted session', async () => {
     await runScenario(async ({ app }) => {
@@ -76,6 +80,32 @@ export function registerSignUpE2ESuite({ runScenario }: E2ESuiteRegistration): v
         .expect(409);
       expect(duplicate.body.code).toBe('CONFLICT');
       await request(app.getHttpServer()).post('/api/v1/users').send(payload).expect(404);
+    }, options);
+  });
+
+  it('allows 10 sign-ups per trusted client IP, blocks the 11th, and isolates IP counters', async () => {
+    await runScenario(async ({ app }) => {
+      const clientA = '198.51.100.21';
+      const clientB = '198.51.100.22';
+      const signUp = (ip: string) =>
+        request(app.getHttpServer())
+          .post('/api/v1/auth/sign-up')
+          .set('X-Forwarded-For', ip)
+          .send({ email: `${randomUUID()}@example.test`, displayName: 'Ada Lovelace', password: 'twelve characters' });
+
+      for (let attempt = 0; attempt < 10; attempt += 1) {
+        await signUp(clientA).expect(201);
+      }
+
+      const blocked = await signUp(clientA).expect(429);
+      expect(blocked.body).toEqual({
+        statusCode: 429,
+        code: 'RATE_LIMIT_EXCEEDED',
+        message: 'Too many requests.',
+        requestId: blocked.headers['x-request-id'],
+      });
+      expect(blocked.headers['x-request-id']).toEqual(expect.any(String));
+      await signUp(clientB).expect(201);
     }, options);
   });
 
