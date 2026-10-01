@@ -41,6 +41,11 @@ export const applicationErrorHttpDescriptors = Object.freeze({
     code: 'PASSWORD_REUSE_NOT_ALLOWED',
     message: 'The new password must differ from the current password.',
   }),
+  RESOURCE_NOT_OWNED: Object.freeze({
+    statusCode: 403,
+    code: 'FORBIDDEN',
+    message: 'You are not allowed to perform this action.',
+  }),
 }) satisfies Readonly<Record<ApplicationErrorCode, HttpErrorDescriptor>>;
 
 const unknownErrorHttpDescriptor: HttpErrorDescriptor = Object.freeze({

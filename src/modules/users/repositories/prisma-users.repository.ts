@@ -4,13 +4,13 @@ import { PrismaService } from '../../../database/prisma.service.js';
 import type { UpdateUserRequest } from '../contracts/update-user-request.schema.js';
 import { userSchema } from '../contracts/user.schema.js';
 import type { User } from '../contracts/user.schema.js';
-import { UserEmailConflictError } from '../users.errors.js';
 import type { ListUsersRepositoryQuery, ListUsersRepositoryResult, UsersRepository } from './users.repository.js';
 
 const userSelect = {
   id: true,
   email: true,
   displayName: true,
+  role: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.UserSelect;
@@ -73,7 +73,6 @@ export class PrismaUsersRepository implements UsersRepository {
       return userSchema.parse(user);
     } catch (error: unknown) {
       if (isRecordNotFound(error)) return null;
-      if (isUniqueEmailViolation(error)) throw new UserEmailConflictError(data.email ?? '', { cause: error });
       throw error;
     }
   }
@@ -116,9 +115,6 @@ function invert(direction: Direction): Direction {
   return direction === 'asc' ? 'desc' : 'asc';
 }
 
-function isUniqueEmailViolation(error: unknown): boolean {
-  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
-}
 function isRecordNotFound(error: unknown): boolean {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025';
 }

@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import { userResponseSchema } from './user-response.schema.js';
+import { viewerUserResponseSchema } from './user-response.schema.js';
 
 export const listUsersResponseSchema = z.object({
-  data: z.array(userResponseSchema),
+  data: z.array(viewerUserResponseSchema),
   pageInfo: z.object({
     nextCursor: z.string().nullable(),
     previousCursor: z.string().nullable(),

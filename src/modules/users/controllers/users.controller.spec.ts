@@ -6,10 +6,17 @@ import { userSchema } from '../contracts/user.schema.js';
 import { UsersController } from './users.controller.js';
 import type { UsersService } from '../services/users.service.js';
 
+const principal = {
+  userId: '123e4567-e89b-42d3-a456-426614174000',
+  sessionId: '123e4567-e89b-42d3-a456-426614174001',
+  role: 'user' as const,
+};
+
 const user = {
   id: '123e4567-e89b-42d3-a456-426614174000',
   email: 'ada@example.com',
   displayName: 'Ada Lovelace',
+  role: 'user' as const,
   createdAt: new Date('2026-09-19T12:34:56.789Z'),
   updatedAt: new Date('2026-09-19T12:34:56.789Z'),
 };
@@ -47,11 +54,11 @@ describe('UsersController', () => {
     const { controller, service } = createController('api');
     const structuredQuery = queryUsersRequestSchema.parse({ criteria: { email: user.email } });
 
-    await expect(controller.query(structuredQuery, {})).resolves.toEqual({
+    await expect(controller.query(structuredQuery, {}, principal)).resolves.toEqual({
       data: [user],
       pageInfo: {},
     });
-    expect(service.list).toHaveBeenCalledWith(structuredQuery);
+    expect(service.list).toHaveBeenCalledWith(structuredQuery, principal.userId);
   });
 
   it('attaches the canonical UUIDv4 schema to the userId path parameter', () => {
@@ -96,21 +103,21 @@ describe('UsersController', () => {
     const { controller, service } = createController('api');
     const update = { displayName: 'Ada Byron' };
 
-    await expect(controller.update(user.id, update)).resolves.toEqual(user);
-    expect(service.update).toHaveBeenCalledWith(user.id, update);
+    await expect(controller.update(user.id, update, principal)).resolves.toEqual(user);
+    expect(service.update).toHaveBeenCalledWith(user.id, principal.userId, update);
   });
 
   it('retrieves a user through the service', async () => {
     const { controller, service } = createController('api');
 
-    await expect(controller.findById(user.id)).resolves.toEqual(user);
-    expect(service.findById).toHaveBeenCalledWith(user.id);
+    await expect(controller.findById(user.id, principal)).resolves.toEqual(user);
+    expect(service.findById).toHaveBeenCalledWith(user.id, principal.userId);
   });
 
   it('deletes a user through the service', async () => {
     const { controller, service } = createController('api');
 
-    await expect(controller.delete(user.id)).resolves.toBeUndefined();
-    expect(service.delete).toHaveBeenCalledWith(user.id);
+    await expect(controller.delete(user.id, principal)).resolves.toBeUndefined();
+    expect(service.delete).toHaveBeenCalledWith(user.id, principal.userId);
   });
 });

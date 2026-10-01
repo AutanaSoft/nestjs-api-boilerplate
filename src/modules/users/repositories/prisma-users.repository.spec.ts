@@ -10,6 +10,7 @@ const user = {
   id: '123e4567-e89b-42d3-a456-426614174000',
   email: 'ada@example.com',
   displayName: 'Ada Lovelace',
+  role: 'user' as const,
   createdAt: new Date('2026-09-19T12:34:56.789Z'),
   updatedAt: new Date('2026-09-19T12:34:56.789Z'),
 };
@@ -39,6 +40,7 @@ describe('PrismaUsersRepository', () => {
         id: true,
         email: true,
         displayName: true,
+        role: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -85,6 +87,7 @@ describe('PrismaUsersRepository', () => {
           id: true,
           email: true,
           displayName: true,
+          role: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -194,6 +197,7 @@ describe('PrismaUsersRepository', () => {
         id: true,
         email: true,
         displayName: true,
+        role: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -207,7 +211,7 @@ describe('PrismaUsersRepository', () => {
     });
     const repository = createRepository(vi.fn(), vi.fn(), vi.fn().mockRejectedValue(missing));
 
-    await expect(repository.update(user.id, { email: user.email })).resolves.toBeNull();
+    await expect(repository.update(user.id, { displayName: 'Ada Byron' })).resolves.toBeNull();
   });
 
   it('deletes a user through Prisma', async () => {
@@ -226,21 +230,6 @@ describe('PrismaUsersRepository', () => {
     const repository = createRepository(vi.fn(), vi.fn(), vi.fn(), vi.fn().mockRejectedValue(missing));
 
     await expect(repository.delete(user.id)).resolves.toBeNull();
-  });
-
-  it('translates a P2002 update error to an email conflict', async () => {
-    const conflict = new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
-      code: 'P2002',
-      clientVersion: '7.10.0',
-    });
-    const repository = createRepository(vi.fn(), vi.fn(), vi.fn().mockRejectedValue(conflict));
-
-    await expect(repository.update(user.id, { email: user.email })).rejects.toMatchObject({
-      name: UserEmailConflictError.name,
-      email: user.email,
-      code: 'CONFLICT',
-      cause: conflict,
-    });
   });
 
   it.each([{ meta: { modelName: 'User', target: ['email'] } }, {}])(

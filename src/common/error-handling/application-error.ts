@@ -4,7 +4,8 @@ export type ApplicationErrorCode =
   | 'INVALID_CREDENTIALS'
   | 'INVALID_REFRESH_TOKEN'
   | 'INVALID_CURRENT_PASSWORD'
-  | 'PASSWORD_REUSE_NOT_ALLOWED';
+  | 'PASSWORD_REUSE_NOT_ALLOWED'
+  | 'RESOURCE_NOT_OWNED';
 
 export abstract class ApplicationError extends Error {
   abstract readonly code: ApplicationErrorCode;

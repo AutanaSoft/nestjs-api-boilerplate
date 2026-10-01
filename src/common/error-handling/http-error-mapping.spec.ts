@@ -4,6 +4,7 @@ import { ApplicationError } from './application-error.js';
 import { applicationErrorHttpDescriptors, mapErrorToResponse } from './http-error-mapping.js';
 import { ResponseContractViolation } from '../serialization/response-contract-violation.js';
 import { InvalidCredentialsError } from '../../modules/auth/auth.errors.js';
+import { UserNotOwnedError } from '../../modules/users/users.errors.js';
 
 type ResourceNotFoundContext = Readonly<{
   resourceId: string;
@@ -73,6 +74,15 @@ describe('mapErrorToResponse', () => {
       statusCode: 409,
       code: 'CONFLICT',
       message: 'The request conflicts with the current resource state.',
+      requestId,
+    });
+  });
+
+  it('maps a user ownership denial to the approved forbidden descriptor', () => {
+    expect(mapErrorToResponse(new UserNotOwnedError(), requestId)).toEqual({
+      statusCode: 403,
+      code: 'FORBIDDEN',
+      message: 'You are not allowed to perform this action.',
       requestId,
     });
   });

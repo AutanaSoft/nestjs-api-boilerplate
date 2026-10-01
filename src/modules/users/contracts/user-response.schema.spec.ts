@@ -8,6 +8,7 @@ const user = {
   id: '123e4567-e89b-42d3-a456-426614174000',
   email: 'ada@example.com',
   displayName: 'Ada Lovelace',
+  role: 'user' as const,
   createdAt: new Date('2026-09-19T12:34:56.789Z'),
   updatedAt: new Date('2026-09-19T12:35:56.789Z'),
 };

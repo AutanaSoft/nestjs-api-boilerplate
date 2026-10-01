@@ -14,7 +14,6 @@ import {
 import {
   ApiBadRequestResponse,
   ApiBody,
-  ApiConflictResponse,
   ApiInternalServerErrorResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
@@ -22,10 +21,12 @@ import {
   ApiOperation,
   ApiParam,
   ApiQuery,
+  ApiForbiddenResponse,
   ApiTooManyRequestsResponse,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { CurrentPrincipal, type AuthenticatedPrincipal } from '../../../common/auth/authenticated-principal.js';
 import { errorResponseSchema } from '../../../common/error-handling/error-response.js';
-import { Public } from '../../../common/auth/public.js';
 import { toOpenApiSchema } from '../../../common/openapi/openapi-schema.js';
 import { API_VERSION } from '../../../config/api.config.js';
 import { listUsersRequestSchema } from '../contracts/list-users-request.schema.js';
@@ -35,12 +36,10 @@ import { queryUsersRequestSchema, queryUsersUrlQuerySchema } from '../contracts/
 import type { QueryUsersRequest } from '../contracts/query-users-request.schema.js';
 import { updateUserRequestSchema } from '../contracts/update-user-request.schema.js';
 import type { UpdateUserRequest } from '../contracts/update-user-request.schema.js';
-import { userResponseSchema } from '../contracts/user-response.schema.js';
+import { userResponseSchema, viewerUserResponseSchema } from '../contracts/user-response.schema.js';
 import { userSchema } from '../contracts/user.schema.js';
 import { UsersService } from '../services/users.service.js';
 
-// Transitional R3b exception only: R4 removes public access before release.
-@Public()
 @Controller({ path: 'users', version: API_VERSION })
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -74,8 +73,12 @@ export class UsersController {
   @ApiTooManyRequestsResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
   @ApiInternalServerErrorResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
   @SerializeOptions({ schema: listUsersResponseSchema })
-  list(@Query({ schema: listUsersRequestSchema }) query: ListUsersRequest) {
-    return this.usersService.list(query);
+  @ApiUnauthorizedResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  list(
+    @Query({ schema: listUsersRequestSchema }) query: ListUsersRequest,
+    @CurrentPrincipal() principal: AuthenticatedPrincipal,
+  ) {
+    return this.usersService.list(query, principal.userId);
   }
 
   @QueryMethod()
@@ -86,24 +89,40 @@ export class UsersController {
   @ApiTooManyRequestsResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
   @ApiInternalServerErrorResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
   @SerializeOptions({ schema: listUsersResponseSchema })
+  @ApiUnauthorizedResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
   query(
     @Body({ schema: queryUsersRequestSchema }) body: QueryUsersRequest,
     @Query({ schema: queryUsersUrlQuerySchema }) _query: Record<never, never>,
+    @CurrentPrincipal() principal: AuthenticatedPrincipal,
   ) {
-    return this.usersService.list(body);
+    return this.usersService.list(body, principal.userId);
+  }
+
+  @Get('me')
+  @ApiOperation({ operationId: 'getCurrentUser' })
+  @ApiOkResponse({ schema: toOpenApiSchema(userResponseSchema, 'output') })
+  @ApiUnauthorizedResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @ApiInternalServerErrorResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @SerializeOptions({ schema: userResponseSchema })
+  findCurrent(@CurrentPrincipal() principal: AuthenticatedPrincipal) {
+    return this.usersService.findById(principal.userId, principal.userId);
   }
 
   @Get(':userId')
   @ApiOperation({ operationId: 'getUser' })
   @ApiParam({ name: 'userId', schema: toOpenApiSchema(userSchema.shape.id, 'input') })
-  @ApiOkResponse({ schema: toOpenApiSchema(userResponseSchema, 'output') })
+  @ApiOkResponse({ schema: toOpenApiSchema(viewerUserResponseSchema, 'output') })
   @ApiBadRequestResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
   @ApiNotFoundResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
   @ApiTooManyRequestsResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
   @ApiInternalServerErrorResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
-  @SerializeOptions({ schema: userResponseSchema })
-  findById(@Param('userId', { schema: userSchema.shape.id }) userId: string) {
-    return this.usersService.findById(userId);
+  @ApiUnauthorizedResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @SerializeOptions({ schema: viewerUserResponseSchema })
+  findById(
+    @Param('userId', { schema: userSchema.shape.id }) userId: string,
+    @CurrentPrincipal() principal: AuthenticatedPrincipal,
+  ) {
+    return this.usersService.findById(userId, principal.userId);
   }
 
   @Delete(':userId')
@@ -115,8 +134,28 @@ export class UsersController {
   @ApiNotFoundResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
   @ApiTooManyRequestsResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
   @ApiInternalServerErrorResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
-  async delete(@Param('userId', { schema: userSchema.shape.id }) userId: string): Promise<void> {
-    await this.usersService.delete(userId);
+  @ApiUnauthorizedResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @ApiForbiddenResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  async delete(
+    @Param('userId', { schema: userSchema.shape.id }) userId: string,
+    @CurrentPrincipal() principal: AuthenticatedPrincipal,
+  ): Promise<void> {
+    await this.usersService.delete(userId, principal.userId);
+  }
+
+  @Patch('me')
+  @ApiOperation({ operationId: 'updateCurrentUser' })
+  @ApiBody({ schema: toOpenApiSchema(updateUserRequestSchema, 'input') })
+  @ApiOkResponse({ schema: toOpenApiSchema(userResponseSchema, 'output') })
+  @ApiBadRequestResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @ApiUnauthorizedResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @ApiInternalServerErrorResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @SerializeOptions({ schema: userResponseSchema })
+  updateCurrent(
+    @Body({ schema: updateUserRequestSchema }) body: UpdateUserRequest,
+    @CurrentPrincipal() principal: AuthenticatedPrincipal,
+  ) {
+    return this.usersService.update(principal.userId, principal.userId, body);
   }
 
   @Patch(':userId')
@@ -126,14 +165,16 @@ export class UsersController {
   @ApiOkResponse({ schema: toOpenApiSchema(userResponseSchema, 'output') })
   @ApiBadRequestResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
   @ApiNotFoundResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
-  @ApiConflictResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @ApiForbiddenResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
+  @ApiUnauthorizedResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
   @ApiTooManyRequestsResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
   @ApiInternalServerErrorResponse({ schema: toOpenApiSchema(errorResponseSchema, 'output') })
   @SerializeOptions({ schema: userResponseSchema })
   update(
     @Param('userId', { schema: userSchema.shape.id }) userId: string,
     @Body({ schema: updateUserRequestSchema }) body: UpdateUserRequest,
+    @CurrentPrincipal() principal: AuthenticatedPrincipal,
   ) {
-    return this.usersService.update(userId, body);
+    return this.usersService.update(userId, principal.userId, body);
   }
 }

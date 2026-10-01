@@ -3,15 +3,11 @@ import { updateUserRequestSchema } from './update-user-request.schema.js';
 import { userSchema } from './user.schema.js';
 
 describe('updateUserRequestSchema', () => {
-  it('derives optional mutable fields from the canonical user schema', () => {
-    expect(updateUserRequestSchema.shape.email.unwrap()).toBe(userSchema.shape.email);
-    expect(updateUserRequestSchema.shape.displayName.unwrap()).toBe(userSchema.shape.displayName);
+  it('derives the required displayName field from the canonical user schema', () => {
+    expect(updateUserRequestSchema.shape.displayName).toBe(userSchema.shape.displayName);
   });
 
-  it('normalizes supplied fields while preserving omitted fields', () => {
-    expect(updateUserRequestSchema.parse({ email: ' Ada.Lovelace@Example.COM ' })).toEqual({
-      email: 'ada.lovelace@example.com',
-    });
+  it('normalizes the required displayName', () => {
     expect(updateUserRequestSchema.parse({ displayName: ' Ada Lovelace ' })).toEqual({
       displayName: 'Ada Lovelace',
     });
@@ -20,14 +16,15 @@ describe('updateUserRequestSchema', () => {
   it.each([
     null,
     {},
-    { email: undefined },
-    { id: '123e4567-e89b-42d3-a456-426614174000' },
-    { role: 'admin' },
-    { createdAt: '2026-01-01T00:00:00.000Z' },
-    { updatedAt: '2026-01-01T00:00:00.000Z' },
-    { email: 'not-an-email' },
+    { displayName: undefined },
+    { email: 'ada@example.com', displayName: 'Ada Lovelace' },
+    { id: '123e4567-e89b-42d3-a456-426614174000', displayName: 'Ada Lovelace' },
+    { role: 'admin', displayName: 'Ada Lovelace' },
+    { password: 'secret', displayName: 'Ada Lovelace' },
+    { createdAt: '2026-01-01T00:00:00.000Z', displayName: 'Ada Lovelace' },
+    { updatedAt: '2026-01-01T00:00:00.000Z', displayName: 'Ada Lovelace' },
     { displayName: 'A' },
-  ])('rejects null, empty, system-managed, and invalid input %#', (input) => {
+  ])('rejects missing, extra, system-managed, and invalid input %#', (input) => {
     expect(() => updateUserRequestSchema.parse(input)).toThrow();
   });
 });

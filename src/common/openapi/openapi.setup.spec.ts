@@ -18,7 +18,7 @@ import { signUpRequestSchema, tokensResponseSchema } from '../../modules/auth/co
 import { listUsersRequestSchema } from '../../modules/users/contracts/list-users-request.schema.js';
 import { queryUsersRequestSchema } from '../../modules/users/contracts/query-users-request.schema.js';
 import { updateUserRequestSchema } from '../../modules/users/contracts/update-user-request.schema.js';
-import { userResponseSchema } from '../../modules/users/contracts/user-response.schema.js';
+import { userResponseSchema, viewerUserResponseSchema } from '../../modules/users/contracts/user-response.schema.js';
 import { userSchema } from '../../modules/users/contracts/user.schema.js';
 import { toOpenApiSchema } from './openapi-schema.js';
 import { setupOpenApi } from './openapi.setup.js';
@@ -234,6 +234,7 @@ describe('setupOpenApi', () => {
         '/api/v1/health/live',
         '/api/v1/health/ready',
         '/api/v1/users',
+        '/api/v1/users/me',
         '/api/v1/users/{userId}',
         '/api/v1/auth/sign-up',
         '/api/v1/auth/sign-in',
@@ -286,16 +287,62 @@ describe('setupOpenApi', () => {
           schema: toOpenApiSchema(userSchema.shape.id, 'input'),
         },
       ]);
-      expect(Object.keys(getUser?.responses ?? {})).toEqual(['200', '400', '404', '429', '500']);
+      expect(Object.keys(getUser?.responses ?? {})).toEqual(['200', '400', '401', '404', '429', '500']);
       expect(getUser?.responses?.['200']).toEqual(
+        expect.objectContaining({
+          content: {
+            'application/json': { schema: toOpenApiSchema(viewerUserResponseSchema, 'output') },
+          },
+        }),
+      );
+      for (const status of ['400', '401', '404', '429', '500']) {
+        expect(getUser?.responses?.[status]).toEqual(
+          expect.objectContaining({
+            content: {
+              'application/json': { schema: toOpenApiSchema(errorResponseSchema, 'output') },
+            },
+          }),
+        );
+      }
+
+      const currentUser = paths['/api/v1/users/me'];
+      expect(currentUser?.get?.operationId).toBe('getCurrentUser');
+      expect(Object.keys(currentUser?.get?.responses ?? {})).toEqual(['200', '401', '500']);
+      expect(currentUser?.get?.responses?.['200']).toEqual(
         expect.objectContaining({
           content: {
             'application/json': { schema: toOpenApiSchema(userResponseSchema, 'output') },
           },
         }),
       );
-      for (const status of ['400', '404', '429', '500']) {
-        expect(getUser?.responses?.[status]).toEqual(
+      for (const status of ['401', '500']) {
+        expect(currentUser?.get?.responses?.[status]).toEqual(
+          expect.objectContaining({
+            content: {
+              'application/json': { schema: toOpenApiSchema(errorResponseSchema, 'output') },
+            },
+          }),
+        );
+      }
+
+      expect(currentUser?.patch?.operationId).toBe('updateCurrentUser');
+      expect(currentUser?.patch?.requestBody).toEqual(
+        expect.objectContaining({
+          content: {
+            'application/json': { schema: toOpenApiSchema(updateUserRequestSchema, 'input') },
+          },
+        }),
+      );
+      expect(Object.keys(currentUser?.patch?.responses ?? {})).toEqual(['200', '400', '401', '500']);
+      expect(currentUser?.patch?.responses?.['200']).toEqual(
+        expect.objectContaining({
+          content: {
+            'application/json': { schema: toOpenApiSchema(userResponseSchema, 'output') },
+          },
+        }),
+      );
+      for (const status of ['400', '401', '500']) {
+        expect(currentUser?.patch?.responses?.[status]).toEqual(
           expect.objectContaining({
             content: {
               'application/json': { schema: toOpenApiSchema(errorResponseSchema, 'output') },
@@ -321,7 +368,7 @@ describe('setupOpenApi', () => {
           },
         }),
       );
-      expect(Object.keys(updateUser?.responses ?? {})).toEqual(['200', '400', '404', '409', '429', '500']);
+      expect(Object.keys(updateUser?.responses ?? {})).toEqual(['200', '400', '401', '403', '404', '429', '500']);
       expect(updateUser?.responses?.['200']).toEqual(
         expect.objectContaining({
           content: {
@@ -329,7 +376,7 @@ describe('setupOpenApi', () => {
           },
         }),
       );
-      for (const status of ['400', '404', '409', '429', '500']) {
+      for (const status of ['400', '401', '403', '404', '429', '500']) {
         expect(updateUser?.responses?.[status]).toEqual(
           expect.objectContaining({
             content: {
@@ -349,10 +396,10 @@ describe('setupOpenApi', () => {
           schema: toOpenApiSchema(userSchema.shape.id, 'input'),
         },
       ]);
-      expect(Object.keys(deleteUser?.responses ?? {})).toEqual(['204', '400', '404', '429', '500']);
+      expect(Object.keys(deleteUser?.responses ?? {})).toEqual(['204', '400', '401', '403', '404', '429', '500']);
       expect(deleteUser?.responses?.['204']).toEqual(expect.objectContaining({ description: expect.any(String) }));
       expect(deleteUser?.responses?.['204']).not.toHaveProperty('content');
-      for (const status of ['400', '404', '429', '500']) {
+      for (const status of ['400', '401', '403', '404', '429', '500']) {
         expect(deleteUser?.responses?.[status]).toEqual(
           expect.objectContaining({
             content: {
@@ -402,7 +449,7 @@ describe('setupOpenApi', () => {
           schema: { type: 'string', maxLength: 1024 },
         },
       ]);
-      expect(Object.keys(listUsers?.responses ?? {})).toEqual(['200', '400', '429', '500']);
+      expect(Object.keys(listUsers?.responses ?? {})).toEqual(['200', '400', '401', '429', '500']);
       expect(listUsers?.responses?.['200']).toEqual(
         expect.objectContaining({
           content: {
@@ -422,7 +469,7 @@ describe('setupOpenApi', () => {
           },
         }),
       );
-      for (const status of ['400', '429', '500']) {
+      for (const status of ['400', '401', '429', '500']) {
         expect(listUsers?.responses?.[status]).toEqual(
           expect.objectContaining({
             content: {
@@ -442,7 +489,7 @@ describe('setupOpenApi', () => {
           },
         }),
       );
-      expect(Object.keys(queryUsers?.responses ?? {})).toEqual(['200', '400', '429', '500']);
+      expect(Object.keys(queryUsers?.responses ?? {})).toEqual(['200', '400', '401', '429', '500']);
       expect(queryUsers?.responses?.['200']).toEqual(
         expect.objectContaining({
           content: {
@@ -462,7 +509,7 @@ describe('setupOpenApi', () => {
           },
         }),
       );
-      for (const status of ['400', '429', '500']) {
+      for (const status of ['400', '401', '429', '500']) {
         expect(queryUsers?.responses?.[status]).toEqual(
           expect.objectContaining({
             content: {
@@ -524,6 +571,7 @@ describe('setupOpenApi', () => {
         '/v1/health/live',
         '/v1/health/ready',
         '/v1/users',
+        '/v1/users/me',
         '/v1/users/{userId}',
         '/v1/auth/sign-up',
         '/v1/auth/sign-in',

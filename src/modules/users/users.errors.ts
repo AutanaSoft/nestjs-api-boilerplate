@@ -8,6 +8,14 @@ export class UserNotFoundError extends ApplicationError {
   }
 }
 
+export class UserNotOwnedError extends ApplicationError {
+  readonly code = 'RESOURCE_NOT_OWNED' as const;
+
+  constructor(options?: ErrorOptions) {
+    super(options);
+  }
+}
+
 export class UserEmailConflictError extends ApplicationError {
   readonly code = 'CONFLICT' as const;
 

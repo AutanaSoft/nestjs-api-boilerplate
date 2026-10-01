@@ -4,7 +4,7 @@ import type { ListUsersResponseInput } from '../contracts/list-users-response.sc
 import type { UpdateUserRequest } from '../contracts/update-user-request.schema.js';
 import type { User } from '../contracts/user.schema.js';
 import { decodeListUsersCursor, encodeListUsersCursor } from '../codecs/list-users-cursor.codec.js';
-import { UserNotFoundError } from '../users.errors.js';
+import { UserNotFoundError, UserNotOwnedError } from '../users.errors.js';
 import { USERS_REPOSITORY } from '../repositories/users.repository.js';
 import type { UsersRepository } from '../repositories/users.repository.js';
 
@@ -12,13 +12,13 @@ import type { UsersRepository } from '../repositories/users.repository.js';
 export class UsersService {
   constructor(@Inject(USERS_REPOSITORY) private readonly usersRepository: UsersRepository) {}
 
-  async findById(id: string): Promise<User> {
+  async findById(id: string, viewerId: string): Promise<User | Omit<User, 'email'>> {
     const user = await this.usersRepository.findById(id);
     if (user === null) throw new UserNotFoundError();
-    return user;
+    return projectForViewer(user, viewerId);
   }
 
-  async list(request: ListUsersRequest): Promise<ListUsersResponseInput> {
+  async list(request: ListUsersRequest, viewerId: string): Promise<ListUsersResponseInput> {
     const cursorDirection =
       request.after === undefined ? (request.before === undefined ? undefined : 'before') : 'after';
     const cursorValue = request.after ?? request.before;
@@ -39,7 +39,7 @@ export class UsersService {
     }
 
     return {
-      data: result.data,
+      data: result.data.map((user) => projectForViewer(user, viewerId)),
       pageInfo: {
         hasNextPage: result.hasNextPage,
         hasPreviousPage: result.hasPreviousPage,
@@ -53,15 +53,31 @@ export class UsersService {
     };
   }
 
-  async update(id: string, data: UpdateUserRequest): Promise<User> {
+  async update(id: string, viewerId: string, data: UpdateUserRequest): Promise<User> {
+    await this.requireOwner(id, viewerId);
     const user = await this.usersRepository.update(id, data);
     if (user === null) throw new UserNotFoundError();
     return user;
   }
 
-  async delete(id: string): Promise<void> {
+  async delete(id: string, viewerId: string): Promise<void> {
+    await this.requireOwner(id, viewerId);
     if ((await this.usersRepository.delete(id)) === null) throw new UserNotFoundError();
   }
+
+  private async requireOwner(id: string, viewerId: string): Promise<User> {
+    const user = await this.usersRepository.findById(id);
+    if (user === null) throw new UserNotFoundError();
+    if (user.id !== viewerId) throw new UserNotOwnedError();
+    return user;
+  }
+}
+
+function projectForViewer(user: User, viewerId: string): User | Omit<User, 'email'> {
+  if (user.id === viewerId) return user;
+  const { email, ...otherUser } = user;
+  void email;
+  return otherUser;
 }
 
 function positionFor(sort: ListUsersRequest['sort'], user: User) {

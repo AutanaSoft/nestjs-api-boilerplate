@@ -11,7 +11,10 @@ import { refreshRequestSchema } from '../../../src/modules/auth/contracts/refres
 import { listUsersRequestSchema } from '../../../src/modules/users/contracts/list-users-request.schema.js';
 import { queryUsersRequestSchema } from '../../../src/modules/users/contracts/query-users-request.schema.js';
 import { updateUserRequestSchema } from '../../../src/modules/users/contracts/update-user-request.schema.js';
-import { userResponseSchema } from '../../../src/modules/users/contracts/user-response.schema.js';
+import {
+  userResponseSchema,
+  viewerUserResponseSchema,
+} from '../../../src/modules/users/contracts/user-response.schema.js';
 import { userSchema } from '../../../src/modules/users/contracts/user.schema.js';
 import type { E2ESuiteRegistration } from '../../support/e2e-context.js';
 
@@ -20,6 +23,7 @@ const USER_RETRIEVAL_OPENAPI_PATH = '/api/v1/users/{userId}';
 const OPENAPI_PATHS = [
   ...HEALTH_OPENAPI_PATHS,
   '/api/v1/users',
+  '/api/v1/users/me',
   USER_RETRIEVAL_OPENAPI_PATH,
   '/api/v1/auth/sign-up',
   '/api/v1/auth/sign-in',
@@ -113,15 +117,30 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
               schema: toOpenApiSchema(userSchema.shape.id, 'input'),
             },
           ]);
-          expect(Object.keys(getUser.responses)).toEqual(['200', '400', '404', '429', '500']);
+          expect(Object.keys(getUser.responses)).toEqual(['200', '400', '401', '404', '429', '500']);
           expect(getUser.responses['200'].content['application/json'].schema).toEqual(
-            toOpenApiSchema(userResponseSchema, 'output'),
+            toOpenApiSchema(viewerUserResponseSchema, 'output'),
           );
-          for (const status of ['400', '404', '429', '500']) {
+          for (const status of ['400', '401', '404', '429', '500']) {
             expect(getUser.responses[status].content['application/json'].schema).toEqual(
               toOpenApiSchema(errorResponseSchema, 'output'),
             );
           }
+
+          const currentUser = document.body.paths['/api/v1/users/me'];
+          expect(currentUser.get.operationId).toBe('getCurrentUser');
+          expect(currentUser.get.responses['200'].content['application/json'].schema).toEqual(
+            toOpenApiSchema(userResponseSchema, 'output'),
+          );
+          expect(Object.keys(currentUser.get.responses)).toEqual(['200', '401', '500']);
+          expect(currentUser.patch.operationId).toBe('updateCurrentUser');
+          expect(currentUser.patch.requestBody.content['application/json'].schema).toEqual(
+            toOpenApiSchema(updateUserRequestSchema, 'input'),
+          );
+          expect(currentUser.patch.responses['200'].content['application/json'].schema).toEqual(
+            toOpenApiSchema(userResponseSchema, 'output'),
+          );
+          expect(Object.keys(currentUser.patch.responses)).toEqual(['200', '400', '401', '500']);
 
           const updateUser = document.body.paths[USER_RETRIEVAL_OPENAPI_PATH].patch;
           expect(updateUser.operationId).toBe('updateUser');
@@ -136,11 +155,11 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
           expect(updateUser.requestBody.content['application/json'].schema).toEqual(
             toOpenApiSchema(updateUserRequestSchema, 'input'),
           );
-          expect(Object.keys(updateUser.responses)).toEqual(['200', '400', '404', '409', '429', '500']);
+          expect(Object.keys(updateUser.responses)).toEqual(['200', '400', '401', '403', '404', '429', '500']);
           expect(updateUser.responses['200'].content['application/json'].schema).toEqual(
             toOpenApiSchema(userResponseSchema, 'output'),
           );
-          for (const status of ['400', '404', '409', '429', '500']) {
+          for (const status of ['400', '401', '403', '404', '429', '500']) {
             expect(updateUser.responses[status].content['application/json'].schema).toEqual(
               toOpenApiSchema(errorResponseSchema, 'output'),
             );
@@ -156,10 +175,10 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
               schema: toOpenApiSchema(userSchema.shape.id, 'input'),
             },
           ]);
-          expect(Object.keys(deleteUser.responses)).toEqual(['204', '400', '404', '429', '500']);
+          expect(Object.keys(deleteUser.responses)).toEqual(['204', '400', '401', '403', '404', '429', '500']);
           expect(deleteUser.responses['204']).toEqual(expect.objectContaining({ description: expect.any(String) }));
           expect(deleteUser.responses['204'].content).toBeUndefined();
-          for (const status of ['400', '404', '429', '500']) {
+          for (const status of ['400', '401', '403', '404', '429', '500']) {
             expect(deleteUser.responses[status].content['application/json'].schema).toEqual(
               toOpenApiSchema(errorResponseSchema, 'output'),
             );
@@ -205,7 +224,7 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
               schema: { type: 'string', maxLength: 1024 },
             },
           ]);
-          expect(Object.keys(listUsers.responses)).toEqual(['200', '400', '429', '500']);
+          expect(Object.keys(listUsers.responses)).toEqual(['200', '400', '401', '429', '500']);
           expect(listUsers.responses['200'].content['application/json'].schema).toEqual(
             expect.objectContaining({
               type: 'object',
@@ -219,7 +238,7 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
               }),
             }),
           );
-          for (const status of ['400', '429', '500']) {
+          for (const status of ['400', '401', '429', '500']) {
             expect(listUsers.responses[status].content['application/json'].schema).toEqual(
               toOpenApiSchema(errorResponseSchema, 'output'),
             );
@@ -231,7 +250,7 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
           expect(queryUsers.requestBody.content['application/json'].schema).toEqual(
             toOpenApiSchema(queryUsersRequestSchema, 'input'),
           );
-          expect(Object.keys(queryUsers.responses)).toEqual(['200', '400', '429', '500']);
+          expect(Object.keys(queryUsers.responses)).toEqual(['200', '400', '401', '429', '500']);
           expect(queryUsers.responses['200'].content['application/json'].schema).toEqual(
             expect.objectContaining({
               type: 'object',
@@ -245,7 +264,7 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
               }),
             }),
           );
-          for (const status of ['400', '429', '500']) {
+          for (const status of ['400', '401', '429', '500']) {
             expect(queryUsers.responses[status].content['application/json'].schema).toEqual(
               toOpenApiSchema(errorResponseSchema, 'output'),
             );
@@ -325,6 +344,7 @@ export function registerOpenApiE2ESuite(registration: E2ESuiteRegistration): voi
             '/v1/health/live',
             '/v1/health/ready',
             '/v1/users',
+            '/v1/users/me',
             '/v1/users/{userId}',
             '/v1/auth/sign-up',
             '/v1/auth/sign-in',

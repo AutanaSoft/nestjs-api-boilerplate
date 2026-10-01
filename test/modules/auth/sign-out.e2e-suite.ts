@@ -105,7 +105,10 @@ export function registerSignOutE2ESuite({ runScenario }: E2ESuiteRegistration): 
         .post('/api/v1/auth/sign-in')
         .send({ email, password: 'twelve characters' })
         .expect(200);
-      await request(app.getHttpServer()).delete(`/api/v1/users/${claims.sub}`).expect(204);
+      await request(app.getHttpServer())
+        .delete(`/api/v1/users/${claims.sub}`)
+        .set('Authorization', `Bearer ${second.body.accessToken}`)
+        .expect(204);
       await request(app.getHttpServer())
         .post('/api/v1/auth/sign-out')
         .set('Authorization', `Bearer ${second.body.accessToken}`)

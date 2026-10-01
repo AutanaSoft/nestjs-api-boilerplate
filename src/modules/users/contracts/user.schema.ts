@@ -16,6 +16,7 @@ export const userSchema = z.strictObject({
   id: z.uuidv4(),
   email: normalizedEmailSchema,
   displayName: displayNameSchema,
+  role: z.literal('user'),
   createdAt: z.date(),
   updatedAt: z.date(),
 });
