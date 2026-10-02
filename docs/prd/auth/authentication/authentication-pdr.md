@@ -6,7 +6,7 @@ slug: authentication
 version: '2.0'
 status: approved
 date_created: '2026-09-25'
-last_updated: '2026-09-28'
+last_updated: '2026-10-02'
 owner: auth
 tags:
   - auth
@@ -24,7 +24,7 @@ management to protected access.
 
 ## 1. Problem
 
-User management is currently accessible without credentials as a temporary development measure. Projects created from
+User management was initially accessible without credentials as a temporary development measure. Projects created from
 this template need a safe way to register and authenticate users and protect user management while allowing
 authenticated users to read profiles and manage only their own account.
 
@@ -133,53 +133,59 @@ self-service access to user management and personal profiles.
   scenarios must continue to create their own isolated fixtures rather than depend on production seeds.
 - The Users management PDR (`docs/prd/users/management/users-management-pdr.md`) solely owns Users HTTP response
   projection, including viewer-dependent email visibility for individual, list, and `QUERY` results, and the detailed
-  Users CRUD and authorization transition. This draft describes future behavior, not the current implementation. A
-  Users-owned local Argon2 provider suffices; extract shared hashing only if a second real consumer emerges.
+  Users CRUD and authorization transition. A Users-owned local Argon2 provider suffices; extract shared hashing only if
+  a second real consumer emerges.
 
 ## 6. Acceptance criteria
 
-- [ ] `POST /api/v1/auth/sign-up` requires exactly `email`, `displayName`, and an untrimmed password of at least 12
+Final R5e integrated verification passed on source through local implementation-chain HEAD `9029b1d`: 75 real-HTTP E2E
+tests, 369 unit tests, lint, build, Prisma validation, Prettier, markdownlint, and `git diff --check` passed. E2E
+scenarios used isolated PostgreSQL databases. The criteria below are reconciled against the source and representative
+tests, not individually tested criterion-by-criterion. The repository remains unreleased; this evidence is not release
+authorization.
+
+- [x] `POST /api/v1/auth/sign-up` requires exactly `email`, `displayName`, and an untrimmed password of at least 12
       characters, rejecting additional fields including `role` and `confirmPassword`. It creates an ordinary user with
       automatic sign-in and session creation with the sole `user` role. Sign-up is the only creation route. Success
       returns `201 Created` with only `{ accessToken, expiresAt, refreshToken, refreshExpiresAt }`, no User body and no
       `Location`; expirations are absolute UTC ISO 8601 date-time strings. A duplicate email returns `409 Conflict`,
       exposing registration existence despite the generic invalid-credentials error at sign-in.
-- [ ] `POST /api/v1/auth/sign-in` accepts only JSON `{ email, password }`: email uses Users normalization and password
+- [x] `POST /api/v1/auth/sign-in` accepts only JSON `{ email, password }`: email uses Users normalization and password
       is raw, untrimmed, nonempty, and not subject to the 12-character enrollment minimum. Missing, malformed, or extra
       fields return `400 BAD_REQUEST`. Success returns exactly `accessToken`, `expiresAt`, `refreshToken`, and
       `refreshExpiresAt` in JSON without email verification. Expirations are absolute UTC ISO 8601 date-time strings.
       Absent email and wrong password both return `401 INVALID_CREDENTIALS` with the catalog message and no `details`.
-- [ ] Passwords require at least 12 characters with no character-class rules at enrollment. The configurable global rate
+- [x] Passwords require at least 12 characters with no character-class rules at enrollment. The configurable global rate
       limit defaults to 100 requests per 60 seconds; sign-up and sign-in each have an independent 10-per-minute per-IP
       limit. Exceeding a limit returns `429 RATE_LIMIT_EXCEEDED`; no per-email failure lockout applies.
-- [ ] An access token authenticates protected requests through `Authorization: Bearer`; missing or invalid credentials
+- [x] An access token authenticates protected requests through `Authorization: Bearer`; missing or invalid credentials
       are rejected under the public HTTP contract.
-- [ ] Access JWTs expire after 15 minutes by default and refresh tokens after 7 days by default, with both lifetimes
+- [x] Access JWTs expire after 15 minutes by default and refresh tokens after 7 days by default, with both lifetimes
       configurable by environment.
-- [ ] `POST /api/v1/auth/refresh` accepts only JSON `{ refreshToken }` with a nonempty value and requires no Bearer
+- [x] `POST /api/v1/auth/refresh` accepts only JSON `{ refreshToken }` with a nonempty value and requires no Bearer
       access token; missing, malformed, or extra fields return `400 BAD_REQUEST`. Success rotates refresh tokens and
       returns the same four-field token response with new absolute expiration timestamps. Unknown, expired, revoked,
       sessionless, and reused rotated tokens produce the same `401 INVALID_REFRESH_TOKEN` with the catalog message and
       no `details`. Reuse, including concurrent requests using the same token, revokes only the affected session and its
       access tokens, requires login, and leaves other sessions active. Clients serialize refresh requests.
-- [ ] `POST /api/v1/auth/sign-out` requires a valid `Authorization: Bearer` access token and no JSON refresh token or
+- [x] `POST /api/v1/auth/sign-out` requires a valid `Authorization: Bearer` access token and no JSON refresh token or
       request body. It immediately revokes only that access token's server-side session, including its refresh and
       access credentials, and returns `204 No Content` without a body. Missing or invalid Bearer credentials return
       `401 UNAUTHORIZED`.
-- [ ] Every account has exactly one role, `user`; no user-management route creates users or changes roles.
-- [ ] Deleting one's own account immediately revokes all its sessions and rejects its previously issued access tokens.
-- [ ] `POST /api/v1/auth/change-password` accepts exactly `currentPassword` and `newPassword` from an authenticated user
+- [x] Every account has exactly one role, `user`; no user-management route creates users or changes roles.
+- [x] Deleting one's own account immediately revokes all its sessions and rejects its previously issued access tokens.
+- [x] `POST /api/v1/auth/change-password` accepts exactly `currentPassword` and `newPassword` from an authenticated user
       and rejects additional fields. `newPassword` is raw and untrimmed, with a minimum of 12 characters and no
       character-class rules; verifying `currentPassword` does not impose that enrollment minimum. Invalid new input
       returns `400 BAD_REQUEST`, while equality with the current password returns `400 PASSWORD_REUSE_NOT_ALLOWED`.
       Success returns `204 No Content` with no body or tokens, revokes all sessions immediately, and requires a new
       sign-in. An incorrect current password with a valid session returns `403 INVALID_CURRENT_PASSWORD`. Neither
       failure changes credentials or revokes sessions. Users cannot read, change, or reset another user's password.
-- [ ] Every Users route requires authentication. Authenticated users can read all users, including individual, list, and
+- [x] Every Users route requires authentication. Authenticated users can read all users, including individual, list, and
       `QUERY` results; only the owner can update their `displayName` or delete their account. Email is immutable after
       sign-up and cross-account writes are forbidden. The Users management PDR solely defines viewer-dependent User
       response projection: self includes email, while other users omit email, including list and `QUERY` items.
-- [ ] Real HTTP E2E scenarios cover registration, login, renewal, logout, authenticated read-all, and owner-only profile
+- [x] Real HTTP E2E scenarios cover registration, login, renewal, logout, authenticated read-all, and owner-only profile
       updates and deletion without relying on production seeds.
 
 ## 7. Considered decisions
@@ -196,7 +202,8 @@ self-service access to user management and personal profiles.
 - Per-email failure lockout is replaced by independent per-IP sign-up and sign-in limits.
 - Requiring email verification before first login in this version.
 
-### Open questions
+### Resolved implementation question
 
-- How should Users and Auth coordinate self-deletion so user removal and invalidation of all sessions complete
-  atomically on commit?
+- Owner deletion atomically invalidates their sessions; requests using previously issued access credentials are rejected
+  after commit. See the [Users implementation plan](../../../plans/users/implementation-plan.md) for
+  persistence-boundary details.

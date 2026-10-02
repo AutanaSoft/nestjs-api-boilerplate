@@ -6,7 +6,7 @@ slug: users-management
 version: '2.0'
 status: approved
 date_created: '2026-09-17'
-last_updated: '2026-09-28'
+last_updated: '2026-10-02'
 owner: users
 tags:
   - users
@@ -17,13 +17,13 @@ tags:
 
 # Introduction
 
-The application has an initial, temporarily unauthenticated user-management capability. This PDR preserves that
-historical scope and defines its transition to authenticated reads and owner-only account management.
+The application now provides authenticated user management. This PDR preserves the initial, temporarily unauthenticated
+scope as historical evidence and records its transition to authenticated reads and owner-only account management.
 
 ## 1. Problem
 
-The initial Users capability exists but is temporarily accessible without credentials and permits Users-owned creation.
-Without a protected, self-service transition, the reusable template would expose cross-account writes and duplicate
+The initial Users capability was temporarily accessible without credentials and permitted Users-owned creation. Without
+a protected, self-service transition, the reusable template would expose cross-account writes and duplicate
 account-creation routes.
 
 ## 2. Goal
@@ -203,28 +203,34 @@ assert implementation of the future Auth transition.
 - [x] Every successful response includes `X-Request-Id` according to the shared HTTP contract.
 - [x] Public responses and errors conform to the repository's shared HTTP contracts.
 
-### Future Auth transition (not yet implemented)
+### Auth transition (implemented; acceptance evidence below)
 
-- [ ] Public Auth sign-up is the sole creation route; `POST /api/v1/users` is removed. No administrator creation,
+Final R5e integrated verification passed on source through local implementation-chain HEAD `9029b1d`: 75 real-HTTP E2E
+tests, 369 unit tests, lint, build, Prisma validation, Prettier, markdownlint, and `git diff --check` passed. E2E
+scenarios used isolated PostgreSQL databases. These criteria were reconciled against the source and representative
+tests, not individually tested criterion-by-criterion. The repository remains unreleased; this evidence is not release
+authorization.
+
+- [x] Public Auth sign-up is the sole creation route; `POST /api/v1/users` is removed. No administrator creation,
       production seed, or forced initial-password state is required. Sign-up rejects role input.
-- [ ] Every Users route requires authentication. All authenticated registered users can read individual users via `GET`,
+- [x] Every Users route requires authentication. All authenticated registered users can read individual users via `GET`,
       list users, and use structured `QUERY`, retaining the existing filtering, sorting, and cursor behavior.
-- [ ] Each account has exactly one persisted role, `user`, not JWT authority. The owner's `GET /users/me`,
+- [x] Each account has exactly one persisted role, `user`, not JWT authority. The owner's `GET /users/me`,
       `GET /users/:userId`, and successful own `PATCH /users/me` or `PATCH /users/:userId` return exactly `id`, `email`,
       `displayName`, `createdAt`, `updatedAt`, and `role`. `GET /users/:userId` for another user returns exactly `id`,
       `displayName`, `createdAt`, `updatedAt`, and `role`. Each `GET /users` and `QUERY` item is projected by viewer:
       the owner's item includes email, and other users' items omit it. The pagination shape remains unchanged; no
       password, hash, or future field is exposed.
-- [ ] `GET /api/v1/users/me` requires a valid Bearer credential and no `userId` or body; `200 OK` returns the six-field
+- [x] `GET /api/v1/users/me` requires a valid Bearer credential and no `userId` or body; `200 OK` returns the six-field
       User projection with UTC ISO 8601 timestamps. Missing or invalid Bearer credentials return `401 UNAUTHORIZED`;
       responses include `X-Request-Id`.
-- [ ] Only the owner can update `displayName` through `PATCH /api/v1/users/me` or `PATCH /api/v1/users/:userId`. Both
+- [x] Only the owner can update `displayName` through `PATCH /api/v1/users/me` or `PATCH /api/v1/users/:userId`. Both
       accept only strict JSON `{ displayName }` with mandatory, normalized and validated display name, and return
       `200 OK` with the six-field User projection. Empty, missing, or extra fields, including `email`, `role`, and
       `password`, return `400 BAD_REQUEST`. Email and role cannot change after sign-up. An existing other user's ID on a
       write returns `403 FORBIDDEN`; an authenticated request to a nonexistent or already deleted ID returns
       `404 RESOURCE_NOT_FOUND`. Missing or invalid Bearer credentials return `401 UNAUTHORIZED`.
-- [ ] Only the owner can physically delete their account through `DELETE /api/v1/users/:userId`, returning
+- [x] Only the owner can physically delete their account through `DELETE /api/v1/users/:userId`, returning
       `204 No Content`; user removal and invalidation of all their sessions complete atomically on commit. An
       authenticated DELETE for a nonexistent or already deleted ID returns `404 RESOURCE_NOT_FOUND`; an existing other
       user's ID returns `403 FORBIDDEN`. Missing or invalid Bearer credentials, including a former owner's access token
@@ -241,8 +247,9 @@ dependency. The E2E run exercised HTTP after applying migrations to isolated Pos
 Coverage is representative rather than one HTTP assertion per variation: required-field omission, unsupported date
 filters and `updatedAt` sorting, acceptance of limit 250, `null` for each mutable update field, and the request-ID
 header on every successful route are supported by strict schemas or shared middleware plus related unit and HTTP tests,
-not all by dedicated E2E cases. The future `AuthModule` transition remains unchecked; it is not part of this initial
-release and must be verified when that module is implemented.
+not all by dedicated E2E cases. At the time of this historical initial-scope verification, the Auth transition had not
+yet been implemented. Its later implementation evidence and acceptance reconciliation are recorded in the Auth
+transition section above; this paragraph does not establish current transition status.
 
 ## 7. Considered decisions
 
@@ -291,6 +298,8 @@ release and must be verified when that module is implemented.
 - Use `POST /users/search` as the preferred structured-query contract.
 - Treat temporary unauthenticated access as a permanent public-access decision.
 
-### Open questions
+### Resolved implementation question
 
-- How will Users and Auth coordinate owner removal and invalidation of every session atomically on commit?
+- Owner deletion atomically invalidates their sessions; requests using previously issued access credentials are rejected
+  after commit. See the [Users implementation plan](../../../plans/users/implementation-plan.md) for
+  persistence-boundary details.
